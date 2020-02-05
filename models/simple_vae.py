@@ -48,7 +48,7 @@ class VAE(nn.Module):
 
         '''
         super().__init__()
-
+        self.name = "simple_vae"
         self.enc = Encoder(INPUT_DIM, HIDDEN_DIM)
         self.dec = Decoder(HIDDEN_DIM, INPUT_DIM)
 
@@ -57,3 +57,6 @@ class VAE(nn.Module):
         predicted = self.dec(x_sample)
 
         return predicted
+
+    def encode(self, x):
+        return self.enc(x)

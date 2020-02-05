@@ -16,16 +16,17 @@ from models.simple_vae import VAE
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+SAVE_SNAPSHOT = True   # save snapshot of the model
 DATASET_LENGTH = "small" # (small|medium|large)
 FIXED_PROTEIN_LENGTH = 50
 BATCH_SIZE = 20         # number of data points in each batch
 N_EPOCHS = 20           # times to run the model on complete data
-INPUT_DIM = FIXED_PROTEIN_LENGTH * 23     # size of each input
+INPUT_DIM = FIXED_PROTEIN_LENGTH * data.VOCABULARY_SIZE     # size of each input
 
 lr = 1e-3               # learning rate
 
-train_dataset = data.read_sequences(f"data/train_set_{DATASET_LENGTH}", fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=False)
-test_dataset = data.read_sequences(f"data/test_set_{DATASET_LENGTH}",fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=False)
+train_dataset = data.read_sequences(f"data/train_set_{DATASET_LENGTH}_{FIXED_PROTEIN_LENGTH}", fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=False)
+test_dataset = data.read_sequences(f"data/test_set_{DATASET_LENGTH}_{FIXED_PROTEIN_LENGTH}", fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=False)
 
 train_iterator = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 test_iterator = DataLoader(test_dataset, batch_size=BATCH_SIZE)
@@ -43,8 +44,8 @@ def reconstruction_accuracy(input, output):
     if input.shape != output.shape:
         raise Exception("Input and output can't have different shapes")
 
-    input_sequences = input.view(input.shape[0], FIXED_PROTEIN_LENGTH, -1)[:, :, :23].argmax(axis=2)
-    output_sequences = output.view(output.shape[0], FIXED_PROTEIN_LENGTH, -1)[:, :, :23].argmax(axis=2)
+    input_sequences = input.view(input.shape[0], FIXED_PROTEIN_LENGTH, -1)[:, :, :data.VOCABULARY_SIZE].argmax(axis=2)
+    output_sequences = output.view(output.shape[0], FIXED_PROTEIN_LENGTH, -1)[:, :, :data.VOCABULARY_SIZE].argmax(axis=2)
 
     return ((input_sequences==output_sequences).sum(axis=1) / float(FIXED_PROTEIN_LENGTH)).mean()
 
@@ -56,7 +57,7 @@ def train():
     train_loss = 0
 
     for i, x in enumerate(train_iterator):
-        # reshape the data into [batch_size, FIXED_PROTEIN_LENGTH*23]
+        # reshape the data into [batch_size, FIXED_PROTEIN_LENGTH*VOCABULARY_SIZE]
         x = x.view(-1, INPUT_DIM)
         x = x.to(device)
 
@@ -132,3 +133,11 @@ for e in range(N_EPOCHS):
 
     if patience_counter > 3:
         break
+
+
+if SAVE_SNAPSHOT:
+    # save a snapshot of the model
+    from datetime import datetime
+    now = datetime.now()
+    date_time = now.strftime("%m-%d-%Y_%H:%M:%S")
+    torch.save(model.state_dict(), f"saved_models/{model.name}_{date_time}")

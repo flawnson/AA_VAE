@@ -3,11 +3,12 @@ import torch
 
 """
 Valid amino acids
-U - unknown
-X - missing
+X - unknown
 0 - padding for fixed length encoders
 """
-amino_acids = "CSTPAGNDEQHRKMILVFYWUX0"
+amino_acids = "CSTPAGNDEQHRKMILVFYWX0"
+VOCABULARY_SIZE = len(amino_acids)
+
 def aa_features():
     """ Returns chemical features regarding each amino acid
     """
@@ -32,7 +33,6 @@ def aa_features():
              [2.94, 0.29, 5.89,  1.79,  5.67, 0.30, 0.38],
              [2.94, 0.30, 6.47,  0.96,  5.66, 0.25, 0.41],
              [3.21, 0.41, 8.08,  2.25,  5.94, 0.32, 0.42],
-             [0.00, 0.00, 0.00,  0.00,  0.00, 0.00, 0.00],
              [0.00, 0.00, 0.00,  0.00,  0.00, 0.00, 0.00],
              [0.00, 0.00, 0.00,  0.00,  0.00, 0.00, 0.00]]
     return torch.Tensor(prop1)
