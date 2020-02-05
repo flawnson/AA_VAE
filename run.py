@@ -1,41 +1,37 @@
 '''This code is a variation of simple VAE from https://graviraja.github.io/vanillavae/
 '''
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
 from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
 
-import matplotlib.pyplot as plt
 import data
-import numpy as np
-
 from models.simple_vae import VAE
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-DATASET_LENGTH = "small" # (small|medium|large)
+DATASET_LENGTH = "small"  # (small|medium|large)
 FIXED_PROTEIN_LENGTH = 50
-BATCH_SIZE = 20         # number of data points in each batch
-N_EPOCHS = 20           # times to run the model on complete data
-INPUT_DIM = FIXED_PROTEIN_LENGTH * 23     # size of each input
+BATCH_SIZE = 20  # number of data points in each batch
+N_EPOCHS = 20  # times to run the model on complete data
+INPUT_DIM = FIXED_PROTEIN_LENGTH * 23  # size of each input
 
-lr = 1e-3               # learning rate
+lr = 1e-3  # learning rate
 
-train_dataset = data.read_sequences(f"data/train_set_{DATASET_LENGTH}", fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=False)
-test_dataset = data.read_sequences(f"data/test_set_{DATASET_LENGTH}",fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=False)
+train_dataset = data.read_sequences(f"data/train_set_{DATASET_LENGTH}", fixed_protein_length=FIXED_PROTEIN_LENGTH,
+                                    add_chemical_features=False)
+test_dataset = data.read_sequences(f"data/test_set_{DATASET_LENGTH}", fixed_protein_length=FIXED_PROTEIN_LENGTH,
+                                   add_chemical_features=False)
 
 train_iterator = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 test_iterator = DataLoader(test_dataset, batch_size=BATCH_SIZE)
 
-
 # vae
-model = VAE(INPUT_DIM, 20).to(device) # 20 is number of hidden dimension
+model = VAE(INPUT_DIM, 20).to(device)  # 20 is number of hidden dimension
 
 # optimizer
 optimizer = optim.Adam(model.parameters(), lr=lr)
+
 
 def reconstruction_accuracy(input, output):
     """ Computes average sequence identity bewteen input and output sequences
@@ -46,7 +42,8 @@ def reconstruction_accuracy(input, output):
     input_sequences = input.view(input.shape[0], FIXED_PROTEIN_LENGTH, -1)[:, :, :23].argmax(axis=2)
     output_sequences = output.view(output.shape[0], FIXED_PROTEIN_LENGTH, -1)[:, :, :23].argmax(axis=2)
 
-    return ((input_sequences==output_sequences).sum(axis=1) / float(FIXED_PROTEIN_LENGTH)).mean()
+    return ((input_sequences == output_sequences).sum(axis=1) / float(FIXED_PROTEIN_LENGTH)).mean()
+
 
 def train():
     # set the train mode
@@ -54,6 +51,8 @@ def train():
 
     # loss of the epoch
     train_loss = 0
+
+    recon_accuracy = 0
 
     for i, x in enumerate(train_iterator):
         # reshape the data into [batch_size, FIXED_PROTEIN_LENGTH*23]
@@ -110,7 +109,8 @@ def test():
             test_loss += recon_loss.item()
             test_accuracy += recon_accuracy
 
-    return test_loss, test_accuracy/len(test_iterator)
+    return test_loss, test_accuracy / len(test_iterator)
+
 
 best_test_loss = float('inf')
 
@@ -122,7 +122,8 @@ for e in range(N_EPOCHS):
     train_loss /= len(train_dataset)
     test_loss /= len(test_dataset)
 
-    print(f'Epoch {e}, Train Loss: {train_loss:.2f}, Test Loss: {test_loss:.2f}, Train accuracy {train_recon_accuracy*100.0:.2f}%, Test accuracy {test_recon_accuracy*100.0:.2f}%')
+    print(
+        f'Epoch {e}, Train Loss: {train_loss:.2f}, Test Loss: {test_loss:.2f}, Train accuracy {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
 
     if best_test_loss > test_loss:
         best_test_loss = test_loss
