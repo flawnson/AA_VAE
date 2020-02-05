@@ -1,12 +1,13 @@
 import torch
-
+import pandas as pd
 
 """
 Valid amino acids
 X - unknown
+U - Selenocysteine
 0 - padding for fixed length encoders
 """
-amino_acids = "CSTPAGNDEQHRKMILVFYWX0"
+amino_acids = "UCSTPAGNDEQHRKMILVFYWX0"
 VOCABULARY_SIZE = len(amino_acids)
 
 def aa_features():
@@ -14,6 +15,7 @@ def aa_features():
     """
 
     prop1 = [[1.77, 0.13, 2.43,  1.54,  6.35, 0.17, 0.41],
+             [1.77, 0.13, 2.43,  1.54,  6.35, 0.17, 0.41],
              [1.31, 0.06, 1.60, -0.04,  5.70, 0.20, 0.28],
              [3.03, 0.11, 2.60,  0.26,  5.60, 0.21, 0.36],
              [2.67, 0.00, 2.72,  0.72,  6.80, 0.13, 0.34],
@@ -81,20 +83,24 @@ def valid_protein(protein_sequence):
 def read_sequences(file, fixed_protein_length, add_chemical_features=False):
     """ Reads and converts valid protein sequences"
     """
-
     proteins = []
-    with open(file) as f:
-        for protein_sequence in f:
-            protein_sequence = protein_sequence.strip()
-            if valid_protein(protein_sequence):
+    for i, row in pd.read_json(file).iterrows():
+        if "sequence" in row:
+            protein_sequence = row['sequence']
+        elif "protein_sequence" in row:
+            protein_sequence = row['protein_sequence']
 
-                # pad sequence
-                if len(protein_sequence) < fixed_protein_length:
-                    protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
+        if valid_protein(protein_sequence):
+            protein_sequence = protein_sequence[:fixed_protein_length]
 
-                proteins.append(seq_to_one_hot(protein_sequence, add_chemical_features=add_chemical_features))
-            else:
-                print("Protein", protein_sequence, "contains invalid characters")
+            # pad sequence
+            if len(protein_sequence) < fixed_protein_length:
+                protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
+
+            proteins.append(seq_to_one_hot(protein_sequence, add_chemical_features=add_chemical_features))
+        else:
+            raise Exception(f"Unknown character in sequence {protein_sequence}")
+
 
     return torch.stack(proteins)
 

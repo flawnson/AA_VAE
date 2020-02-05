@@ -18,15 +18,15 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 SAVE_SNAPSHOT = True   # save snapshot of the model
 DATASET_LENGTH = "small" # (small|medium|large)
-FIXED_PROTEIN_LENGTH = 50
+FIXED_PROTEIN_LENGTH = 50 # (50|200)
 BATCH_SIZE = 20         # number of data points in each batch
 N_EPOCHS = 20           # times to run the model on complete data
 INPUT_DIM = FIXED_PROTEIN_LENGTH * data.VOCABULARY_SIZE     # size of each input
 
 lr = 1e-3               # learning rate
 
-train_dataset = data.read_sequences(f"data/train_set_{DATASET_LENGTH}_{FIXED_PROTEIN_LENGTH}", fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=False)
-test_dataset = data.read_sequences(f"data/test_set_{DATASET_LENGTH}_{FIXED_PROTEIN_LENGTH}", fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=False)
+train_dataset = data.read_sequences(f"data/train_set_{DATASET_LENGTH}_{FIXED_PROTEIN_LENGTH}.json", fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=False)
+test_dataset = data.read_sequences(f"data/test_set_{DATASET_LENGTH}_{FIXED_PROTEIN_LENGTH}.json", fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=False)
 
 train_iterator = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 test_iterator = DataLoader(test_dataset, batch_size=BATCH_SIZE)
