@@ -33,13 +33,13 @@ class ConvolutionalVAE(VaeTemplate):
 
         decoder = nn.Sequential(
             UnFlatten(size=h_dim),
-            nn.ConvTranspose2d(h_dim, 128, kernel_size=5, stride=2),
+            nn.ConvTranspose1d(h_dim, 128, kernel_size=5, stride=2),
             nn.ReLU(),
-            nn.ConvTranspose2d(128, 64, kernel_size=5, stride=2),
+            nn.ConvTranspose1d(128, 64, kernel_size=5, stride=2),
             nn.ReLU(),
-            nn.ConvTranspose2d(64, 32, kernel_size=6, stride=2),
+            nn.ConvTranspose1d(64, 32, kernel_size=6, stride=2),
             nn.ReLU(),
-            nn.ConvTranspose2d(32, image_channels, kernel_size=6, stride=2),
+            nn.ConvTranspose1d(32, image_channels, kernel_size=6, stride=2),
             nn.Sigmoid(),
         )
         super(ConvolutionalVAE, self).__init__(encoder, decoder, h_dim, z_dim)
