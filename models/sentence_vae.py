@@ -6,6 +6,26 @@ from models.vae_template import VaeTemplate
 from utils.utils import to_var
 
 
+def _save_sample(save_to, sample, running_seqs, t):
+    # select only still running
+    running_latest = save_to[running_seqs]
+    # update token at position t
+    running_latest[:, t] = sample.data
+    # save back
+    save_to[running_seqs] = running_latest
+
+    return save_to
+
+
+def _sample(dist, mode='greedy'):
+
+    if mode == 'greedy':
+        _, sample = torch.topk(dist, 1, dim=-1)
+    sample = sample.squeeze()
+
+    return sample
+
+
 class SentenceVAE(VaeTemplate):
 
     def __init__(self, vocab_size, embedding_size, rnn_type, hidden_size, word_dropout, embedding_dropout, latent_size,
@@ -25,10 +45,6 @@ class SentenceVAE(VaeTemplate):
         self.bidirectional = bidirectional
         self.num_layers = num_layers
         self.hidden_size = hidden_size
-
-        self.embedding = nn.Embedding(vocab_size, embedding_size)
-        self.word_dropout_rate = word_dropout
-        self.embedding_dropout = nn.Dropout(p=embedding_dropout)
 
         if rnn_type == 'rnn':
             rnn = nn.RNN
@@ -155,10 +171,10 @@ class SentenceVAE(VaeTemplate):
 
             logits = self.outputs2vocab(output)
 
-            input_sequence = self._sample(logits)
+            input_sequence = _sample(logits)
 
             # save next input
-            generations = self._save_sample(generations, input_sequence, sequence_running, t)
+            generations = _save_sample(generations, input_sequence, sequence_running, t)
 
             # update gloabl running sequence
             sequence_mask[sequence_running] = (input_sequence != self.eos_idx).data
@@ -178,21 +194,3 @@ class SentenceVAE(VaeTemplate):
             t += 1
 
         return generations, z
-
-    def _sample(self, dist, mode='greedy'):
-
-        if mode == 'greedy':
-            _, sample = torch.topk(dist, 1, dim=-1)
-        sample = sample.squeeze()
-
-        return sample
-
-    def _save_sample(self, save_to, sample, running_seqs, t):
-        # select only still running
-        running_latest = save_to[running_seqs]
-        # update token at position t
-        running_latest[:, t] = sample.data
-        # save back
-        save_to[running_seqs] = running_latest
-
-        return save_to

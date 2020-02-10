@@ -18,28 +18,41 @@ class UnFlatten(nn.Module):
 
 
 class ConvolutionalVAE(VaeTemplate):
-    def __init__(self, image_channels=3, h_dim=1024, z_dim=32):
+    def __init__(self, model_config, h_dim, z_dim):
+        sizes: list = model_config["sizes"]
         encoder = nn.Sequential(
-            nn.Conv1d(image_channels, 32, kernel_size=4, stride=2),
+            nn.Conv1d(in_channels=sizes[0], out_channels=sizes[1], kernel_size=5, stride=1, padding=2, groups=1),
             nn.ReLU(),
-            nn.Conv1d(32, 64, kernel_size=4, stride=2),
+            nn.Conv1d(in_channels=sizes[1], out_channels=sizes[2], kernel_size=5, stride=1, padding=2, groups=1),
             nn.ReLU(),
-            nn.Conv1d(64, 128, kernel_size=4, stride=2),
+            nn.Conv1d(in_channels=sizes[2], out_channels=sizes[3], kernel_size=5, stride=1, padding=2, groups=1),
             nn.ReLU(),
-            nn.Conv1d(128, 256, kernel_size=4, stride=2),
-            nn.ReLU(),
-            Flatten()
+            nn.Conv1d(in_channels=sizes[3], out_channels=1, kernel_size=5, stride=1, padding=2, groups=1),
+            nn.ReLU()  # ,
+            # nn.LSTM()
+            # Flatten()
         )
 
         decoder = nn.Sequential(
-            UnFlatten(size=h_dim),
-            nn.ConvTranspose2d(h_dim, 128, kernel_size=5, stride=2),
+            # nn.LSTM(),
+            # nn.ReLU(),
+            # UnFlatten(size=h_dim),
+            nn.ConvTranspose1d(1, sizes[3], kernel_size=5, stride=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(128, 64, kernel_size=5, stride=2),
+            nn.ConvTranspose1d(sizes[3], sizes[2], kernel_size=5, stride=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(64, 32, kernel_size=6, stride=2),
+            nn.ConvTranspose1d(sizes[2], sizes[1], kernel_size=6, stride=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(32, image_channels, kernel_size=6, stride=2),
-            nn.Sigmoid(),
+            nn.ConvTranspose1d(sizes[1], sizes[0], kernel_size=6, stride=1),
+            nn.Sigmoid()
         )
         super(ConvolutionalVAE, self).__init__(encoder, decoder, h_dim, z_dim)
+
+    def forward(self, x):
+        h = self.encoder(x)
+        z, mu, log_var = self.bottleneck(h)
+        z = self.fc3(z)
+        val = self.decoder(z)
+        if self.postprocess is not None:
+            val = self.postprocess(val)
+        return val, mu, log_var

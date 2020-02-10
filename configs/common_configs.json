@@ -1,0 +1,8 @@
+{
+  "dataset": "small",
+  "protein_length": 50,
+  "batch_size": 20,
+  "feature_length": 23,
+  "hidden_size": 100,
+  "embedding_size": 60
+}
