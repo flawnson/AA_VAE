@@ -19,7 +19,7 @@ Load the saved model
 from models.simple_vae import VAE
 EMBEDDING_LENGTH = 20
 INPUT_DIM = FIXED_PROTEIN_LENGTH * data.VOCABULARY_SIZE
-model_to_load = "simple_vae_02-05-2020_15:53:09"
+model_to_load = "simple_vae_02_05_2020_15_53_09"
 model = VAE(INPUT_DIM, EMBEDDING_LENGTH)
 model.load_state_dict(torch.load(f"saved_models/{model_to_load}"))
 model.eval()

@@ -2,10 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class Encoder(nn.Module):
     ''' This the encoder part of VAE
 
     '''
+
     def __init__(self, input_dim, hidden_dim):
         '''
         Args:
@@ -26,6 +28,7 @@ class Decoder(nn.Module):
     ''' This the decoder part of VAE
 
     '''
+
     def __init__(self, hidden_dim, output_dim):
         '''
         Args:
