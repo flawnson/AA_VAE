@@ -17,7 +17,7 @@ class Trainer:
         self.N_EPOCHS = N_EPOCHS
 
     def reconstruction_accuracy(self, input, output):
-        """ Computes average sequence identity bewteen input and output sequences
+        """ Computes average sequence identity between input and output sequences
         """
         if input.shape != output.shape:
             raise Exception("Input and output can't have different shapes")
@@ -107,7 +107,6 @@ class Trainer:
                 best_test_loss = test_loss
                 patience_counter = 1
             else:
-                print("Patience value at {}".format(patience_counter))
                 patience_counter += 1
 
             print("Patience value at {}".format(patience_counter))
