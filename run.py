@@ -8,9 +8,9 @@ import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from utils import data
 from models.convolutional_vae import ConvolutionalVAE
 from models.simple_vae import VAE
+from utils import data
 from utils.train import Trainer
 
 if __name__ == "__main__":
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     DATASET_LENGTH = config["dataset"]  # (small|medium|large)
     FIXED_PROTEIN_LENGTH = config["protein_length"]
-    INPUT_DIM = FIXED_PROTEIN_LENGTH * config["feature_length"]  # size of each input
+    INPUT_DIM = FIXED_PROTEIN_LENGTH * (config["feature_length"] + config["added_length"])  # size of each input
 
     BATCH_SIZE = model_config["batch_size"]  # number of data points in each batch
     N_EPOCHS = model_config["epochs"]  # times to run the model on complete data
@@ -43,11 +43,12 @@ if __name__ == "__main__":
 
     if model_config["model_name"] == "convolutional_vae":
         model = ConvolutionalVAE(model_config["convolutional_parameters"], config["hidden_size"],
-                                 config["embedding_size"])
+                                 config["embedding_size"], config["feature_length"], device)
     else:
         model = VAE(INPUT_DIM, 20).to(device)  # 20 is number of hidden dimension
 
     # optimizer
     optimizer = optim.Adam(model.parameters(), lr=lr)
-    Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device, optimizer, train_dataset,
-            test_dataset, model_config["epochs"]).train()
+    Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device, optimizer,
+            train_dataset,
+            test_dataset, model_config["epochs"]).trainer()

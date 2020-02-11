@@ -21,11 +21,39 @@ class Trainer:
         """
         if input.shape != output.shape:
             raise Exception("Input and output can't have different shapes")
-
-        input_sequences = input.view(input.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23].argmax(axis=2)
-        output_sequences = output.view(output.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23].argmax(axis=2)
+        input_sequences = input.transpose(1, 2).view(input.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23]\
+            .argmax(axis=2)
+        output_sequences = output.transpose(1, 2).view(output.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23]\
+            .argmax(axis=2)
 
         return ((input_sequences == output_sequences).sum(axis=1) / float(self.FIXED_PROTEIN_LENGTH)).mean()
+
+    def __inner_iteration(self, x, training: bool):
+        x = x.transpose(1, 2).to(self.device)
+
+        # update the gradients to zero
+        if training:
+            self.optimizer.zero_grad()
+
+        # forward pass
+        predicted = self.model(x)[0]
+
+        # reconstruction loss
+        recon_loss = F.binary_cross_entropy(predicted, x, size_average=False)
+
+        loss = recon_loss.item()
+        # reconstruction accuracy
+        # TODO this needs to change once new features are added into the vector
+        recon_accuracy = self.reconstruction_accuracy(predicted, x)
+
+        # backward pass
+        if training:
+            recon_loss.backward()
+            self.optimizer.step()
+
+        # update the weights
+
+        return loss, recon_accuracy
 
     def train(self):
         # set the train mode
@@ -38,29 +66,11 @@ class Trainer:
 
         for i, x in enumerate(self.train_iterator):
             # reshape the data into [batch_size, FIXED_PROTEIN_LENGTH*23]
-            x = x.transpose(1, 2).to(self.device)
+            loss, accuracy = self.__inner_iteration(x, True)
+            train_loss += loss
+            recon_accuracy += accuracy
 
-            # update the gradients to zero
-            self.optimizer.zero_grad()
-
-            # forward pass
-            predicted = self.model(x)
-
-            # reconstruction loss
-            recon_loss = F.binary_cross_entropy(predicted, x, size_average=False)
-
-            # reconstruction accuracy
-            #TODO this needs to change
-            recon_accuracy = self.reconstruction_accuracy(predicted, x)
-
-            # backward pass
-            recon_loss.backward()
-            train_loss += recon_loss.item()
-
-            # update the weights
-            self.optimizer.step()
-
-        return train_loss, recon_accuracy
+        return train_loss, recon_accuracy / len(self.train_iterator)
 
     def test(self):
         # set the evaluation mode
@@ -74,20 +84,9 @@ class Trainer:
         # we don't need to track the gradients, since we are not updating the parameters during evaluation / testing
         with torch.no_grad():
             for i, x in enumerate(self.test_iterator):
-                # reshape the data
-                x = x.transpose(1, 2).to(self.device)
-
-                # forward pass
-                predicted = self.model(x)
-
-                # reconstruction loss
-                recon_loss = F.binary_cross_entropy(predicted, x, size_average=False)
-
-                # reconstruction accuracy
-                recon_accuracy = self.reconstruction_accuracy(predicted, x)
-
-                test_loss += recon_loss.item()
-                test_accuracy += recon_accuracy
+                loss, accuracy = self.__inner_iteration(x, False)
+                test_loss += loss
+                test_accuracy += accuracy
 
         return test_loss, test_accuracy / len(self.test_iterator)
 
@@ -108,7 +107,9 @@ class Trainer:
                 best_test_loss = test_loss
                 patience_counter = 1
             else:
+                print("Patience value at {}".format(patience_counter))
                 patience_counter += 1
 
-            if patience_counter > 3:
+            print("Patience value at {}".format(patience_counter))
+            if patience_counter > 100:
                 break
