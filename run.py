@@ -9,6 +9,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from models.convolutional_vae import ConvolutionalVAE
+from models.lstm_vae import LSTMVae
 from models.simple_vae import VAE
 from utils import data
 from utils.train import Trainer
@@ -43,6 +44,9 @@ if __name__ == "__main__":
 
     if model_config["model_name"] == "convolutional_vae":
         model = ConvolutionalVAE(model_config["convolutional_parameters"], config["hidden_size"],
+                                 config["embedding_size"], config["feature_length"], device)
+    if model_config["model_name"] == "lstm_vae":
+        model = LSTMVae(model_config["convolutional_parameters"], config["hidden_size"],
                                  config["embedding_size"], config["feature_length"], device)
     else:
         model = VAE(INPUT_DIM, 20).to(device)  # 20 is number of hidden dimension
