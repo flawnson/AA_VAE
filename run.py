@@ -52,3 +52,11 @@ if __name__ == "__main__":
     Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device, optimizer,
             train_dataset,
             test_dataset, model_config["epochs"]).trainer()
+
+
+if SAVE_SNAPSHOT:
+    # save a snapshot of the model
+    from datetime import datetime
+    now = datetime.now()
+    date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
+    torch.save(model.state_dict(), f"saved_models/{model.name}_{date_time}")
