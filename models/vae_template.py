@@ -11,7 +11,7 @@ def reparameterization(mu, log_var: torch.Tensor, device):
 
 
 class VaeTemplate(nn.Module):
-    def __init__(self, encoder, decoder, device, h_dim=1024, z_dim=32, preprocessing_func=None,
+    def __init__(self, encoder, decoder, device, h_dim, z_dim, preprocessing_func=None,
                  post_processing_func=None):
         super(VaeTemplate, self).__init__()
         self.preprocess = preprocessing_func

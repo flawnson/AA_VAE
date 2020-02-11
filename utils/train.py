@@ -21,9 +21,9 @@ class Trainer:
         """
         if input.shape != output.shape:
             raise Exception("Input and output can't have different shapes")
-        input_sequences = input.transpose(1, 2).view(input.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23]\
+        input_sequences = input.transpose(1, 2).view(input.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23] \
             .argmax(axis=2)
-        output_sequences = output.transpose(1, 2).view(output.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23]\
+        output_sequences = output.transpose(1, 2).view(output.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23] \
             .argmax(axis=2)
 
         return ((input_sequences == output_sequences).sum(axis=1) / float(self.FIXED_PROTEIN_LENGTH)).mean()
@@ -91,7 +91,7 @@ class Trainer:
         return test_loss, test_accuracy / len(self.test_iterator)
 
     def trainer(self):
-        best_test_loss = float('inf')
+        best_training_loss = float('inf')
         patience_counter = 0
         for e in range(self.N_EPOCHS):
 
@@ -103,8 +103,8 @@ class Trainer:
             print(
                 f'Epoch {e}, Train Loss: {train_loss:.2f}, Test Loss: {test_loss:.2f}, Train accuracy {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
 
-            if best_test_loss > test_loss:
-                best_test_loss = test_loss
+            if best_training_loss > train_loss:
+                best_training_loss = train_loss
                 patience_counter = 1
             else:
                 patience_counter += 1

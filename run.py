@@ -33,10 +33,10 @@ if __name__ == "__main__":
 
     lr = model_config["optimizer_config"]["learning_rate"]  # learning rate
 
-    train_dataset = data.read_sequences(f"data/train_set_{DATASET_LENGTH}", fixed_protein_length=FIXED_PROTEIN_LENGTH,
-                                        add_chemical_features=False)
-    test_dataset = data.read_sequences(f"data/test_set_{DATASET_LENGTH}", fixed_protein_length=FIXED_PROTEIN_LENGTH,
-                                       add_chemical_features=False)
+    train_dataset = data.read_sequences(f"data/train_set_{DATASET_LENGTH}_{FIXED_PROTEIN_LENGTH}.json",
+                                        fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=False)
+    test_dataset = data.read_sequences(f"data/test_set_{DATASET_LENGTH}_{FIXED_PROTEIN_LENGTH}.json",
+                                       fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=False)
 
     train_iterator = DataLoader(train_dataset, shuffle=True)
     test_iterator = DataLoader(test_dataset)
@@ -53,10 +53,11 @@ if __name__ == "__main__":
             train_dataset,
             test_dataset, model_config["epochs"]).trainer()
 
+    SAVE_SNAPSHOT = False
+    if SAVE_SNAPSHOT:
+        # save a snapshot of the model
+        from datetime import datetime
 
-if SAVE_SNAPSHOT:
-    # save a snapshot of the model
-    from datetime import datetime
-    now = datetime.now()
-    date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
-    torch.save(model.state_dict(), f"saved_models/{model.name}_{date_time}")
+        now = datetime.now()
+        date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
+        torch.save(model.state_dict(), f"saved_models/{model.name}_{date_time}")
