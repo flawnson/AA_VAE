@@ -1,16 +1,6 @@
 import torch
 import torch.nn.functional as nn
-import torch.optim as optim
-from torch.autograd import Variable
-import torch.nn.functional as F
 
-import numpy as np
-import argparse
-import utils
-
-from sklearn.metrics import accuracy_score
-from sklearn.utils import shuffle
-from sklearn.model_selection import train_test_split as tts
 
 class VAE(torch.nn.Module):
     def __init__(self, input_size, hidden_sizes, batch_size):
@@ -21,20 +11,14 @@ class VAE(torch.nn.Module):
         self.batch_size = batch_size
 
         self.fc = torch.nn.Linear(input_size, hidden_sizes[0])  # 2 for bidirection
-        self.BN = torch.nn.BatchNorm1d(hidden_sizes[0])
         self.fc1 = torch.nn.Linear(hidden_sizes[0], hidden_sizes[1])
-        self.BN1 = torch.nn.BatchNorm1d(hidden_sizes[1])
         self.fc2 = torch.nn.Linear(hidden_sizes[1], hidden_sizes[2])
-        self.BN2 = torch.nn.BatchNorm1d(hidden_sizes[2])
         self.fc3_mu = torch.nn.Linear(hidden_sizes[2], hidden_sizes[3])
         self.fc3_sig = torch.nn.Linear(hidden_sizes[2], hidden_sizes[3])
 
         self.fc4 = torch.nn.Linear(hidden_sizes[3] + 8, hidden_sizes[2])
-        self.BN4 = torch.nn.BatchNorm1d(hidden_sizes[2])
         self.fc5 = torch.nn.Linear(hidden_sizes[2], hidden_sizes[1])
-        self.BN5 = torch.nn.BatchNorm1d(hidden_sizes[1])
         self.fc6 = torch.nn.Linear(hidden_sizes[1], hidden_sizes[0])
-        self.BN6 = torch.nn.BatchNorm1d(hidden_sizes[0])
         self.fc7 = torch.nn.Linear(hidden_sizes[0], input_size - 8)
 
     def sample_z(self, x_size, mu, log_var):
@@ -91,4 +75,3 @@ class VAE(torch.nn.Module):
 # Create and Load model into memory
 # =============================================================================
 
-vae = VAE(X_dim, hidden_size, batch_size)

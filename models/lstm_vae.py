@@ -14,13 +14,15 @@ class LSTMVae(VaeTemplate):
             nn.Conv1d(in_channels=sizes[2], out_channels=sizes[3], kernel_size=5, stride=1, padding=2, groups=1),
             nn.ReLU(),
             nn.Conv1d(in_channels=sizes[3], out_channels=1, kernel_size=5, stride=1, padding=2, groups=1),
-            nn.ReLU()
+            nn.ReLU(),
+            nn.LSTM(h_dim, z_dim, num_layers=6, bidirectional=True,
+                                   batch_first=True)
         )
 
         decoder = nn.Sequential(
-            # nn.LSTM(),
-            # nn.ReLU(),
-            # UnFlatten(size=h_dim),
+            nn.LSTM(z_dim * 2, int(h_dim/2), num_layers=6, bidirectional=True,
+                                   batch_first=True),
+            nn.ReLU(),
             nn.ConvTranspose1d(1, sizes[3], kernel_size=5, stride=1, padding=2),
             nn.ReLU(),
             nn.ConvTranspose1d(sizes[3], sizes[2], kernel_size=5, stride=1, padding=2),
