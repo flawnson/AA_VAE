@@ -112,3 +112,13 @@ class Trainer:
             print("Patience value at {}".format(patience_counter))
             if patience_counter > 100:
                 break
+
+    def save_snapshot(self):
+        from datetime import datetime
+
+        now = datetime.now()
+
+        date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
+
+        torch.save(self.model.state_dict(), f"saved_models/{self.model.name}_{date_time}")
+
