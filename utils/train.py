@@ -1,32 +1,44 @@
 import torch
 import torch.nn.functional as F
 
+from utils.model_factory import create_model
+
+
+def trainer(config, model_config):
+    train, model, optimiser, device = create_model(config, model_config)
+    train.trainer()
+
+    SAVE_SNAPSHOT = False
+
+    if SAVE_SNAPSHOT:
+        train.save_snapshot()
+
 
 class Trainer:
-    def __init__(self, model, FIXED_PROTEIN_LENGTH, train_iterator, test_iterator, INPUT_DIM, device, optimizer,
-                 train_dataset, test_dataset, N_EPOCHS):
+    def __init__(self, model, data_length, train_iterator, test_iterator, input_dim, device, optimizer,
+                 train_dataset, test_dataset, n_epochs):
         self.model = model.to(device)
-        self.FIXED_PROTEIN_LENGTH = FIXED_PROTEIN_LENGTH
+        self.data_length = data_length
         self.train_iterator = train_iterator
         self.test_iterator = test_iterator
-        self.INPUT_DIM = INPUT_DIM
+        self.input_dim = input_dim
         self.device = device
         self.optimizer = optimizer
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
-        self.N_EPOCHS = N_EPOCHS
+        self.n_epochs = n_epochs
 
     def reconstruction_accuracy(self, input, output):
         """ Computes average sequence identity between input and output sequences
         """
         if input.shape != output.shape:
             raise Exception("Input and output can't have different shapes")
-        input_sequences = input.transpose(1, 2).view(input.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23] \
+        input_sequences = input.transpose(1, 2).view(input.shape[0], self.data_length, -1)[:, :, :23] \
             .argmax(axis=2)
-        output_sequences = output.transpose(1, 2).view(output.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23] \
+        output_sequences = output.transpose(1, 2).view(output.shape[0], self.data_length, -1)[:, :, :23] \
             .argmax(axis=2)
 
-        return ((input_sequences == output_sequences).sum(axis=1) / float(self.FIXED_PROTEIN_LENGTH)).mean()
+        return ((input_sequences == output_sequences).sum(axis=1) / float(self.data_length)).mean()
 
     def __inner_iteration(self, x, training: bool):
         x = x.transpose(1, 2).to(self.device)
@@ -93,7 +105,7 @@ class Trainer:
     def trainer(self):
         best_training_loss = float('inf')
         patience_counter = 0
-        for e in range(self.N_EPOCHS):
+        for e in range(self.n_epochs):
 
             train_loss, train_recon_accuracy = self.train()
             test_loss, test_recon_accuracy = self.test()
@@ -112,3 +124,14 @@ class Trainer:
             print("Patience value at {}".format(patience_counter))
             if patience_counter > 100:
                 break
+
+    def save_snapshot(self):
+        from datetime import datetime
+
+        now = datetime.now()
+
+        date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
+
+        torch.save(self.model.state_dict(), f"saved_models/{self.model.name}_{date_time}")
+
+
