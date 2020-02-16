@@ -3,7 +3,7 @@
 import gdown
 import os
 
-url = "https://drive.google.com/uc?id=130MjgI8eAMf5KKqJBmP8wuj_LIza4SrF"
+url = "https://drive.google.com/uc?id=1NLWLUMM0OzwLb40GA1w7vnP02pGc0urM"
 gdown.download(url, "data.tar.gz", quiet=False)
 
 if os.name == 'posix':
