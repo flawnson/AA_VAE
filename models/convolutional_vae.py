@@ -3,6 +3,12 @@ import torch.nn as nn
 from models.vae_template import VaeTemplate
 
 
+def init_weights(m):
+    if type(m) == nn.Conv1d or type(m) == nn.ConvTranspose1d:
+        nn.init.xavier_uniform(m.weight)
+        m.bias.data.fill_(0.01)
+
+
 class ConvolutionalVAE(VaeTemplate):
     def __init__(self, model_config, h_dim, z_dim, out_dim, device):
         sizes: list = model_config["sizes"]
@@ -18,6 +24,7 @@ class ConvolutionalVAE(VaeTemplate):
             # nn.LSTM()
             # Flatten()
         )
+        encoder.apply(init_weights)
 
         decoder = nn.Sequential(
             # nn.LSTM(),
@@ -32,6 +39,7 @@ class ConvolutionalVAE(VaeTemplate):
             nn.ConvTranspose1d(sizes[1], out_dim, kernel_size=5, stride=1, padding=2),
             nn.Sigmoid()
         )
+        decoder.apply(init_weights)
         super(ConvolutionalVAE, self).__init__(encoder, decoder, device, h_dim, z_dim)
 
     def forward(self, x):

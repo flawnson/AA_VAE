@@ -1,10 +1,10 @@
 {
   "model_name": "convolutional_vae",
   "batch_size": 20,
-  "epochs": 100,
+  "epochs": 200,
   "learning_rate": 1e-3,
   "convolutional_parameters": {
-    "sizes": [23, 16, 8, 4, 1]
+    "sizes": [30, 16, 8, 4, 1]
   },
   "optimizer_config": {
     "learning_rate": 1e-3

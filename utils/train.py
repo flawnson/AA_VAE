@@ -19,8 +19,8 @@ class Trainer:
     def reconstruction_accuracy(self, input, output):
         """ Computes average sequence identity between input and output sequences
         """
-        if input.shape != output.shape:
-            raise Exception("Input and output can't have different shapes")
+        # if input.shape != output.shape:
+        #     raise Exception("Input and output can't have different shapes")
         input_sequences = input.transpose(1, 2).view(input.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23] \
             .argmax(axis=2)
         output_sequences = output.transpose(1, 2).view(output.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23] \
@@ -39,7 +39,7 @@ class Trainer:
         predicted = self.model(x)[0]
 
         # reconstruction loss
-        recon_loss = F.binary_cross_entropy(predicted, x, size_average=False)
+        recon_loss = F.binary_cross_entropy(predicted, x[:,:23,:], size_average=False)
 
         loss = recon_loss.item()
         # reconstruction accuracy
