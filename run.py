@@ -33,9 +33,16 @@ if __name__ == "__main__":
 
     lr = model_config["optimizer_config"]["learning_rate"]  # learning rate
 
-    train_dataset = data.read_sequences(f"data/train_set_{DATASET_LENGTH}_{FIXED_PROTEIN_LENGTH}.json",
+    if config["class"] != "mammalian":
+        train_dataset_name = f"data/train_set_{DATASET_LENGTH}_{FIXED_PROTEIN_LENGTH}.json"
+        test_dataset_name = f"data/test_set_{DATASET_LENGTH}_{FIXED_PROTEIN_LENGTH}.json"
+    else:
+        train_dataset_name = "data/train_set_large_1500_mammalian.json"
+        test_dataset_name = "data/test_set_large_1500_mammalian.json"
+
+    train_dataset = data.read_sequences(train_dataset_name,
                                         fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=True)
-    test_dataset = data.read_sequences(f"data/test_set_{DATASET_LENGTH}_{FIXED_PROTEIN_LENGTH}.json",
+    test_dataset = data.read_sequences(test_dataset_name,
                                        fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=True)
 
     train_iterator = DataLoader(train_dataset, shuffle=True)
