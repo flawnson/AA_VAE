@@ -23,10 +23,9 @@ class Trainer:
         """
         # if input.shape != output.shape:
         #     raise Exception("Input and output can't have different shapes")
-        input_sequences = input.transpose(1, 2).view(input.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23] \
-            .argmax(axis=2)
-        output_sequences = output.transpose(1, 2).view(output.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23] \
-            .argmax(axis=2)
+        output_sequences = output#.transpose(1, 2).view(input.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23] \
+#            .argmax(axis=2)
+        input_sequences = input.transpose(1, 2)[:, :, :23].argmax(axis=2)
 
         return ((input_sequences == output_sequences).sum(axis=1) / float(self.FIXED_PROTEIN_LENGTH)).mean()
 
@@ -85,7 +84,7 @@ class Trainer:
         test_accuracy = 0.0
 
         # we don't need to track the gradients, since we are not updating the parameters during evaluation / testing
-        with torch.no_grad():
+        with t.no_grad():
             for i, x in enumerate(self.test_iterator):
                 loss, accuracy = self.__inner_iteration(x, False)
                 test_loss += loss
