@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch as torch
 
 from models.vae_template import VaeTemplate
 
@@ -10,7 +11,7 @@ def init_weights(m):
 
 
 class ConvolutionalVAE(VaeTemplate):
-    def __init__(self, model_config, h_dim, z_dim, out_dim, device):
+    def __init__(self, model_config, h_dim, z_dim, out_dim, device, embeddings_static):
         sizes: list = model_config["sizes"]
         encoder = nn.Sequential(
             nn.Conv1d(in_channels=sizes[0], out_channels=sizes[1], kernel_size=5, stride=1, padding=2, groups=1),
@@ -40,13 +41,16 @@ class ConvolutionalVAE(VaeTemplate):
             nn.Sigmoid()
         )
         decoder.apply(init_weights)
-        super(ConvolutionalVAE, self).__init__(encoder, decoder, device, h_dim, z_dim)
+        deembed = nn.Linear(sizes[0], 1)
+        embedding = nn.Embedding(23, sizes[0])
+        embedding.weight.data.copy_(embeddings_static)
+        embedding.weight.requires_grad = False
+        super(ConvolutionalVAE, self).__init__(encoder, decoder, device, h_dim, z_dim, preprocessing_func= embedding, post_processing_func= deembed)
+        self.embedding = embedding
 
     def forward(self, x):
-        h = self.encoder(x)
-        z, mu, log_var = self.bottleneck(h)
+        h = self.encoder(self.embedding(x).transpose(1,2))
+        z, _, _ = self.bottleneck(h)
         z = self.fc3(z)
         val = self.decoder(z)
-        if self.postprocess is not None:
-            val = self.postprocess(val)
-        return val, mu, log_var
+        return val

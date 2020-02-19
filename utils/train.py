@@ -1,4 +1,4 @@
-import torch
+import torch as t
 import torch.nn.functional as F
 
 
@@ -16,6 +16,8 @@ class Trainer:
         self.test_dataset = test_dataset
         self.N_EPOCHS = N_EPOCHS
 
+        self.criterion = t.nn.CrossEntropyLoss()
+
     def reconstruction_accuracy(self, input, output):
         """ Computes average sequence identity between input and output sequences
         """
@@ -29,17 +31,18 @@ class Trainer:
         return ((input_sequences == output_sequences).sum(axis=1) / float(self.FIXED_PROTEIN_LENGTH)).mean()
 
     def __inner_iteration(self, x, training: bool):
-        x = x.transpose(1, 2).to(self.device)
+        x = x.to(self.device)
 
         # update the gradients to zero
         if training:
             self.optimizer.zero_grad()
 
         # forward pass
-        predicted = self.model(x)[0]
-
+        predicted = self.model(x)
+        # predicted = predicted.view(1,predicted.shape[0], -1)
         # reconstruction loss
-        recon_loss = F.binary_cross_entropy(predicted, x[:,:23,:], size_average=False)
+        # predicted = F.log_softmax(predicted, 1)
+        recon_loss = self.criterion(predicted, x)
 
         loss = recon_loss.item()
         # reconstruction accuracy
@@ -103,6 +106,10 @@ class Trainer:
             print(
                 f'Epoch {e}, Train Loss: {train_loss:.2f}, Test Loss: {test_loss:.2f}, Train accuracy {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
 
+            if train_recon_accuracy > 0.90 and test_recon_accuracy > 0.90:
+                self.save_snapshot()
+                break
+
             if best_training_loss > train_loss:
                 best_training_loss = train_loss
                 patience_counter = 1
@@ -112,3 +119,12 @@ class Trainer:
             print("Patience value at {}".format(patience_counter))
             if patience_counter > 100:
                 break
+
+    def save_snapshot(self):
+        from datetime import datetime
+
+        now = datetime.now()
+
+        date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
+
+        torch.save(self.model.state_dict(), f"saved_models/{self.model.name}_{date_time}")
