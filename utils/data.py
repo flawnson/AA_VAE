@@ -50,6 +50,10 @@ def one_to_number(res_str):
     return [amino_acids.index(r) for r in res_str]
 
 
+def get_embedding_matrix():
+    return seq_to_one_hot(amino_acids, True)
+
+
 def to_categorical(y, num_classes):
     """ Converts a class vector to binary class matrix. """
     new_y = torch.LongTensor(y)
@@ -66,12 +70,12 @@ def seq_to_one_hot(res_seq_one, add_chemical_features=False):
     """
 
     ints = one_to_number(res_seq_one)
-    new_ints = torch.LongTensor(ints)
 
-    feats = torch.Tensor(aa_features()[new_ints])
     onehot = to_categorical(ints, num_classes=len(amino_acids))
 
     if add_chemical_features:
+        new_ints = torch.LongTensor(ints)
+        feats = torch.Tensor(aa_features()[new_ints])
         return torch.cat((onehot, feats), 1)
     else:
         return onehot
@@ -86,7 +90,7 @@ def valid_protein(protein_sequence):
     return True
 
 
-def read_sequences(file, fixed_protein_length, add_chemical_features=False):
+def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequence_only=False):
     """ Reads and converts valid protein sequences"
     """
     proteins = []
@@ -103,7 +107,10 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False):
             if len(protein_sequence) < fixed_protein_length:
                 protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
 
-            proteins.append(seq_to_one_hot(protein_sequence, add_chemical_features=add_chemical_features))
+            if sequence_only:
+                proteins.append(torch.LongTensor(one_to_number(protein_sequence)))
+            else:
+                proteins.append(seq_to_one_hot(protein_sequence, add_chemical_features=add_chemical_features))
         else:
             raise Exception(f"Unknown character in sequence {protein_sequence}")
 

@@ -28,8 +28,8 @@ if __name__ == "__main__":
     FIXED_PROTEIN_LENGTH = config["protein_length"]
     INPUT_DIM = FIXED_PROTEIN_LENGTH * (config["feature_length"] + config["added_length"])  # size of each input
 
-    BATCH_SIZE = model_config["batch_size"]  # number of data points in each batch
-    N_EPOCHS = model_config["epochs"]  # times to run the model on complete data
+    BATCH_SIZE = config["batch_size"]  # number of data points in each batch
+    N_EPOCHS = config["epochs"]  # times to run the model on complete data
 
     lr = model_config["optimizer_config"]["learning_rate"]  # learning rate
 
@@ -40,17 +40,22 @@ if __name__ == "__main__":
         train_dataset_name = "data/train_set_large_1500_mammalian.json"
         test_dataset_name = "data/test_set_large_1500_mammalian.json"
 
-    train_dataset = data.read_sequences(train_dataset_name,
-                                        fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=True)
-    test_dataset = data.read_sequences(test_dataset_name,
-                                       fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=True)
+    print(f"Loading the sequence for train data: {train_dataset_name} and test data: {test_dataset_name}")
 
-    train_iterator = DataLoader(train_dataset, shuffle=True)
-    test_iterator = DataLoader(test_dataset)
+    train_dataset = data.read_sequences(train_dataset_name,
+                                        fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=True,
+                                        sequence_only=True)
+    test_dataset = data.read_sequences(test_dataset_name,
+                                       fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=True,
+                                       sequence_only=True)
+
+    train_iterator = DataLoader(train_dataset, shuffle=True, batch_size= BATCH_SIZE)
+    test_iterator = DataLoader(test_dataset, batch_size=BATCH_SIZE)
 
     if model_config["model_name"] == "convolutional_vae":
         model = ConvolutionalVAE(model_config["convolutional_parameters"], config["hidden_size"],
-                                 config["embedding_size"], config["feature_length"], device)
+                                 config["embedding_size"], config["feature_length"], device,
+                                 data.get_embedding_matrix())
     else:
         model = VAE(INPUT_DIM, 20).to(device)  # 20 is number of hidden dimension
 
@@ -58,7 +63,7 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=lr)
     Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device, optimizer,
             train_dataset,
-            test_dataset, model_config["epochs"]).trainer()
+            test_dataset, N_EPOCHS).trainer()
 
     SAVE_SNAPSHOT = False
     if SAVE_SNAPSHOT:
