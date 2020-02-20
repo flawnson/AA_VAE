@@ -12,8 +12,8 @@ class Trainer:
         self.INPUT_DIM = INPUT_DIM
         self.device = device
         self.optimizer = optimizer
-        self.train_dataset = train_dataset
-        self.test_dataset = test_dataset
+        self.train_dataset_len = train_dataset
+        self.test_dataset_len = test_dataset
         self.N_EPOCHS = N_EPOCHS
 
         self.criterion = t.nn.CrossEntropyLoss()
@@ -23,14 +23,14 @@ class Trainer:
         """
         # if input.shape != output.shape:
         #     raise Exception("Input and output can't have different shapes")
-        output_sequences = output#.transpose(1, 2).view(input.shape[0], self.FIXED_PROTEIN_LENGTH, -1)[:, :, :23] \
-#            .argmax(axis=2)
+        output_sequences = output
         input_sequences = input.transpose(1, 2)[:, :, :23].argmax(axis=2)
 
         return ((input_sequences == output_sequences).sum(axis=1) / float(self.FIXED_PROTEIN_LENGTH)).mean()
 
     def __inner_iteration(self, x, training: bool):
         x = x.to(self.device)
+
 
         # update the gradients to zero
         if training:
@@ -41,7 +41,7 @@ class Trainer:
         # predicted = predicted.view(1,predicted.shape[0], -1)
         # reconstruction loss
         # predicted = F.log_softmax(predicted, 1)
-        recon_loss = self.criterion(predicted, x)
+        recon_loss = self.criterion(predicted, x.long())
 
         loss = recon_loss.item()
         # reconstruction accuracy
@@ -100,8 +100,8 @@ class Trainer:
             train_loss, train_recon_accuracy = self.train()
             test_loss, test_recon_accuracy = self.test()
 
-            train_loss /= len(self.train_dataset)
-            test_loss /= len(self.test_dataset)
+            train_loss /= self.train_dataset_len
+            test_loss /= self.test_dataset_len
             print(
                 f'Epoch {e}, Train Loss: {train_loss:.2f}, Test Loss: {test_loss:.2f}, Train accuracy {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
 

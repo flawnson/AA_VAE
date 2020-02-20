@@ -49,9 +49,11 @@ if __name__ == "__main__":
                                        fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=True,
                                        sequence_only=True)
 
+    print(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     train_iterator = DataLoader(train_dataset, shuffle=True, batch_size= BATCH_SIZE)
     test_iterator = DataLoader(test_dataset, batch_size=BATCH_SIZE)
 
+    print(f"Creating the model")
     if model_config["model_name"] == "convolutional_vae":
         model = ConvolutionalVAE(model_config["convolutional_parameters"], config["hidden_size"],
                                  config["embedding_size"], config["feature_length"], device,
@@ -59,11 +61,12 @@ if __name__ == "__main__":
     else:
         model = VAE(INPUT_DIM, 20).to(device)  # 20 is number of hidden dimension
 
+    print(f"Start the training")
     # optimizer
     optimizer = optim.Adam(model.parameters(), lr=lr)
     Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device, optimizer,
-            train_dataset,
-            test_dataset, N_EPOCHS).trainer()
+            len(train_dataset),
+            len(test_dataset), N_EPOCHS).trainer()
 
     SAVE_SNAPSHOT = False
     if SAVE_SNAPSHOT:

@@ -1,6 +1,5 @@
 {
   "model_name": "convolutional_vae",
-  "learning_rate": 1e-2,
   "convolutional_parameters": {
     "sizes": [30, 16, 8, 4, 1]
   },

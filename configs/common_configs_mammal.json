@@ -3,9 +3,9 @@
   "protein_length": 1500,
   "class": "mammalian",
   "batch_size": 2000,
-  "epochs": 1000,
+  "epochs": 100,
   "feature_length": 30,
   "added_length": 0,
   "hidden_size": 1500,
-  "embedding_size": 300
+  "embedding_size": 500
 }

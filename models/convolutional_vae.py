@@ -1,12 +1,10 @@
-import torch.nn as nn
 import torch as torch
-
-from models.vae_template import VaeTemplate
+import torch.nn as nn
 
 
 def init_weights(m):
     if type(m) == nn.Conv1d or type(m) == nn.ConvTranspose1d:
-        nn.init.xavier_uniform(m.weight)
+        nn.init.xavier_uniform_(m.weight)
         m.bias.data.fill_(0.01)
 
 
@@ -16,6 +14,7 @@ def reparameterization(mu, log_var: torch.Tensor, device):
     esp = torch.randn(*mu.size()).to(device)
     z = mu + std * esp
     return z
+
 
 class ConvolutionalVAE(nn.Module):
     def __init__(self, model_config, h_dim, z_dim, out_dim, device, embeddings_static):
@@ -39,9 +38,9 @@ class ConvolutionalVAE(nn.Module):
             # UnFlatten(size=h_dim),
             nn.ConvTranspose1d(1, sizes[3], kernel_size=5, stride=1, padding=2),
             nn.ReLU(),
-            nn.ConvTranspose1d(sizes[3], sizes[2], kernel_size=5, stride=1, padding= 2),
+            nn.ConvTranspose1d(sizes[3], sizes[2], kernel_size=5, stride=1, padding=2),
             nn.ReLU(),
-            nn.ConvTranspose1d(sizes[2], sizes[1], kernel_size=5, stride=1, padding= 2),
+            nn.ConvTranspose1d(sizes[2], sizes[1], kernel_size=5, stride=1, padding=2),
             nn.ReLU(),
             nn.ConvTranspose1d(sizes[1], out_dim, kernel_size=5, stride=1, padding=2)
         )
@@ -67,7 +66,8 @@ class ConvolutionalVAE(nn.Module):
         return self.bottleneck(self.encoder(x))[0]
 
     def forward(self, x):
-        x1 = self.embedding(x).transpose(1,2)
+        x = x.long()
+        x1 = self.embedding(x).transpose(1, 2)
         h = self.encoder(x1)
         z, _, _ = self.bottleneck(h)
         z = self.fc3(z)
