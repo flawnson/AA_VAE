@@ -10,8 +10,16 @@ def init_weights(m):
         m.bias.data.fill_(0.01)
 
 
-class ConvolutionalVAE(VaeTemplate):
+def reparameterization(mu, log_var: torch.Tensor, device):
+    std = log_var.mul(0.5).exp_()
+    std = std.to(device)
+    esp = torch.randn(*mu.size()).to(device)
+    z = mu + std * esp
+    return z
+
+class ConvolutionalVAE(nn.Module):
     def __init__(self, model_config, h_dim, z_dim, out_dim, device, embeddings_static):
+        super(ConvolutionalVAE, self).__init__()
         sizes: list = model_config["sizes"]
         encoder = nn.Sequential(
             nn.Conv1d(in_channels=sizes[0], out_channels=sizes[1], kernel_size=5, stride=1, padding=2, groups=1),
@@ -22,8 +30,6 @@ class ConvolutionalVAE(VaeTemplate):
             nn.ReLU(),
             nn.Conv1d(in_channels=sizes[3], out_channels=1, kernel_size=5, stride=1, padding=2, groups=1),
             nn.ReLU()  # ,
-            # nn.LSTM()
-            # Flatten()
         )
         encoder.apply(init_weights)
 
@@ -37,19 +43,32 @@ class ConvolutionalVAE(VaeTemplate):
             nn.ReLU(),
             nn.ConvTranspose1d(sizes[2], sizes[1], kernel_size=5, stride=1, padding= 2),
             nn.ReLU(),
-            nn.ConvTranspose1d(sizes[1], out_dim, kernel_size=5, stride=1, padding=2),
-            nn.Sigmoid()
+            nn.ConvTranspose1d(sizes[1], out_dim, kernel_size=5, stride=1, padding=2)
         )
         decoder.apply(init_weights)
-        deembed = nn.Linear(sizes[0], 1)
         embedding = nn.Embedding(23, sizes[0])
         embedding.weight.data.copy_(embeddings_static)
         embedding.weight.requires_grad = False
-        super(ConvolutionalVAE, self).__init__(encoder, decoder, device, h_dim, z_dim, preprocessing_func= embedding, post_processing_func= deembed)
         self.embedding = embedding
+        self.encoder: nn.Module = encoder
+        self.fc1: nn.Module = nn.Linear(h_dim, z_dim)
+        self.fc2: nn.Module = nn.Linear(h_dim, z_dim)
+        self.fc3: nn.Module = nn.Linear(z_dim, h_dim)
+        self.decoder: nn.Module = decoder
+        self.device = device
+
+    def bottleneck(self, h):
+        mu = self.fc1(h)
+        log_var = self.fc2(h)
+        z = reparameterization(mu, log_var, self.device)
+        return z, mu, log_var
+
+    def representation(self, x):
+        return self.bottleneck(self.encoder(x))[0]
 
     def forward(self, x):
-        h = self.encoder(self.embedding(x).transpose(1,2))
+        x1 = self.embedding(x).transpose(1,2)
+        h = self.encoder(x1)
         z, _, _ = self.bottleneck(h)
         z = self.fc3(z)
         val = self.decoder(z)

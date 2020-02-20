@@ -126,4 +126,4 @@ class Trainer:
 
         date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
 
-        torch.save(self.model.state_dict(), f"saved_models/{self.model.name}_{date_time}")
+        t.save(self.model.state_dict(), f"saved_models/{self.model.name}_{date_time}")
