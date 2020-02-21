@@ -9,6 +9,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from models.convolutional_vae import ConvolutionalVAE
+from models.convolutional_linear import Convolutional_Linear_VAE
 from models.simple_vae import VAE
 from utils import data
 from utils.train import Trainer
@@ -59,7 +60,12 @@ if __name__ == "__main__":
                                  config["embedding_size"], config["feature_length"], device,
                                  data.get_embedding_matrix())
     else:
-        model = VAE(INPUT_DIM, 20).to(device)  # 20 is number of hidden dimension
+        if model_config["model_name"] =="convolutional_linear_vae":
+            model = Convolutional_Linear_VAE(model_config["convolutional_parameters"], config["hidden_size"],
+                                     config["embedding_size"], config["feature_length"], device,
+                                     data.get_embedding_matrix())
+        else:
+            model = VAE(INPUT_DIM, 20).to(device)  # 20 is number of hidden dimension
 
     print(f"Start the training")
     # optimizer
