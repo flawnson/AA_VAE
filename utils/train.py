@@ -106,7 +106,6 @@ class Trainer:
                 f'Epoch {e}, Train Loss: {train_loss:.2f}, Test Loss: {test_loss:.2f}, Train accuracy {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
 
             if train_recon_accuracy > 0.90 and test_recon_accuracy > 0.90:
-                self.save_snapshot()
                 break
 
             if best_training_loss > train_loss:
@@ -118,6 +117,8 @@ class Trainer:
             print("Patience value at {}".format(patience_counter))
             if patience_counter > 100:
                 break
+
+        self.save_snapshot()
 
     def save_snapshot(self):
         from datetime import datetime

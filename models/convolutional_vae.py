@@ -19,6 +19,7 @@ def reparameterization(mu, log_var: torch.Tensor, device):
 class ConvolutionalVAE(nn.Module):
     def __init__(self, model_config, h_dim, z_dim, out_dim, device, embeddings_static):
         super(ConvolutionalVAE, self).__init__()
+        self.name = "ConvolutionalVAE"
         sizes: list = model_config["sizes"]
         encoder = nn.Sequential(
             nn.Conv1d(in_channels=sizes[0], out_channels=sizes[1], kernel_size=5, stride=1, padding=2, groups=1),
@@ -63,7 +64,7 @@ class ConvolutionalVAE(nn.Module):
         return z, mu, log_var
 
     def representation(self, x):
-        return self.bottleneck(self.encoder(x))[0]
+        return self.bottleneck(self.encoder(self.embedding(x.long()).transpose(1, 2)))[0]
 
     def forward(self, x):
         x = x.long()

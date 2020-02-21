@@ -3,7 +3,7 @@
   "protein_length": 50,
   "class": "bacteria",
   "batch_size": 20,
-  "epochs": 1000,
+  "epochs": 10,
   "feature_length": 30,
   "added_length": 0,
   "hidden_size": 50,

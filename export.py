@@ -19,8 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--modelconfig", help="model config file", type=str)
     parser.add_argument("-x", "--model", help="model to load", type=str)
     args = parser.parse_args()
-    device = torch.device('cpu')
-    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     config: dict = json.load(open(args.config))
     model_config: dict = json.load(open(args.modelconfig))
@@ -38,7 +37,7 @@ if __name__ == "__main__":
     proteins_onehot = data.read_sequences(protein_file, FIXED_PROTEIN_LENGTH, add_chemical_features=False,
                         sequence_only = True)
     model_to_load = args.model
-    model.load_state_dict(torch.load(f"saved_models/{model_to_load}"))
+    model.load_state_dict(torch.load(model_to_load))
     model.eval()
 
     protein_embeddings = model.representation(proteins_onehot)

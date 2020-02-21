@@ -10,8 +10,9 @@ U - Selenocysteine
 amino_acids = "UCSTPAGNDEQHRKMILVFYWX0"
 VOCABULARY_SIZE = len(amino_acids)
 
-amino_acids_to_byte_map = {r:amino_acids.index(r) for r in amino_acids }
+amino_acids_to_byte_map = {r: amino_acids.index(r) for r in amino_acids}
 amino_acids_set = {r for r in amino_acids}
+
 
 def aa_features():
     """ Returns chemical features regarding each amino acid
@@ -116,5 +117,5 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
         else:
             raise Exception(f"Unknown character in sequence {protein_sequence}")
         if (i % 100000) == 9999:
-            print(f"{i} {len(proteins) , proteins[0].shape[0]}")
+            print(f"{i} {len(proteins), proteins[0].shape[0]}")
     return torch.stack(proteins)
