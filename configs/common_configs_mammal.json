@@ -2,10 +2,10 @@
   "dataset": "small",
   "protein_length": 1500,
   "class": "mammalian",
-  "batch_size": 2000,
-  "epochs": 100,
+  "batch_size": 4000,
+  "epochs": 500,
   "feature_length": 30,
   "added_length": 0,
   "hidden_size": 1500,
-  "embedding_size": 500
+  "embedding_size": 300
 }

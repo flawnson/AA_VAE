@@ -2,7 +2,7 @@
   "dataset": "small",
   "protein_length": 50,
   "class": "mammalian",
-  "batch_size": 2000,
+  "batch_size": 5000,
   "feature_length": 23,
   "added_length": 0,
   "hidden_size": 50,
