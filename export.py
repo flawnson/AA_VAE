@@ -27,7 +27,7 @@ if __name__ == "__main__":
     if model_config["model_name"] == "convolutional_vae":
         model = ConvolutionalVAE(model_config["convolutional_parameters"], config["hidden_size"],
                                  config["embedding_size"], config["feature_length"], device,
-                                 data.get_embedding_matrix())
+                                 data.get_embedding_matrix()).to(device)
     else:
         model = VAE(1500, 20).to(device)  # 20 is number of hidden dimensio
 
@@ -40,6 +40,6 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(model_to_load))
     model.eval()
 
-    protein_embeddings = model.representation(proteins_onehot)
-    proteins['embeddings'] = list(protein_embeddings.detach().numpy())
+    protein_embeddings = model.representation(proteins_onehot.to(device))
+    proteins['embeddings'] = list(protein_embeddings.to('cpu').detach().numpy())
     proteins.to_json("exports/embeddings.json")
