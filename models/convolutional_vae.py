@@ -67,7 +67,6 @@ class ConvolutionalVAE(nn.Module):
         return self.bottleneck(self.encoder(self.embedding(x.long()).transpose(1, 2)))[0]
 
     def forward(self, x):
-        x = x.long()
         x1 = self.embedding(x).transpose(1, 2)
         h = self.encoder(x1)
         z, _, _ = self.bottleneck(h)
