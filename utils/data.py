@@ -1,5 +1,6 @@
 import pandas as pd
 import torch
+import json
 
 """
 Valid amino acids

@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model", help="model config file", type=str)
     parser.add_argument("-b", "--benchmarking", help="benchmarking run config", type=str)
     args = parser.parse_args()
-    device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     config: dict = json.load(open(args.config))
     model_config: dict = json.load(open(args.model))
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     print(f"Start the training")
     # optimizer
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.01)
     Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device, optimizer,
             len(train_dataset),
             len(test_dataset), N_EPOCHS).trainer()

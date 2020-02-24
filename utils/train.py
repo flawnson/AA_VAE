@@ -24,7 +24,7 @@ class Trainer:
         # if input.shape != output.shape:
         #     raise Exception("Input and output can't have different shapes")
         output_sequences = output
-        input_sequences = input.transpose(1, 2)[:, :, :23].argmax(axis=2)
+        input_sequences = input.argmax(axis=1)
 
         return ((input_sequences == output_sequences).sum(axis=1) / float(self.FIXED_PROTEIN_LENGTH)).mean()
 
