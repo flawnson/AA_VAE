@@ -1,32 +1,40 @@
-import torch as t
-import torch.nn.functional as F
+import torch
 
 
 class Trainer:
-    def __init__(self, model, FIXED_PROTEIN_LENGTH, train_iterator, test_iterator, INPUT_DIM, device, optimizer,
-                 train_dataset, test_dataset, N_EPOCHS):
+    def __init__(self, model, data_length, train_iterator, test_iterator, input_dim, device, optimizer,
+                 train_dataset, test_dataset, n_epochs, loss_function_name="bce",
+                 vocab_size=23,
+                 patience_count=1000):
+
+        loss_function = {
+            "bce": torch.nn.CrossEntropyLoss
+        }
+
         self.model = model.to(device)
-        self.FIXED_PROTEIN_LENGTH = FIXED_PROTEIN_LENGTH
+        self.data_length = data_length
         self.train_iterator = train_iterator
         self.test_iterator = test_iterator
-        self.INPUT_DIM = INPUT_DIM
+        self.input_dim = input_dim
         self.device = device
         self.optimizer = optimizer
         self.train_dataset_len = train_dataset
         self.test_dataset_len = test_dataset
-        self.N_EPOCHS = N_EPOCHS
 
-        self.criterion = t.nn.CrossEntropyLoss()
+        self.n_epochs = n_epochs
+        self.vocab_size = vocab_size
+        self.patience_count = patience_count
+        self.criterion = loss_function[loss_function_name]()
 
-    def reconstruction_accuracy(self, input, output):
+    def reconstruction_accuracy(self, predicted, actual):
         """ Computes average sequence identity between input and output sequences
         """
         # if input.shape != output.shape:
         #     raise Exception("Input and output can't have different shapes")
-        output_sequences = output
-        input_sequences = input.argmax(axis=1)
+        output_sequences = actual
+        input_sequences = predicted.argmax(axis=1)
 
-        return ((input_sequences == output_sequences).sum(axis=1) / float(self.FIXED_PROTEIN_LENGTH)).mean()
+        return ((input_sequences == output_sequences).sum(axis=1) / float(self.vocab_size)).mean()
 
     def __inner_iteration(self, x, training: bool):
         x = x.long().to(self.device)
@@ -37,9 +45,7 @@ class Trainer:
 
         # forward pass
         predicted = self.model(x)
-        # predicted = predicted.view(1,predicted.shape[0], -1)
-        # reconstruction loss
-        # predicted = F.log_softmax(predicted, 1)
+
         recon_loss = self.criterion(predicted, x)
 
         loss = recon_loss.item()
@@ -51,8 +57,6 @@ class Trainer:
         if training:
             recon_loss.backward()
             self.optimizer.step()
-
-        # update the weights
 
         return loss, recon_accuracy
 
@@ -83,9 +87,14 @@ class Trainer:
         test_accuracy = 0.0
 
         # we don't need to track the gradients, since we are not updating the parameters during evaluation / testing
-        with t.no_grad():
+        with torch.no_grad():
             for i, x in enumerate(self.test_iterator):
+
+                # update the gradients to zero
+
                 loss, accuracy = self.__inner_iteration(x, False)
+
+                # backward pass
                 test_loss += loss
                 test_accuracy += accuracy
 
@@ -94,7 +103,7 @@ class Trainer:
     def trainer(self):
         best_training_loss = float('inf')
         patience_counter = 0
-        for e in range(self.N_EPOCHS):
+        for e in range(self.n_epochs):
 
             train_loss, train_recon_accuracy = self.train()
             test_loss, test_recon_accuracy = self.test()
@@ -126,4 +135,4 @@ class Trainer:
 
         date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
 
-        t.save(self.model.state_dict(), f"saved_models/{self.model.name}_{date_time}")
+        torch.save(self.model.state_dict(), f"saved_models/{self.model.name}_{date_time}")
