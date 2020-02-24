@@ -1,3 +1,11 @@
 *pyc
 *__pydata__
+.gitignore
 data.tar.gz
+data/
+data/test_set_large_50
+data/test_set_medium_50
+data/test_set_small_50
+data/train_set_large_50
+data/train_set_medium_50
+data/train_set_small_50

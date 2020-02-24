@@ -1,5 +1,6 @@
 import pandas as pd
 import torch
+import json
 
 """
 Valid amino acids
@@ -9,6 +10,9 @@ U - Selenocysteine
 """
 amino_acids = "UCSTPAGNDEQHRKMILVFYWX0"
 VOCABULARY_SIZE = len(amino_acids)
+
+amino_acids_to_byte_map = {r: amino_acids.index(r) for r in amino_acids}
+amino_acids_set = {r for r in amino_acids}
 
 
 def aa_features():
@@ -47,7 +51,11 @@ def one_to_number(res_str):
 
     """
 
-    return [amino_acids.index(r) for r in res_str]
+    return [amino_acids_to_byte_map[r] for r in res_str]
+
+
+def get_embedding_matrix():
+    return seq_to_one_hot(amino_acids, True)
 
 
 def to_categorical(y, num_classes):
@@ -66,12 +74,12 @@ def seq_to_one_hot(res_seq_one, add_chemical_features=False):
     """
 
     ints = one_to_number(res_seq_one)
-    new_ints = torch.LongTensor(ints)
 
-    feats = torch.Tensor(aa_features()[new_ints])
     onehot = to_categorical(ints, num_classes=len(amino_acids))
 
     if add_chemical_features:
+        new_ints = torch.LongTensor(ints)
+        feats = torch.Tensor(aa_features()[new_ints])
         return torch.cat((onehot, feats), 1)
     else:
         return onehot
@@ -81,12 +89,12 @@ def valid_protein(protein_sequence):
     """ Checks if the protein contains only valid amino acid values
     """
     for aa in protein_sequence:
-        if aa not in amino_acids:
+        if aa not in amino_acids_set:
             return False
     return True
 
 
-def read_sequences(file, fixed_protein_length, add_chemical_features=False):
+def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequence_only=False):
     """ Reads and converts valid protein sequences"
     """
     proteins = []
@@ -103,8 +111,12 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False):
             if len(protein_sequence) < fixed_protein_length:
                 protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
 
-            proteins.append(seq_to_one_hot(protein_sequence, add_chemical_features=add_chemical_features))
+            if sequence_only:
+                proteins.append(torch.ByteTensor(one_to_number(protein_sequence)))
+            else:
+                proteins.append(seq_to_one_hot(protein_sequence, add_chemical_features=add_chemical_features))
         else:
             raise Exception(f"Unknown character in sequence {protein_sequence}")
-
+        if (i % 100000) == 9999:
+            print(f"{i} {len(proteins), proteins[0].shape[0]}")
     return torch.stack(proteins)

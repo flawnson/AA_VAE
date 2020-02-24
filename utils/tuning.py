@@ -20,12 +20,18 @@ def tuner_run(config):
 def tuner(smoke_test: bool, config, model_config):
     cpus = int(multiprocessing.cpu_count())
     gpus = torch.cuda.device_count()
+    tune_config = {**config, **model_config}
+    for k, v in config["tunable"]:
+        if isinstance(v, dict):
+            for k1, v1 in v:
+                tune_config[k][k1] = tune.grid_search(v1)
+        else:
+            tune_config[k] = tune.grid_search(v)
     z2 = {
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
         "momentum": tune.uniform(0.1, 0.9),
-        "use_gpu": True
     }
-    config_tune = {**config, **model_config, **z2}
+    config_tune = {**tune_config, **z2}
     sched = AsyncHyperBandScheduler(
         time_attr="training_iteration", metric="mean_accuracy")
     analysis = tune.run(

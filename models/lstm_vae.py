@@ -4,48 +4,29 @@ from models.vae_template import VaeTemplate
 
 
 class LSTMVae(VaeTemplate):
-    def __init__(self, model_config, h_dim, z_dim, out_dim, device):
-        sizes: list = model_config["sizes"]
-        encoder = nn.Sequential(
-            nn.Conv1d(in_channels=sizes[0], out_channels=sizes[1], kernel_size=5, stride=1, padding=2, groups=1),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=sizes[1], out_channels=sizes[2], kernel_size=5, stride=1, padding=2, groups=1),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=sizes[2], out_channels=sizes[3], kernel_size=5, stride=1, padding=2, groups=1),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=sizes[3], out_channels=1, kernel_size=5, stride=1, padding=2, groups=1),
-            nn.ReLU(),
-            nn.LSTM(h_dim, z_dim, num_layers=6, bidirectional=True,
+    def __init__(self, h_dim, z_dim, vocab, embedding_size,  device, layers, bidirectional: bool):
+        super(LSTMVae, self).__init__(None, None, device, z_dim * 2, z_dim)
+        embedding_size = int(embedding_size/2)*2
+        self.embeds = nn.Embedding(vocab, embedding_size)
+        self.rectifier = nn.ReLU()
+        self.encoder_rnn = nn.LSTM(embedding_size, z_dim, num_layers=layers,
+                                   bidirectional=bidirectional,
                                    batch_first=True)
-        )
+        self.decoder_rnn = nn.LSTM(z_dim * (2 if bidirectional else 1), int(embedding_size / (2 if bidirectional else 1)),
+                                   num_layers=layers, bidirectional=bidirectional,
+                                   batch_first=True)
+        self.deembed = nn.Linear(embedding_size, vocab)
 
-        decoder = nn.Sequential(
-            nn.LSTM(z_dim * 2, int(h_dim/2), num_layers=6, bidirectional=True,
-                                   batch_first=True),
-            nn.ReLU(),
-            nn.ConvTranspose1d(1, sizes[3], kernel_size=5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.ConvTranspose1d(sizes[3], sizes[2], kernel_size=5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.ConvTranspose1d(sizes[2], sizes[1], kernel_size=5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.ConvTranspose1d(sizes[1], out_dim, kernel_size=5, stride=1, padding=2),
-            nn.Sigmoid()
-        )
-        super(LSTMVae, self).__init__(encoder, decoder, device, z_dim * 2, z_dim)
-        self.encoder_rnn = nn.LSTM(h_dim, z_dim, num_layers=6, bidirectional=True,
-                                   batch_first=True)
-        self.decoder_rnn = nn.LSTM(z_dim * 2, int(h_dim/2), num_layers=6, bidirectional=True,
-                                   batch_first=True)
+        self.smax = nn.Softmax(dim=2)
 
     def forward(self, x):
         self.encoder_rnn.flatten_parameters()
-        h, _ = self.encoder_rnn(self.encoder(x))
+        x = self.embeds(x)
+        h, _ = self.encoder_rnn(x)
         z, mu, log_var = self.bottleneck(h)
         z = self.fc3(z)
         self.decoder_rnn.flatten_parameters()
-        val = self.decoder_rnn(z)
-        val = self.decoder(val[0])
+        val = self.smax(self.deembed(self.decoder_rnn(z)[0]))
         if self.postprocess is not None:
             val = self.postprocess(val)
-        return val, mu, log_var
+        return val.transpose(1, 2), mu, log_var

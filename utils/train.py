@@ -1,22 +1,16 @@
 import torch
-import torch.nn.functional as F
-
-from utils.model_factory import create_model
-
-
-def trainer(config, model_config):
-    train, model, optimiser, device = create_model(config, model_config)
-    train.trainer()
-
-    SAVE_SNAPSHOT = False
-
-    if SAVE_SNAPSHOT:
-        train.save_snapshot()
 
 
 class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, input_dim, device, optimizer,
-                 train_dataset, test_dataset, n_epochs):
+                 train_dataset, test_dataset, n_epochs, loss_function_name="bce",
+                 vocab_size=23,
+                 patience_count=1000):
+
+        loss_function = {
+            "bce": torch.nn.CrossEntropyLoss
+        }
+
         self.model = model.to(device)
         self.data_length = data_length
         self.train_iterator = train_iterator
@@ -24,34 +18,35 @@ class Trainer:
         self.input_dim = input_dim
         self.device = device
         self.optimizer = optimizer
-        self.train_dataset = train_dataset
-        self.test_dataset = test_dataset
-        self.n_epochs = n_epochs
+        self.train_dataset_len = train_dataset
+        self.test_dataset_len = test_dataset
 
-    def reconstruction_accuracy(self, input, output):
+        self.n_epochs = n_epochs
+        self.vocab_size = vocab_size
+        self.patience_count = patience_count
+        self.criterion = loss_function[loss_function_name]()
+
+    def reconstruction_accuracy(self, predicted, actual):
         """ Computes average sequence identity between input and output sequences
         """
-        if input.shape != output.shape:
-            raise Exception("Input and output can't have different shapes")
-        input_sequences = input.transpose(1, 2).view(input.shape[0], self.data_length, -1)[:, :, :23] \
-            .argmax(axis=2)
-        output_sequences = output.transpose(1, 2).view(output.shape[0], self.data_length, -1)[:, :, :23] \
-            .argmax(axis=2)
+        # if input.shape != output.shape:
+        #     raise Exception("Input and output can't have different shapes")
+        output_sequences = actual
+        input_sequences = predicted.argmax(axis=1)
 
-        return ((input_sequences == output_sequences).sum(axis=1) / float(self.data_length)).mean()
+        return ((input_sequences == output_sequences).sum(axis=1) / float(self.vocab_size)).mean()
 
     def __inner_iteration(self, x, training: bool):
-        x = x.transpose(1, 2).to(self.device)
+        x = x.long().to(self.device)
 
         # update the gradients to zero
         if training:
             self.optimizer.zero_grad()
 
         # forward pass
-        predicted = self.model(x)[0]
+        predicted = self.model(x)
 
-        # reconstruction loss
-        recon_loss = F.binary_cross_entropy(predicted, x, size_average=False)
+        recon_loss = self.criterion(predicted, x)
 
         loss = recon_loss.item()
         # reconstruction accuracy
@@ -62,8 +57,6 @@ class Trainer:
         if training:
             recon_loss.backward()
             self.optimizer.step()
-
-        # update the weights
 
         return loss, recon_accuracy
 
@@ -96,7 +89,12 @@ class Trainer:
         # we don't need to track the gradients, since we are not updating the parameters during evaluation / testing
         with torch.no_grad():
             for i, x in enumerate(self.test_iterator):
+
+                # update the gradients to zero
+
                 loss, accuracy = self.__inner_iteration(x, False)
+
+                # backward pass
                 test_loss += loss
                 test_accuracy += accuracy
 
@@ -110,10 +108,13 @@ class Trainer:
             train_loss, train_recon_accuracy = self.train()
             test_loss, test_recon_accuracy = self.test()
 
-            train_loss /= len(self.train_dataset)
-            test_loss /= len(self.test_dataset)
+            train_loss /= self.train_dataset_len
+            test_loss /= self.test_dataset_len
             print(
-                f'Epoch {e}, Train Loss: {train_loss:.2f}, Test Loss: {test_loss:.2f}, Train accuracy {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
+                f'Epoch {e}, Train Loss: {train_loss:.8f}, Test Loss: {test_loss:.8f}, Train accuracy {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
+
+            if train_recon_accuracy > 0.87 and test_recon_accuracy > 0.87:
+                break
 
             if best_training_loss > train_loss:
                 best_training_loss = train_loss
@@ -125,6 +126,8 @@ class Trainer:
             if patience_counter > 100:
                 break
 
+        self.save_snapshot()
+
     def save_snapshot(self):
         from datetime import datetime
 
@@ -133,5 +136,3 @@ class Trainer:
         date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
 
         torch.save(self.model.state_dict(), f"saved_models/{self.model.name}_{date_time}")
-
-
