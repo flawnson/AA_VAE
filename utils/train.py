@@ -105,7 +105,7 @@ class Trainer:
             print(
                 f'Epoch {e}, Train Loss: {train_loss:.8f}, Test Loss: {test_loss:.8f}, Train accuracy {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
 
-            if train_recon_accuracy > 0.70 and test_recon_accuracy > 0.70:
+            if train_recon_accuracy > 0.87 and test_recon_accuracy > 0.87:
                 break
 
             if best_training_loss > train_loss:
