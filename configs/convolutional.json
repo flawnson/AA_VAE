@@ -1,7 +1,8 @@
 {
   "model_name": "convolutional_vae",
   "convolutional_parameters": {
-    "sizes": [30, 16, 8, 4, 1]
+    "encoder_sizes": [30, 16, 8, 4, 1],
+    "decoder_sizes": [23, 16, 8, 4, 1]
   },
   "optimizer_config": {
     "learning_rate": 1e-3

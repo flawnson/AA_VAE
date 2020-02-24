@@ -24,13 +24,12 @@ class Trainer:
         # if input.shape != output.shape:
         #     raise Exception("Input and output can't have different shapes")
         output_sequences = output
-        input_sequences = input.transpose(1, 2)[:, :, :23].argmax(axis=2)
+        input_sequences = input.argmax(axis=1)
 
         return ((input_sequences == output_sequences).sum(axis=1) / float(self.FIXED_PROTEIN_LENGTH)).mean()
 
     def __inner_iteration(self, x, training: bool):
-        x = x.to(self.device)
-
+        x = x.long().to(self.device)
 
         # update the gradients to zero
         if training:
@@ -41,7 +40,7 @@ class Trainer:
         # predicted = predicted.view(1,predicted.shape[0], -1)
         # reconstruction loss
         # predicted = F.log_softmax(predicted, 1)
-        recon_loss = self.criterion(predicted, x.long())
+        recon_loss = self.criterion(predicted, x)
 
         loss = recon_loss.item()
         # reconstruction accuracy

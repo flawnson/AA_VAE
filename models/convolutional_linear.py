@@ -19,7 +19,7 @@ def reparameterization(mu, log_var: torch.Tensor, device):
 class Convolutional_Linear_VAE(nn.Module):
     def __init__(self, model_config, h_dim, z_dim, out_dim, device, embeddings_static):
         super(Convolutional_Linear_VAE, self).__init__()
-        sizes: list = model_config["sizes"]
+        sizes: list = model_config["encoder_sizes"]
         encoder = nn.Sequential(
             nn.Conv1d(in_channels=sizes[0], out_channels=sizes[1], kernel_size=5, stride=1, padding=2, groups=1),
             nn.ReLU(),
@@ -35,6 +35,7 @@ class Convolutional_Linear_VAE(nn.Module):
         encoder.apply(init_weights)
         self.linear1.apply(init_weights)
 
+        sizes: list = model_config["decoder_sizes"]
         decoder = nn.Sequential(
             # nn.LSTM(),
             # nn.ReLU(),

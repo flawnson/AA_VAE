@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     print(f"Start the training")
     # optimizer
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.01)
     Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device, optimizer,
             len(train_dataset),
             len(test_dataset), N_EPOCHS).trainer()
