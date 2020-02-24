@@ -93,5 +93,5 @@ class ConvolutionalVAE(nn.Module):
         x = self.rd2(self.cd2((self.bnd1(x))))
         x = self.rd3(self.cd3((self.bnd2(x))))
         x = self.rd4(self.cd4((self.bnd3(x))))
-        # x = self.smax(x)
+        x = self.smax(x)
         return x
