@@ -72,7 +72,7 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.01)
     Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device, optimizer,
             len(train_dataset),
-            len(test_dataset), N_EPOCHS).trainer()
+            len(test_dataset), N_EPOCHS, vocab_size=FIXED_PROTEIN_LENGTH).trainer()
 
     SAVE_SNAPSHOT = False
     if SAVE_SNAPSHOT:
