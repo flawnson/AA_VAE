@@ -92,20 +92,11 @@ class Trainer:
 
                 # update the gradients to zero
 
-                x = x.long().to(self.device)
-                # forward pass
-                predicted = self.model(x)
-
-                recon_loss = self.criterion(predicted, x)
-
-                loss = recon_loss.item()
-                # reconstruction accuracy
-                # TODO this needs to change once new features are added into the vector
-                recon_accuracy = self.reconstruction_accuracy(predicted, x)
+                loss, accuracy = self.__inner_iteration(x, False)
 
                 # backward pass
                 test_loss += loss
-                test_accuracy += recon_accuracy
+                test_accuracy += accuracy
 
         return test_loss, test_accuracy / len(self.test_iterator)
 
