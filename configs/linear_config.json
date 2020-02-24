@@ -1,0 +1,11 @@
+{
+  "model_name": "linear_vae",
+  "batch_size": 500,
+  "epochs": 10000,
+  "learning_rate": 1e-2,
+    "sizes": [512, 256, 64],
+    "kernel_sizes": [5,5,5,5,5],
+    "padding_sizes": [2,2,2,2,2],
+    "stride_sizes": [1,1,1,1,1],
+    "flatten" : "True"
+}

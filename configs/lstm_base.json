@@ -1,21 +1,9 @@
 {
   "model_name": "lstm_vae",
   "batch_size": 1000,
-  "epochs": 5000,
-  "learning_rate": 1e-3,
-  "convolutional_parameters": {
-    "sizes": [23, 16, 8, 4, 1]
-  },
-  "optimizer_config": {
-    "learning_rate": 1e-3
-  },
-  "tuning_config": {
-                    "layer_1_size": [128, 256],
-                    "layer_2_size": [16, 32],
-                    "lr": [0.003, 0.005, 0.007],
-                    "early_stopping_loss": false,
-                    "early_stopping_accs": false,
-                    "loss_patience": 5,
-                    "accs_patience": 5
-  }
+  "epochs": 500,
+  "layers": 10,
+  "bidirectional": "True",
+  "learning_rate": 1e-2,
+  "flatten" : "False"
 }
