@@ -5,7 +5,7 @@
     "decoder_sizes": [23, 16, 8, 4, 1]
   },
   "optimizer_config": {
-    "learning_rate": 1e-3
+    "learning_rate": 5e-4
   },
   "tuning_config": {
                     "layer_1_size": [128, 256],
