@@ -11,7 +11,7 @@ def reparameterization(mu, log_var: torch.Tensor, device):
 
 
 class VaeTemplate(nn.Module):
-    def __init__(self, encoder, decoder, device, h_dim, z_dim, preprocessing_func=None,
+    def __init__(self, encoder, decoder, device, h_dim, z_dim, embedding, preprocessing_func=None,
                  post_processing_func=None):
         super(VaeTemplate, self).__init__()
         self.preprocess = preprocessing_func
@@ -22,6 +22,7 @@ class VaeTemplate(nn.Module):
         self.fc3: nn.Module = nn.Linear(z_dim, h_dim)
         self.decoder: nn.Module = decoder
         self.device = device
+        self.embedding = embedding
 
     def bottleneck(self, h):
         mu = self.fc1(h)
@@ -33,6 +34,7 @@ class VaeTemplate(nn.Module):
         return self.bottleneck(self.encoder(x))[0]
 
     def forward(self, x):
+        x = self.embedding(x).transpose(1, 2)
         if self.preprocess is not None:
             x = self.preprocess(x)
         h = self.encoder(x)

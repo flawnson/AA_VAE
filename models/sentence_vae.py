@@ -1,9 +1,15 @@
 import torch
 import torch.nn as nn
 import torch.nn.utils.rnn as rnn_utils
+from torch.autograd import Variable
 
 from models.vae_template import VaeTemplate
-from utils.utils import to_var
+
+
+def to_var(x, volatile=False):
+    if torch.cuda.is_available():
+        x = x.cuda()
+    return Variable(x, volatile=volatile)
 
 
 def _save_sample(save_to, sample, running_seqs, t):
@@ -18,7 +24,6 @@ def _save_sample(save_to, sample, running_seqs, t):
 
 
 def _sample(dist, mode='greedy'):
-
     if mode == 'greedy':
         _, sample = torch.topk(dist, 1, dim=-1)
     sample = sample.squeeze()
