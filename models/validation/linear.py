@@ -41,8 +41,8 @@ class LinearModel(torch.nn.Module):
         :return:
         """
         return nn.Sequential(
-            nn.Linear(layer_in, layer_out, *args, **kwargs),
             nn.BatchNorm1d(layer_out),
+            nn.Linear(layer_in, layer_out, *args, **kwargs),
             nn.ReLU(),
             nn.Dropout(self.dropout)
         )
