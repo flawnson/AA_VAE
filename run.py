@@ -21,7 +21,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--benchmarking", help="benchmarking run config", type=str)
     args = parser.parse_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+    # device = "cpu"
     config: dict = json.load(open(args.config))
     model_config: dict = json.load(open(args.model))
 
@@ -45,10 +45,10 @@ if __name__ == "__main__":
 
     train_dataset = data.read_sequences(train_dataset_name,
                                         fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=True,
-                                        sequence_only=True)
+                                        sequence_only=True, pad_sequence=True, fill_itself=False)
     test_dataset = data.read_sequences(test_dataset_name,
                                        fixed_protein_length=FIXED_PROTEIN_LENGTH, add_chemical_features=True,
-                                       sequence_only=True)
+                                       sequence_only=True, pad_sequence=True, fill_itself=False)
 
     print(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     train_iterator = DataLoader(train_dataset, shuffle=True, batch_size= BATCH_SIZE)

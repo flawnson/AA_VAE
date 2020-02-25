@@ -8,7 +8,7 @@ class Trainer:
                  patience_count=1000):
 
         loss_function = {
-            "bce": torch.nn.CrossEntropyLoss
+            "bce": torch.nn.functional.cross_entropy
         }
 
         self.model = model.to(device)
@@ -24,19 +24,20 @@ class Trainer:
         self.n_epochs = n_epochs
         self.vocab_size = vocab_size
         self.patience_count = patience_count
-        self.criterion = loss_function[loss_function_name]()
+        self.criterion = loss_function[loss_function_name]
 
-    def reconstruction_accuracy(self, predicted, actual):
+    def reconstruction_accuracy(self, predicted, actual, current_index, training: bool):
         """ Computes average sequence identity between input and output sequences
         """
         # if input.shape != output.shape:
         #     raise Exception("Input and output can't have different shapes")
-        output_sequences = actual
-        input_sequences = predicted.argmax(axis=1)
+        mask = actual.le(20)
+        output_sequences = torch.masked_select(actual, mask)
+        input_sequences = torch.masked_select(predicted.argmax(axis=1), mask)
 
-        return ((input_sequences == output_sequences).sum(axis=1) / float(self.vocab_size)).mean()
+        return ((input_sequences == output_sequences).sum()) / float(len(input_sequences))
 
-    def __inner_iteration(self, x, training: bool):
+    def __inner_iteration(self, x, training: bool, i):
         x = x.long().to(self.device)
 
         # update the gradients to zero
@@ -46,12 +47,12 @@ class Trainer:
         # forward pass
         predicted = self.model(x)
 
-        recon_loss = self.criterion(predicted, x)
+        recon_loss = self.criterion(predicted, x, ignore_index=22)
 
         loss = recon_loss.item()
         # reconstruction accuracy
         # TODO this needs to change once new features are added into the vector
-        recon_accuracy = self.reconstruction_accuracy(predicted, x)
+        recon_accuracy = self.reconstruction_accuracy(predicted, x, i * x.shape[0], training)
 
         # backward pass
         if training:
@@ -71,7 +72,7 @@ class Trainer:
 
         for i, x in enumerate(self.train_iterator):
             # reshape the data into [batch_size, FIXED_PROTEIN_LENGTH*23]
-            loss, accuracy = self.__inner_iteration(x, True)
+            loss, accuracy = self.__inner_iteration(x, True, i)
             train_loss += loss
             recon_accuracy += accuracy
 
@@ -89,10 +90,9 @@ class Trainer:
         # we don't need to track the gradients, since we are not updating the parameters during evaluation / testing
         with torch.no_grad():
             for i, x in enumerate(self.test_iterator):
-
                 # update the gradients to zero
 
-                loss, accuracy = self.__inner_iteration(x, False)
+                loss, accuracy = self.__inner_iteration(x, False, i)
 
                 # backward pass
                 test_loss += loss

@@ -1,6 +1,5 @@
 import pandas as pd
 import torch
-import json
 
 """
 Valid amino acids
@@ -94,7 +93,8 @@ def valid_protein(protein_sequence):
     return True
 
 
-def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequence_only=False):
+def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequence_only=False, pad_sequence=True,
+                   fill_itself=False):
     """ Reads and converts valid protein sequences"
     """
     proteins = []
@@ -106,10 +106,17 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
 
         if valid_protein(protein_sequence):
             protein_sequence = protein_sequence[:fixed_protein_length]
-
             # pad sequence
-            if len(protein_sequence) < fixed_protein_length:
-                protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
+            if pad_sequence:
+                if len(protein_sequence) < fixed_protein_length:
+                    protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
+            else:
+                if fill_itself:
+                    length = len(protein_sequence)
+                    protein_sequence = (protein_sequence * (int(fixed_protein_length / length) + 1))[
+                                       :fixed_protein_length]
+                else:
+                    ValueError("One of fill_itself or pad_sequence should be provided")
 
             if sequence_only:
                 proteins.append(torch.ByteTensor(one_to_number(protein_sequence)))
@@ -117,6 +124,6 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
                 proteins.append(seq_to_one_hot(protein_sequence, add_chemical_features=add_chemical_features))
         else:
             raise Exception(f"Unknown character in sequence {protein_sequence}")
-        if (i % 100000) == 9999:
+        if (i % 100000) == 99999:
             print(f"{i} {len(proteins), proteins[0].shape[0]}")
     return torch.stack(proteins)
