@@ -8,7 +8,8 @@ class Trainer:
                  patience_count=1000):
 
         loss_function = {
-            "bce": torch.nn.functional.cross_entropy
+            "bce": torch.nn.functional.cross_entropy,
+            "nll": torch.nn.functional.nll_loss
         }
 
         self.model = model.to(device)
@@ -31,7 +32,7 @@ class Trainer:
         """
         # if input.shape != output.shape:
         #     raise Exception("Input and output can't have different shapes")
-        mask = actual.le(20)
+        mask = actual.le(21)
         output_sequences = torch.masked_select(actual, mask)
         input_sequences = torch.masked_select(predicted.argmax(axis=1), mask)
 

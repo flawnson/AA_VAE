@@ -7,10 +7,19 @@ from ray.tune import track
 from ray.tune.schedulers import AsyncHyperBandScheduler
 
 from utils.model_factory import create_model
+from utils.model_factory import load_data
+from utils.train import Trainer
 
 
 def tuner_run(config):
-    train, model, optimizer, device = create_model(config, config)
+    model, optimizer, device = create_model(config, config)
+
+    data_length = config["protein_length"]
+    train_dataset, test_dataset, train_iterator, test_iterator = load_data(config)
+    train = Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device,
+                    optimizer,
+                    len(train_dataset),
+                    len(test_dataset), 0, vocab_size=data_length)
     while True:
         train.train()
         loss, acc = train.test()
@@ -31,6 +40,7 @@ def tuner(smoke_test: bool, config, model_config):
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
         "momentum": tune.uniform(0.1, 0.9),
     }
+
     config_tune = {**tune_config, **z2}
     sched = AsyncHyperBandScheduler(
         time_attr="training_iteration", metric="mean_accuracy")
@@ -39,7 +49,7 @@ def tuner(smoke_test: bool, config, model_config):
         name="exp",
         scheduler=sched,
         stop={
-            "mean_accuracy": 0.80,
+            "mean_accuracy": 0.70,
             "training_iteration": 5 if smoke_test else 10000
         },
         resources_per_trial={

@@ -1,11 +1,12 @@
 {
   "model_name": "convolutional_vae",
-  "convolutional_parameters": {
+  "model_parameters": {
     "encoder_sizes": [30, 16, 8, 4, 1],
     "decoder_sizes": [23, 16, 8, 4, 1]
   },
   "optimizer_config": {
-    "learning_rate": 5e-4
+    "lr": 5e-4,
+    "weight_decay": 0.01
   },
   "tuning_config": {
                     "layer_1_size": [128, 256],
