@@ -12,5 +12,5 @@
     "epochs": 500,
     "auroc_average": "macro",
     "auroc_multi_class": "ovr"
-  },
+  }
 }
