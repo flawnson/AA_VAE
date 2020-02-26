@@ -98,6 +98,7 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
     """ Reads and converts valid protein sequences"
     """
     proteins = []
+    print(file)
     for i, row in pd.read_json(file).iterrows():
         if max_length != -1:
             if i > max_length:
