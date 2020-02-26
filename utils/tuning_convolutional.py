@@ -15,17 +15,26 @@ from utils.train import Trainer
 
 def tuner_run(config):
     model, optimizer, device = create_model(config, config)
-
+    max_dataset_length = 20000
     data_length = config["protein_length"]
-    train_dataset, test_dataset, train_iterator, test_iterator = load_data(config, 20000)
+    train_dataset, test_dataset, train_iterator, test_iterator = load_data(config, max_dataset_length)
     train = Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device,
                     optimizer,
                     len(train_dataset),
                     len(test_dataset), 0, vocab_size=data_length)
+    train_dataset_len = train_dataset.shape[0]
+    test_dataset_len = test_dataset.shape[0]
+    e = 1
     while True:
-        train.train()
-        loss, acc = train.test()
-        track.log(mean_accuracy=acc)
+        train_loss, train_recon_accuracy = train.train()
+        test_loss, test_recon_accuracy = train.test()
+
+        train_loss /= train_dataset_len
+        test_loss /= test_dataset_len
+        print(
+            f'Epoch {e}, Train Loss: {train_loss:.8f}, Test Loss: {test_loss:.8f}, Train accuracy {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
+        e = e + 1
+        track.log(mean_accuracy=test_recon_accuracy)
 
 
 def tuner(smoke_test: bool, config):
