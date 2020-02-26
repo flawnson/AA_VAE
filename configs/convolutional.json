@@ -3,10 +3,10 @@
   "model_parameters": {
     "encoder_sizes": [30, 16, 8, 4, 1],
     "decoder_sizes": [23, 16, 8, 4, 1],
-   "kernel_sizes_encoder" : 5,
+   "kernel_sizes_encoder" : 16,
    "stride_sizes_encoder" :  1,
-   "padding_sizes_encoder" : 2,
-   "kernel_sizes_decoder": 5,
+   "padding_sizes_encoder" : 8,
+   "kernel_sizes_decoder": 16,
    "stride_sizes_decoder": 1,
    "padding_sizes_decoder": 2
   },
