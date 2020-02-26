@@ -15,7 +15,7 @@ def tuner_run(config):
     model, optimizer, device = create_model(config, config)
 
     data_length = config["protein_length"]
-    train_dataset, test_dataset, train_iterator, test_iterator = load_data(config)
+    train_dataset, test_dataset, train_iterator, test_iterator = load_data(config, True)
     train = Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device,
                     optimizer,
                     len(train_dataset),
@@ -32,12 +32,20 @@ def tuner(smoke_test: bool, config):
     model_config = {
         "model_name": "convolutional_vae",
         "model_parameters": {
-            "encoder_sizes": [30, tune.grid_search(30, 8), tune.grid_search(30, 4), tune.grid_search(16, 2), 1],
-            "decoder_sizes": [23, 16, tune.grid_search(16, 4), tune.grid_search(16, 2), 1]
+            "encoder_sizes": [30, tune.grid_search(30, 16, 8), tune.grid_search(16, 8, 4),
+                              tune.grid_search(16, 8, 4, 2), 1],
+            "decoder_sizes": [23, tune.grid_search(16, 8), tune.grid_search(16, 8, 4), tune.grid_search(8, 4, 2), 1]
+            "kernel_sizes_encoder": tune.grid_search(2,4,8,16,32),
+            "stride_sizes_encoder": tune.grid_search(2,4,8,16),
+            "padding_sizes_encoder": tune.grid_search(2,4,8),
+            "kernel_sizes_decoder": tune.grid_search(2,4,8,16,32),
+            "stride_sizes_decoder": tune.grid_search(2,4,8,16),
+            "padding_sizes_decoder": tune.grid_search(2,4,8)
         },
+
         "optimizer_config": {
-            "lr": 5e-4,
-            "weight_decay": 0.01
+            "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
+            "weight_decay": tune.sample_from()
         }
     }
     tune_config = {**config, **model_config}
@@ -61,7 +69,7 @@ def tuner(smoke_test: bool, config):
         scheduler=sched,
         stop={
             "mean_accuracy": 0.70,
-            "training_iteration": 5 if smoke_test else 10000
+            "training_iteration": 5 if smoke_test else 100
         },
         resources_per_trial={
             "cpu": cpus,

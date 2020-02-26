@@ -24,56 +24,74 @@ def reparameterization(mu, log_var: torch.Tensor, device):
     return z
 
 
-def out_size_transpose(current_layer, padding, dilation, kernel_size, stride):
-    return (current_layer - 1) * stride - 2 * padding + dilation * (kernel_size - 1) + padding + 1
-
-
 class ConvolutionalVAE(nn.Module):
     def __init__(self, model_config, h_dim, z_dim, data_length, device, embeddings_static):
         super(ConvolutionalVAE, self).__init__()
         self.name = "ConvolutionalVAE"
         encoder_sizes: list = model_config["encoder_sizes"]
+        kernel_sizes_encoder = model_config["kernel_sizes_encoder"]
+        stride_sizes_encoder = model_config["stride_sizes_encoder"]
+        padding_sizes_encoder = model_config["padding_sizes_encoder"]
+        kernel_sizes_decoder = model_config["kernel_sizes_decoder"]
+        stride_sizes_decoder = model_config["stride_sizes_decoder"]
+        padding_sizes_decoder = model_config["padding_sizes_decoder"]
+        out_dim = data_length
+        for a in encoder_sizes:
+            out_dim = out_size_conv(out_dim, padding_sizes_encoder, 1, kernel_sizes_encoder, stride_sizes_encoder)
+        # h_dim = out_dim
         # encoder = nn.Sequential(
         self.bne1 = nn.BatchNorm1d(encoder_sizes[0])
-        self.ce1 = nn.Conv1d(in_channels=encoder_sizes[0], out_channels=encoder_sizes[1], kernel_size=5, stride=1,
-                             padding=2, groups=1)
+        self.ce1 = nn.Conv1d(in_channels=encoder_sizes[0], out_channels=encoder_sizes[1],
+                             kernel_size=kernel_sizes_encoder,
+                             stride=stride_sizes_encoder,
+                             padding=padding_sizes_encoder, groups=1)
         self.ce1.apply(init_weights)
         self.re1 = nn.ReLU()
         self.bne2 = nn.BatchNorm1d(encoder_sizes[1])
-        self.ce2 = nn.Conv1d(in_channels=encoder_sizes[1], out_channels=encoder_sizes[2], kernel_size=5, stride=1,
-                             padding=2, groups=1)
+        self.ce2 = nn.Conv1d(in_channels=encoder_sizes[1], out_channels=encoder_sizes[2],
+                             kernel_size=kernel_sizes_encoder,
+                             stride=stride_sizes_encoder,
+                             padding=padding_sizes_encoder, groups=1)
         self.ce2.apply(init_weights)
         self.re2 = nn.ReLU()
         self.bne3 = nn.BatchNorm1d(encoder_sizes[2])
-        self.ce3 = nn.Conv1d(in_channels=encoder_sizes[2], out_channels=encoder_sizes[3], kernel_size=5, stride=1,
-                             padding=2, groups=1)
+        self.ce3 = nn.Conv1d(in_channels=encoder_sizes[2], out_channels=encoder_sizes[3],
+                             kernel_size=kernel_sizes_encoder,
+                             stride=stride_sizes_encoder,
+                             padding=padding_sizes_encoder, groups=1)
         self.ce3.apply(init_weights)
         self.re3 = nn.ReLU()
         self.bne4 = nn.BatchNorm1d(encoder_sizes[3])
-        self.ce4 = nn.Conv1d(in_channels=encoder_sizes[3], out_channels=1, kernel_size=5, stride=1, padding=2, groups=1)
+        self.ce4 = nn.Conv1d(in_channels=encoder_sizes[3], out_channels=1, kernel_size=kernel_sizes_encoder,
+                             stride=stride_sizes_encoder,
+                             padding=padding_sizes_encoder, groups=1)
         self.ce4.apply(init_weights)
         self.re4 = nn.ReLU()  # ,
         self.smax = nn.Softmax()
         # )
 
         decoder_sizes: list = model_config["decoder_sizes"]
-        # decoder = nn.Sequential(
-        # nn.LSTM(),
-        # nn.ReLU(),
-        # UnFlatten(size=h_dim),
-        self.cd1 = nn.ConvTranspose1d(1, decoder_sizes[3], kernel_size=5, stride=1, padding=2)
+        self.cd1 = nn.ConvTranspose1d(1, decoder_sizes[3], kernel_size=kernel_sizes_decoder,
+                                      stride=stride_sizes_decoder,
+                                      padding=padding_sizes_decoder, groups=1)
         self.cd1.apply(init_weights)
         self.rd1 = nn.ReLU()
         self.bnd1 = nn.BatchNorm1d(decoder_sizes[3])
-        self.cd2 = nn.ConvTranspose1d(decoder_sizes[3], decoder_sizes[2], kernel_size=5, stride=1, padding=2)
+        self.cd2 = nn.ConvTranspose1d(decoder_sizes[3], decoder_sizes[2], kernel_size=kernel_sizes_decoder,
+                                      stride=stride_sizes_decoder,
+                                      padding=padding_sizes_decoder, groups=1)
         self.cd2.apply(init_weights)
         self.rd2 = nn.ReLU()
         self.bnd2 = nn.BatchNorm1d(decoder_sizes[2])
-        self.cd3 = nn.ConvTranspose1d(decoder_sizes[2], decoder_sizes[1], kernel_size=5, stride=1, padding=2)
+        self.cd3 = nn.ConvTranspose1d(decoder_sizes[2], decoder_sizes[1], kernel_size=kernel_sizes_decoder,
+                                      stride=stride_sizes_decoder,
+                                      padding=padding_sizes_decoder, groups=1)
         self.cd3.apply(init_weights)
         self.rd3 = nn.ReLU()
         self.bnd3 = nn.BatchNorm1d(decoder_sizes[1])
-        self.cd4 = nn.ConvTranspose1d(decoder_sizes[1], decoder_sizes[0], kernel_size=5, stride=1, padding=2)
+        self.cd4 = nn.ConvTranspose1d(decoder_sizes[1], decoder_sizes[0], kernel_size=kernel_sizes_decoder,
+                                      stride=stride_sizes_decoder,
+                                      padding=padding_sizes_decoder, groups=1)
         self.rd4 = nn.ReLU()
         self.cd4.apply(init_weights)
         # )

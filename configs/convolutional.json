@@ -2,7 +2,13 @@
   "model_name": "convolutional_vae",
   "model_parameters": {
     "encoder_sizes": [30, 16, 8, 4, 1],
-    "decoder_sizes": [23, 16, 8, 4, 1]
+    "decoder_sizes": [23, 16, 8, 4, 1],
+   "kernel_sizes_encoder" : 5,
+   "stride_sizes_encoder" :  1,
+   "padding_sizes_encoder" : 2,
+   "kernel_sizes_decoder": 5,
+   "stride_sizes_decoder": 1,
+   "padding_sizes_decoder": 2
   },
   "optimizer_config": {
     "lr": 5e-4,
