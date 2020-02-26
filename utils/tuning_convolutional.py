@@ -25,7 +25,8 @@ def tuner_run(config):
     train_dataset_len = train_dataset.shape[0]
     test_dataset_len = test_dataset.shape[0]
     e = 1
-    while True:
+    epochs = config["epochs"]
+    for e in range(epochs):
         train_loss, train_recon_accuracy = train.train()
         test_loss, test_recon_accuracy = train.test()
 
@@ -61,7 +62,7 @@ def tuner(smoke_test: bool, config):
         }
     }
     config_tune = {**config, **model_config}
-
+    config["epochs"] = 100
     sched = AsyncHyperBandScheduler(
         time_attr="training_iteration", metric="mean_accuracy")
     analysis = tune.run(
