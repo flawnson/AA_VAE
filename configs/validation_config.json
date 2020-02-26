@@ -10,6 +10,8 @@
   },
   "train_config": {
     "epochs": 500,
+    "lr": 0.005,
+    "wd": 5e-5,
     "auroc_average": "macro",
     "auroc_multi_class": "ovr"
   }
