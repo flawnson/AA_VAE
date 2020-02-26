@@ -16,6 +16,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--benchmarking", help="benchmarking run config", type=str)
     args = parser.parse_args()
     config: dict = json.load(open(args.config))
+
     model_config: dict = json.load(open(args.model))
 
     data_length = config["protein_length"]

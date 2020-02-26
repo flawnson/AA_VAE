@@ -1,3 +1,5 @@
+import argparse
+import json
 import multiprocessing
 
 import numpy as np
@@ -35,12 +37,12 @@ def tuner(smoke_test: bool, config):
             "encoder_sizes": [30, tune.grid_search(30, 16, 8), tune.grid_search(16, 8, 4),
                               tune.grid_search(16, 8, 4, 2), 1],
             "decoder_sizes": [23, tune.grid_search(16, 8), tune.grid_search(16, 8, 4), tune.grid_search(8, 4, 2), 1]
-            "kernel_sizes_encoder": tune.grid_search(2,4,8,16,32),
-            "stride_sizes_encoder": tune.grid_search(2,4,8,16),
-            "padding_sizes_encoder": tune.grid_search(2,4,8),
-            "kernel_sizes_decoder": tune.grid_search(2,4,8,16,32),
-            "stride_sizes_decoder": tune.grid_search(2,4,8,16),
-            "padding_sizes_decoder": tune.grid_search(2,4,8)
+            "kernel_sizes_encoder": tune.grid_search(2, 4, 8, 16, 32),
+            "stride_sizes_encoder": tune.grid_search(2, 4, 8, 16),
+            "padding_sizes_encoder": tune.grid_search(2, 4, 8),
+            "kernel_sizes_decoder": tune.grid_search(2, 4, 8, 16, 32),
+            "stride_sizes_decoder": tune.grid_search(2, 4, 8, 16),
+            "padding_sizes_decoder": tune.grid_search(2, 4, 8)
         },
 
         "optimizer_config": {
@@ -78,3 +80,11 @@ def tuner(smoke_test: bool, config):
         num_samples=1 if smoke_test else 3,
         config=config_tune)
     print("Best config is:", analysis.get_best_config(metric="mean_accuracy"))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Config file parser")
+    parser.add_argument("-c", "--config", help="common config file", type=str)
+    args = parser.parse_args()
+    config: dict = json.load(open(args.config))
+    tuner(False, config)
