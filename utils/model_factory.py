@@ -49,7 +49,7 @@ def create_model(config, model_config):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model = models.get(model_config["model_name"])(model_config["model_parameters"], config["hidden_size"],
-                                                   config["embedding_size"], device,
+                                                   config["embedding_size"], config["protein_length"], device,
                                                    data.get_embedding_matrix()).to(device)
 
     # optimizer

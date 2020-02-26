@@ -29,7 +29,7 @@ def out_size_transpose(current_layer, padding, dilation, kernel_size, stride):
 
 
 class ConvolutionalVAE(nn.Module):
-    def __init__(self, model_config, h_dim, z_dim,  device, embeddings_static):
+    def __init__(self, model_config, h_dim, z_dim, data_length, device, embeddings_static):
         super(ConvolutionalVAE, self).__init__()
         self.name = "ConvolutionalVAE"
         encoder_sizes: list = model_config["encoder_sizes"]
