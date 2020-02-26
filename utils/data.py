@@ -128,5 +128,5 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
         else:
             raise Exception(f"Unknown character in sequence {protein_sequence}")
         if (i % 100000) == 99999:
-            print(f"{i} {len(proteins), proteins[i].shape[0]}")
+            print(f"{i} {len(proteins), proteins[i-1].shape[0]}")
     return torch.stack(proteins)
