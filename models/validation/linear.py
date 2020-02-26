@@ -13,7 +13,7 @@ from models.validation.trainer import TrainLinear
 
 
 class LinearModel(torch.nn.Module):
-    def __init__(self, in_size, out_size, layer_sizes, dropout=.25):
+    def __init__(self, in_size, out_size, layer_sizes, x, dropout=.25):
         """
 
         :param in_size: Model input size (embedding size)
@@ -23,6 +23,7 @@ class LinearModel(torch.nn.Module):
         """
         super(LinearModel, self).__init__()
 
+        self.x = x
         self.in_size = in_size
         self.out_size = out_size
         self.layer_sizes = layer_sizes
@@ -60,10 +61,11 @@ class LinearModel(torch.nn.Module):
 
         return full_model
 
+    def forward(self):
+        return self.model(self.x)
+
 
 if __name__ == "__main__":
-    # print(LinearModel(1, 10, [22, 33, 44, 55, 66]).model())
-    # print(list(LinearModel(1, 10, [22, 33, 44, 55, 66]).model().parameters()))
     path = osp.join('simple-vae', 'configs')  # Implicitly used to get config file?
     parser = argparse.ArgumentParser(description="Config file parser")
     parser.add_argument("-f", "--config", help="json config file", type=str)
@@ -77,19 +79,15 @@ if __name__ == "__main__":
     json_config = json.load(json_file)
 
     data_config = json_config.get('data_config')
-    data = ProteinLabels(json_data)
+    data = QuinaryLabels(json_data)
     dataset = DataLoader(dataset=data, batch_size=data_config.get('batch_size'), pin_memory=True)
 
     model_config = json_config.get('model_config')
-    print(model_config)
-    print(model_config.get('layer_sizes'))
-    # print(model_config['layer_sizes'])
-    exit()
     model = LinearModel(model_config.get('in_size'),
                         model_config.get('out_size'),
                         model_config.get('layer_sizes'),
                         model_config.get('dropout'))
-    print(list(model.parameters()))
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     train_config = json_config.get('train_config')

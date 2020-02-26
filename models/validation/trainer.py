@@ -6,27 +6,29 @@ from torch.nn import functional as f
 from sklearn.metrics import roc_auc_score
 
 class TrainLinear:
-    def __init__(self, config, targets, model, device):
+    def __init__(self, config, dataset, model, device):
 
         self.config = config
-        self.targets = targets
+        self.targets = dataset
         self.model = model
         self.device = device
-        self.optimizer = torch.optim.Adam(params=self.model.parameters(),
+        self.optimizer = torch.optim.Adam(params=self.model.model().parameters(),
                                           lr=self.config.get('lr'),
-                                          weight_decay=self.config.get('wd')).step()
+                                          weight_decay=self.config.get('wd'))
 
     def train(self):
         self.model.train()
         self.optimizer.zero_grad()
-        logits = self.model()
+        logits = self.model.model()
 
-        imb_wc = torch.bincount(self.targets, minlength=int(self.targets.max())).float().clamp(
-            min=1e-10, max=1e10) / self.targets.shape[0]
-        weights = (1 / imb_wc) / (sum(1 / imb_wc))
+        # imb_wc = torch.bincount(self.targets, minlength=int(self.targets.max())).float().clamp(
+        #     min=1e-10, max=1e10) / self.targets.shape[0]
+        # weights = (1 / imb_wc) / (sum(1 / imb_wc))
 
-        loss = f.cross_entropy(logits, self.targets, weight=weights)
+        # loss = f.cross_entropy(logits, self.targets, weight=weights)
+        loss = f.cross_entropy(logits, self.targets)
         loss.backward()
+        self.optimizer.step()
 
     def test(self) -> list:
         self.model.eval()

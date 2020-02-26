@@ -1,12 +1,12 @@
 {
   "data_config": {
-    "batch_size": 16
+    "batch_size": 1
   },
   "model_config": {
-    "in_size:": 300,
-    "out_size:": 2,
-    "layer_sizes:": [128, 64, 32],
-    "dropout:": 0.25
+    "in_size": 300,
+    "out_size": 2,
+    "layer_sizes": [128, 64, 32],
+    "dropout": 0.25
   },
   "train_config": {
     "epochs": 500,
