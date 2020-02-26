@@ -56,7 +56,7 @@ def tuner(smoke_test: bool, config):
             for k1, v1 in v:
                 tune_config[k][k1] = tune.grid_search(v1)
         else:
-            tune_config[k] = tune.grid_search(v)
+            tune_config[k] = tune.grid_search(tune.loguniform(0.0001, 1))
     z2 = {
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
         "momentum": tune.uniform(0.1, 0.9),
