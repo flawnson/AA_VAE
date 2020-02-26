@@ -9,12 +9,8 @@ from models.lstm_vae import LSTMVae
 from utils import data
 
 
-def load_data(_config, tuning: bool = False):
+def load_data(_config, max_length=-1):
     dataset_type = _config["dataset"]  # (small|medium|large)
-    if tuning:
-        max_length = 10000
-    else:
-        max_length = -1
     data_length = _config["protein_length"]
     batch_size = _config["batch_size"]  # number of data points in each batch
     if _config["class"] != "mammalian":

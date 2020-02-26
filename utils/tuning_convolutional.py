@@ -17,7 +17,7 @@ def tuner_run(config):
     model, optimizer, device = create_model(config, config)
 
     data_length = config["protein_length"]
-    train_dataset, test_dataset, train_iterator, test_iterator = load_data(config, True)
+    train_dataset, test_dataset, train_iterator, test_iterator = load_data(config, 20000)
     train = Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device,
                     optimizer,
                     len(train_dataset),
