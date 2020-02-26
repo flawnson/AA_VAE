@@ -36,7 +36,8 @@ def tuner(smoke_test: bool, config):
         "model_parameters": {
             "encoder_sizes": [30, tune.grid_search([30, 16, 8]), tune.grid_search([16, 8, 4]),
                               tune.grid_search([16, 8, 4, 2]), 1],
-            "decoder_sizes": [23, tune.grid_search([16, 8]), tune.grid_search([16, 8, 4]), tune.grid_search([8, 4, 2]), 1],
+            "decoder_sizes": [23, tune.grid_search([16, 8]), tune.grid_search([16, 8, 4]), tune.grid_search([8, 4, 2]),
+                              1],
             "kernel_sizes_encoder": tune.grid_search([2, 4, 8, 16, 32, 64, 128]),
             "stride_sizes_encoder": tune.grid_search([2, 4, 8, 16, 32]),
             "padding_sizes_encoder": tune.grid_search([2, 4, 8, 16]),
@@ -47,22 +48,11 @@ def tuner(smoke_test: bool, config):
 
         "optimizer_config": {
             "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
-            "weight_decay": tune.sample_from()
+            "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.0001, 1))
         }
     }
-    tune_config = {**config, **model_config}
-    for k, v in config["tunable"]:
-        if isinstance(v, dict):
-            for k1, v1 in v:
-                tune_config[k][k1] = tune.grid_search(v1)
-        else:
-            tune_config[k] = tune.grid_search(lambda spec: tune.loguniform(0.0001, 1))
-    z2 = {
-        "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
-        "momentum": tune.uniform(0.1, 0.9),
-    }
+    config_tune = {**config, **model_config}
 
-    config_tune = {**tune_config, **z2}
     sched = AsyncHyperBandScheduler(
         time_attr="training_iteration", metric="mean_accuracy")
     analysis = tune.run(
