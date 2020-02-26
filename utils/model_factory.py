@@ -10,15 +10,11 @@ from utils import data
 
 
 def load_data(_config, max_length=-1):
-    dataset_type = _config["dataset"]  # (small|medium|large)
     data_length = _config["protein_length"]
     batch_size = _config["batch_size"]  # number of data points in each batch
-    if _config["class"] != "mammalian":
-        train_dataset_name = f"data/train_set_{dataset_type}_{data_length}.json"
-        test_dataset_name = f"data/test_set_{dataset_type}_{data_length}.json"
-    else:
-        train_dataset_name = "data/train_set_large_1500_mammalian.json"
-        test_dataset_name = "data/test_set_large_1500_mammalian.json"
+    train_dataset_name = _config["train_dataset_name"]
+    test_dataset_name = _config["test_dataset_name"]
+
     print(f"Loading the sequence for train data: {train_dataset_name} and test data: {test_dataset_name}")
     _train_dataset = data.read_sequences(train_dataset_name,
                                          fixed_protein_length=data_length, add_chemical_features=True,

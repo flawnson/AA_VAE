@@ -6,6 +6,6 @@
   "epochs": 4500,
   "feature_length": 1500,
   "added_length": 0,
-  "hidden_size": 1500,
+  "hidden_size": 1000,
   "embedding_size": 300
 }

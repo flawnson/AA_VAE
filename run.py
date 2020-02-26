@@ -3,7 +3,7 @@ This code is a variation of simple VAE from https://graviraja.github.io/vanillav
 """
 import argparse
 import json
-
+import os
 from utils.model_factory import create_model, load_data
 from utils.train import Trainer
 
@@ -19,7 +19,15 @@ if __name__ == "__main__":
 
     data_length = config["protein_length"]
     number_of_epochs = config["epochs"]  # times to run the model on complete data
-
+    dataset_type = config["dataset"]  # (small|medium|large)
+    if config["class"] != "mammalian":
+        train_dataset_name = f"data/train_set_{dataset_type}_{data_length}.json"
+        test_dataset_name = f"data/test_set_{dataset_type}_{data_length}.json"
+    else:
+        train_dataset_name = "data/train_set_large_1500_mammalian.json"
+        test_dataset_name = "data/test_set_large_1500_mammalian.json"
+    config["train_dataset_name"] = os.getcwd() + "/" + train_dataset_name
+    config["test_dataset_name"] = os.getcwd() + "/" + test_dataset_name
     train_dataset, test_dataset, train_iterator, test_iterator = load_data(config)
 
     print(f"Creating the model")
