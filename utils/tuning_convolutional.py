@@ -61,8 +61,8 @@ def tuner(smoke_test: bool, config):
             "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.0001, 1))
         }
     }
+    config["epochs"] = 400
     config_tune = {**config, **model_config}
-    config["epochs"] = 100
     sched = AsyncHyperBandScheduler(
         time_attr="training_iteration", metric="mean_accuracy")
     analysis = tune.run(
