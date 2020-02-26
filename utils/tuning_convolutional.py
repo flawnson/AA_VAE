@@ -44,10 +44,8 @@ def tuner(smoke_test: bool, config_):
     gpus = torch.cuda.device_count()
     model_config = {
         "model_name": "convolutional_vae",
-        "encoder_sizes": [30, tune.grid_search([30, 16, 8]), tune.grid_search([16, 8, 4]),
-                          tune.grid_search([16, 8, 4, 2]), 1],
-        "decoder_sizes": [23, tune.grid_search([16, 8]), tune.grid_search([16, 8, 4]), tune.grid_search([8, 4, 2]),
-                          1],
+        "encoder_sizes": [30, 16, 8, 4, 1],
+        "decoder_sizes": [23, 16, 8, 4, 1],
         "kernel_sizes_encoder": tune.grid_search([2, 4, 8, 16, 32, 64, 128]),
         "stride_sizes_encoder": tune.grid_search([2, 4, 8, 16, 32]),
         "kernel_sizes_decoder": tune.grid_search([2, 4, 8, 16, 32, 64, 128]),
