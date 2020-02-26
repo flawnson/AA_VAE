@@ -34,15 +34,15 @@ def tuner(smoke_test: bool, config):
     model_config = {
         "model_name": "convolutional_vae",
         "model_parameters": {
-            "encoder_sizes": [30, tune.grid_search(30, 16, 8), tune.grid_search(16, 8, 4),
-                              tune.grid_search(16, 8, 4, 2), 1],
-            "decoder_sizes": [23, tune.grid_search(16, 8), tune.grid_search(16, 8, 4), tune.grid_search(8, 4, 2), 1],
-            "kernel_sizes_encoder": tune.grid_search(2, 4, 8, 16, 32, 64, 128),
-            "stride_sizes_encoder": tune.grid_search(2, 4, 8, 16, 32),
-            "padding_sizes_encoder": tune.grid_search(2, 4, 8, 16),
-            "kernel_sizes_decoder": tune.grid_search(2, 4, 8, 16, 32, 64, 128),
-            "stride_sizes_decoder": tune.grid_search(2, 4, 8, 16, 32),
-            "padding_sizes_decoder": tune.grid_search(2, 4, 8, 16)
+            "encoder_sizes": [30, tune.grid_search([30, 16, 8]), tune.grid_search([16, 8, 4]),
+                              tune.grid_search([16, 8, 4, 2]), 1],
+            "decoder_sizes": [23, tune.grid_search([16, 8]), tune.grid_search([16, 8, 4]), tune.grid_search([8, 4, 2]), 1],
+            "kernel_sizes_encoder": tune.grid_search([2, 4, 8, 16, 32, 64, 128]),
+            "stride_sizes_encoder": tune.grid_search([2, 4, 8, 16, 32]),
+            "padding_sizes_encoder": tune.grid_search([2, 4, 8, 16]),
+            "kernel_sizes_decoder": tune.grid_search([2, 4, 8, 16, 32, 64, 128]),
+            "stride_sizes_decoder": tune.grid_search([2, 4, 8, 16, 32]),
+            "padding_sizes_decoder": tune.grid_search([2, 4, 8, 16])
         },
 
         "optimizer_config": {
