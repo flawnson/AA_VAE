@@ -14,12 +14,12 @@
     4,
     1
   ],
-  "kernel_sizes_encoder": 16,
+  "kernel_sizes_encoder": 128,
   "stride_sizes_encoder": 1,
-  "padding_sizes_encoder": 8,
-  "kernel_sizes_decoder": 16,
+  "padding_sizes_encoder": 64,
+  "kernel_sizes_decoder": 128,
   "stride_sizes_decoder": 1,
-  "padding_sizes_decoder": 2,
+  "padding_sizes_decoder": 64,
   "lr": 5e-4,
   "weight_decay": 0.01
 }

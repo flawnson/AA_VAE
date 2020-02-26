@@ -34,7 +34,9 @@ def load_data(_config, max_length=-1):
 
 
 def get_optimizer(optimizer_config, model):
-    return optim.Adam(model.parameters(), **optimizer_config)
+    lr = optimizer_config["lr"]
+    weight_decay = optimizer_config["weight_decay"]
+    return optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
 
 def create_model(config, model_config):
@@ -44,9 +46,9 @@ def create_model(config, model_config):
               "convolutional_linear": Convolutional_Linear_VAE}
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    model = models.get(model_config["model_name"])(model_config["model_parameters"], config["hidden_size"],
+    model = models.get(model_config["model_name"])(model_config, config["hidden_size"],
                                                    config["embedding_size"], config["protein_length"], device,
                                                    data.get_embedding_matrix()).to(device)
 
     # optimizer
-    return model, get_optimizer(model_config["optimizer_config"], model), device
+    return model, get_optimizer(model_config, model), device

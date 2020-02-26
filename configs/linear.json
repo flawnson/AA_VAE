@@ -1,14 +1,7 @@
 {
  "model_name": "linear_vae",
-  "model_parameters": {
     "encoder_sizes": [30, 16, 8, 4, 1],
-    "decoder_sizes": [23, 16, 8, 4, 1]
-  },
-  "optimizer_config": {
+    "decoder_sizes": [23, 16, 8, 4, 1],
     "lr": 5e-4,
     "weight_decay": 0.01
-  },
-  "tunable": {
-    "lr": []
-  }
 }

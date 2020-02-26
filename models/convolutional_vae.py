@@ -31,10 +31,11 @@ class ConvolutionalVAE(nn.Module):
         encoder_sizes: list = model_config["encoder_sizes"]
         kernel_sizes_encoder = model_config["kernel_sizes_encoder"]
         stride_sizes_encoder = model_config["stride_sizes_encoder"]
-        padding_sizes_encoder = model_config["padding_sizes_encoder"]
+        padding_sizes_encoder = int(kernel_sizes_encoder / 2)
         kernel_sizes_decoder = model_config["kernel_sizes_decoder"]
         stride_sizes_decoder = model_config["stride_sizes_decoder"]
-        padding_sizes_decoder = model_config["padding_sizes_decoder"]
+        padding_sizes_decoder = int(kernel_sizes_decoder/2)
+
         out_dim = data_length
         for a in range(len(encoder_sizes)-1):
             out_dim = out_size_conv(out_dim, padding_sizes_encoder, 1, kernel_sizes_encoder, stride_sizes_encoder)

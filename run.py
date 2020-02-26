@@ -4,9 +4,7 @@ This code is a variation of simple VAE from https://graviraja.github.io/vanillav
 import argparse
 import json
 
-import torch
-
-from utils.model_factory import create_model, get_optimizer, load_data
+from utils.model_factory import create_model, load_data
 from utils.train import Trainer
 
 if __name__ == "__main__":
