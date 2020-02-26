@@ -26,9 +26,20 @@ def tuner_run(config):
         track.log(mean_accuracy=acc)
 
 
-def tuner(smoke_test: bool, config, model_config):
+def tuner(smoke_test: bool, config):
     cpus = int(multiprocessing.cpu_count())
     gpus = torch.cuda.device_count()
+    model_config = {
+        "model_name": "convolutional_vae",
+        "model_parameters": {
+            "encoder_sizes": [30, tune.grid_search(30, 8), tune.grid_search(30, 4), tune.grid_search(16, 2), 1],
+            "decoder_sizes": [23, 16, tune.grid_search(16, 4), tune.grid_search(16, 2), 1]
+        },
+        "optimizer_config": {
+            "lr": 5e-4,
+            "weight_decay": 0.01
+        }
+    }
     tune_config = {**config, **model_config}
     for k, v in config["tunable"]:
         if isinstance(v, dict):

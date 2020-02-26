@@ -1,40 +1,54 @@
 import torch
+import torch.nn as nn
+
 from models.vae_template import VaeTemplate
 
 
-class LinearVAE(VaeTemplate):
-    def __init__(self, input_size, hidden_sizes, device, embeddings_static):
+class LinearVAE(VaeTemplate, nn.Module):
+    def __init__(self, model_config, hidden_size, embedding_size, data_length, device, embeddings_static):
+        self.data_length = data_length
+        self.name = "linear_vae"
+        encoder_sizes: list = model_config["encoder_sizes"]
         encoder = torch.nn.Sequential(
-            torch.nn.Linear(input_size, hidden_sizes[0]),  # 2 for bidirection
-            torch.nn.BatchNorm1d(hidden_sizes[0]),
-            torch.nn.Linear(hidden_sizes[0], hidden_sizes[1]),
-            torch.nn.BatchNorm1d(hidden_sizes[1]),
-            torch.nn.Linear(hidden_sizes[1], hidden_sizes[2]),
-            torch.nn.BatchNorm1d(hidden_sizes[2])
+            torch.nn.BatchNorm1d(encoder_sizes[0] * data_length),
+            torch.nn.Linear(encoder_sizes[0] * data_length, encoder_sizes[1] * data_length),  # 2 for bidirection
+            torch.nn.LeakyReLU(),
+            torch.nn.BatchNorm1d(encoder_sizes[1] * data_length),
+            torch.nn.Linear(encoder_sizes[1] * data_length, encoder_sizes[2] * data_length),
+            torch.nn.LeakyReLU(),
+            torch.nn.BatchNorm1d(encoder_sizes[2] * data_length),
+            torch.nn.Linear(encoder_sizes[2] * data_length, encoder_sizes[3] * data_length),
+            torch.nn.LeakyReLU(),
+            torch.nn.BatchNorm1d(encoder_sizes[3] * data_length),
+            torch.nn.Linear(encoder_sizes[3] * data_length, hidden_size),
+            torch.nn.LeakyReLU()
         )
 
+        decoder_sizes: list = model_config["decoder_sizes"]
         decoder = torch.nn.Sequential(
-            torch.nn.Linear(hidden_sizes[3], hidden_sizes[2]),
-            torch.nn.BatchNorm1d(hidden_sizes[2]),
-            torch.nn.Linear(hidden_sizes[2], hidden_sizes[1]),
-            torch.nn.BatchNorm1d(hidden_sizes[1]),
-            torch.nn.Linear(hidden_sizes[1], hidden_sizes[0]),
-            torch.nn.BatchNorm1d(hidden_sizes[0]),
-            torch.nn.Linear(hidden_sizes[0], input_size)
+            torch.nn.BatchNorm1d(hidden_size),
+            torch.nn.Linear(hidden_size, decoder_sizes[3] * data_length),
+            torch.nn.LeakyReLU(),
+            torch.nn.BatchNorm1d(decoder_sizes[3] * data_length),
+            torch.nn.Linear(decoder_sizes[3] * data_length, decoder_sizes[2] * data_length),
+            torch.nn.LeakyReLU(),
+            torch.nn.BatchNorm1d(decoder_sizes[2] * data_length),
+            torch.nn.Linear(decoder_sizes[2] * data_length, decoder_sizes[1] * data_length),
+            torch.nn.LeakyReLU(),
+            torch.nn.BatchNorm1d(decoder_sizes[1] * data_length),
+            torch.nn.Linear(decoder_sizes[1] * data_length, decoder_sizes[0] * data_length),
+            torch.nn.LeakyReLU()
         )
         embedding = torch.nn.Embedding(23, 30, max_norm=1)
         embedding.weight.data.copy_(embeddings_static)
         embedding.weight.requires_grad = False
-        super(LinearVAE, self).__init__(encoder, decoder, device, hidden_sizes[2], hidden_sizes[3], embedding=embedding)
+        super(LinearVAE, self).__init__(encoder, decoder, device, hidden_size, embedding_size, embedding=embedding)
 
     def forward(self, x):
         x = self.embedding(x).view(x.shape[0], -1)
-        if self.preprocess is not None:
-            x = self.preprocess(x)
         h = self.encoder(x)
         z, _, _ = self.bottleneck(h)
         z = self.fc3(z)
         val = self.decoder(z)
-        if self.postprocess is not None:
-            val = self.postprocess(val)
+        val = val.view(x.shape[0], 23, -1)
         return val

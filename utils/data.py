@@ -94,11 +94,14 @@ def valid_protein(protein_sequence):
 
 
 def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequence_only=False, pad_sequence=True,
-                   fill_itself=False):
+                   fill_itself=False, max_length=-1):
     """ Reads and converts valid protein sequences"
     """
     proteins = []
     for i, row in pd.read_json(file).iterrows():
+        if max_length != -1:
+            if i > max_length:
+                break
         if "sequence" in row:
             protein_sequence = row['sequence']
         elif "protein_sequence" in row:
@@ -125,5 +128,5 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
         else:
             raise Exception(f"Unknown character in sequence {protein_sequence}")
         if (i % 100000) == 99999:
-            print(f"{i} {len(proteins), proteins[0].shape[0]}")
+            print(f"{i} {len(proteins), proteins[i].shape[0]}")
     return torch.stack(proteins)
