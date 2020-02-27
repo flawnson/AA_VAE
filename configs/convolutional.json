@@ -20,6 +20,6 @@
   "kernel_sizes_decoder": 16,
   "stride_sizes_decoder": 1,
   "padding_sizes_decoder": 2,
-  "lr": 5e-4,
+  "lr": 5e-3,
   "weight_decay": 0.01
 }

@@ -10,32 +10,32 @@ class LinearVAE(VaeTemplate, nn.Module):
         self.name = "linear_vae"
         encoder_sizes: list = model_config["encoder_sizes"]
         encoder = torch.nn.Sequential(
-            torch.nn.BatchNorm1d(encoder_sizes[0] * data_length),
+            # torch.nn.BatchNorm1d(encoder_sizes[0] * data_length),
             torch.nn.Linear(encoder_sizes[0] * data_length, encoder_sizes[1] * data_length),  # 2 for bidirection
             torch.nn.LeakyReLU(),
-            torch.nn.BatchNorm1d(encoder_sizes[1] * data_length),
+            # torch.nn.BatchNorm1d(encoder_sizes[1] * data_length),
             torch.nn.Linear(encoder_sizes[1] * data_length, encoder_sizes[2] * data_length),
             torch.nn.LeakyReLU(),
-            torch.nn.BatchNorm1d(encoder_sizes[2] * data_length),
+            # torch.nn.BatchNorm1d(encoder_sizes[2] * data_length),
             torch.nn.Linear(encoder_sizes[2] * data_length, encoder_sizes[3] * data_length),
             torch.nn.LeakyReLU(),
-            torch.nn.BatchNorm1d(encoder_sizes[3] * data_length),
+            # torch.nn.BatchNorm1d(encoder_sizes[3] * data_length),
             torch.nn.Linear(encoder_sizes[3] * data_length, hidden_size),
             torch.nn.LeakyReLU()
         )
 
         decoder_sizes: list = model_config["decoder_sizes"]
         decoder = torch.nn.Sequential(
-            torch.nn.BatchNorm1d(hidden_size),
+            # torch.nn.BatchNorm1d(hidden_size),
             torch.nn.Linear(hidden_size, decoder_sizes[3] * data_length),
             torch.nn.LeakyReLU(),
-            torch.nn.BatchNorm1d(decoder_sizes[3] * data_length),
+            # torch.nn.BatchNorm1d(decoder_sizes[3] * data_length),
             torch.nn.Linear(decoder_sizes[3] * data_length, decoder_sizes[2] * data_length),
             torch.nn.LeakyReLU(),
-            torch.nn.BatchNorm1d(decoder_sizes[2] * data_length),
+            # torch.nn.BatchNorm1d(decoder_sizes[2] * data_length),
             torch.nn.Linear(decoder_sizes[2] * data_length, decoder_sizes[1] * data_length),
             torch.nn.LeakyReLU(),
-            torch.nn.BatchNorm1d(decoder_sizes[1] * data_length),
+            # torch.nn.BatchNorm1d(decoder_sizes[1] * data_length),
             torch.nn.Linear(decoder_sizes[1] * data_length, decoder_sizes[0] * data_length),
             torch.nn.LeakyReLU()
         )

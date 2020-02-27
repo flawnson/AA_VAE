@@ -1,7 +1,7 @@
 {
  "model_name": "linear_vae",
-    "encoder_sizes": [30, 16, 8, 4, 1],
-    "decoder_sizes": [23, 16, 8, 4, 1],
-    "lr": 5e-4,
+    "encoder_sizes": [30, 8, 8, 4, 1],
+    "decoder_sizes": [23, 8, 8, 4, 1],
+    "lr": 5e-3,
     "weight_decay": 0.01
 }
