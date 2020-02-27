@@ -19,14 +19,14 @@ class TrainLinear:
     def train(self):
         self.model.train()
         self.optimizer.zero_grad()
-        logits = self.model(torch.randn(300, 300))
+        logits = self.model(torch.randn(2, 300))
 
         # imb_wc = torch.bincount(self.targets, minlength=int(self.targets.max())).float().clamp(
         #     min=1e-10, max=1e10) / self.targets.shape[0]
         # weights = (1 / imb_wc) / (sum(1 / imb_wc))
 
         # loss = f.cross_entropy(logits, self.targets, weight=weights)
-        loss = f.cross_entropy(logits)
+        loss = f.cross_entropy(logits, )
         loss.backward()
         self.optimizer.step()
 

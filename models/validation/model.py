@@ -51,15 +51,17 @@ class LinearModel(torch.nn.Module):
         self.in_size = in_size
         self.out_size = out_size
         self.layer_sizes = layer_sizes
+        self.dropout = dropout
 
-        self.first_layer = LinearLayer(self.in_size, self.out_size, self.layer_sizes).input_layer()
-        self.hidden_layers = [LinearLayer(self.in_size, self.out_size, self.layer_sizes).hidden_layers(in_size, out_size, bias=True)
-                         for in_size, out_size in zip(self.layer_sizes, self.layer_sizes[1:])]
+        self.first_layer = LinearLayer(self.in_size, self.out_size, self.layer_sizes, self.dropout).input_layer()
+        self.hidden_layers = [LinearLayer(self.in_size,
+                                          self.out_size,
+                                          self.layer_sizes,
+                                          self.dropout).hidden_layers(in_size, out_size, bias=True)
+                                          for in_size, out_size in zip(self.layer_sizes, self.layer_sizes[1:])]
         self.final_layer = LinearLayer(self.in_size, self.out_size, self.layer_sizes).output_layer()
 
         self.full_model = nn.Sequential(self.first_layer, *self.hidden_layers, self.final_layer)
-
-        # self.model = LinearLayer(in_size, out_size, layer_sizes, dropout=dropout)
 
     def forward(self, data):
         return self.full_model(data)
