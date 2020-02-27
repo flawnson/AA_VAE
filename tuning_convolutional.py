@@ -47,6 +47,9 @@ def tuner_run(config):
 def tuner(smoke_test: bool, config_):
     cpus = int(multiprocessing.cpu_count())
     gpus = torch.cuda.device_count()
+    if gpus > 1:
+        gpus = 1
+
     model_config = {
         "model_name": "convolutional_vae",
         "encoder_sizes": [30, 16, 8, 4, 1],

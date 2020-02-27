@@ -36,7 +36,7 @@ class Trainer:
         output_sequences = torch.masked_select(actual, mask)
         input_sequences = torch.masked_select(predicted.argmax(axis=1), mask)
 
-        return ((input_sequences == output_sequences).sum()) / float(len(input_sequences))
+        return (((input_sequences == output_sequences).sum()) / float(len(input_sequences))).item()
 
     def __inner_iteration(self, x, training: bool, i):
         x = x.long().to(self.device)

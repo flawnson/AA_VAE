@@ -54,6 +54,7 @@ class GatedCNN(VaeTemplate, nn.Module):
         self.b_l = nn.Parameter(torch.randn(1, vocab_size, 1, 1))
         self.conv_gate_l = nn.Conv2d(1, vocab_size, kernel, padding=(padding, 0))
         self.c_l = nn.Parameter(torch.randn(1, vocab_size, 1, 1))
+        self.sigmoid = nn.Sigmoid()
 
 
     def forward(self, x):
@@ -73,13 +74,13 @@ class GatedCNN(VaeTemplate, nn.Module):
         A += self.b_0.repeat(1, 1, seq_len, 1)
         B = self.conv_gate_0(x)  # (bs, Cout, seq_len, 1)
         B += self.c_0.repeat(1, 1, seq_len, 1)
-        h = A * F.sigmoid(B)  # (bs, Cout, seq_len, 1)
+        h = A * self.sigmoid(B)  # (bs, Cout, seq_len, 1)
         res_input = h
 
         for i, (conv, conv_gate) in enumerate(zip(self.conv, self.conv_gate)):
             A = conv(h) + self.b[i].repeat(1, 1, seq_len, 1)
             B = conv_gate(h) + self.c[i].repeat(1, 1, seq_len, 1)
-            h = A * F.sigmoid(B)  # (bs, Cout, seq_len, 1)
+            h = A * self.sigmoid(B)  # (bs, Cout, seq_len, 1)
             if i % self.res_block_count == 0:  # size of each residual block
                 h += res_input
                 res_input = h
@@ -96,7 +97,7 @@ class GatedCNN(VaeTemplate, nn.Module):
         for i, (conv, conv_gate) in enumerate(zip(self.conv_d, self.conv_gate_d)):
             A = conv(h) + self.b[i].repeat(1, 1, seq_len, 1)
             B = conv_gate(h) + self.c[i].repeat(1, 1, seq_len, 1)
-            h = A * F.sigmoid(B)  # (bs, Cout, seq_len, 1)
+            h = A * self.sigmoid(B)  # (bs, Cout, seq_len, 1)
             if i % self.res_block_count == 0:  # size of each residual block
                 h += res_input
                 res_input = h
@@ -104,6 +105,6 @@ class GatedCNN(VaeTemplate, nn.Module):
         A += self.b_l.repeat(1, 1, seq_len, 1)
         B = self.conv_gate_l(x)  # (bs, Cout, seq_len, 1)
         B += self.c_l.repeat(1, 1, seq_len, 1)
-        h = A * F.sigmoid(B)
+        h = A * self.sigmoid(B)
         h=h.squeeze(3)
         return h
