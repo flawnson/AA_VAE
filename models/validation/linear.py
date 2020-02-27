@@ -25,8 +25,7 @@ if __name__ == "__main__":
     json_config = json.load(json_file)
 
     data_config = json_config.get('data_config')
-    data = QuinaryLabels(json_data)
-    dataset = DataLoader(dataset=data, batch_size=data_config.get('batch_size'), pin_memory=True)
+    dataset = QuinaryLabels(json_data)
 
     model_config = json_config.get('model_config')
     model = LinearModel(model_config.get('in_size'),
@@ -37,4 +36,4 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     train_config = json_config.get('train_config')
-    TrainLinear(train_config, dataset, model, device).run()
+    TrainLinear(train_config, data_config, dataset, model, device).run()

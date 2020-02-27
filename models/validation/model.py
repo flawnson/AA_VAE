@@ -40,8 +40,8 @@ class LinearLayer(torch.nn.Module):
     def output_layer(self) -> nn.Linear:
         return nn.Linear(self.layer_sizes[-1], self.out_size)
 
-    def forward(self, x):
-        return self.model(x)
+    # def forward(self, x):
+    #     return self.model(x)
 
 
 class LinearModel(torch.nn.Module):
