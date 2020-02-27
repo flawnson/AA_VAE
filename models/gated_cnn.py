@@ -12,7 +12,7 @@ class GatedCNN(VaeTemplate, nn.Module):
         vocab_size = embeddings_static.shape[0]
         embd_size = embeddings_static.shape[1]
         n_layers = model_config["layers"]
-        kernel = model_config["kernel_size"]
+        kernel = [model_config["kernel_size_0"], model_config["kernel_size_1"]]
         out_chs = model_config["channels"]
         res_block_count = model_config["residual"]
         ans_size = hidden_size
@@ -61,9 +61,7 @@ class GatedCNN(VaeTemplate, nn.Module):
 
         # CNN
         x = x.unsqueeze(1)  # (bs, Cin, seq_len, embd_size), insert Channnel-In dim
-        # Conv2d
-        #    Input : (bs, Cin,  Hin,  Win )
-        #    Output: (bs, Cout, Hout, Wout)
+
         A = self.conv_0(x)  # (bs, Cout, seq_len, 1)
         A += self.b_0.repeat(1, 1, seq_len, 1)
         B = self.conv_gate_0(x)  # (bs, Cout, seq_len, 1)
