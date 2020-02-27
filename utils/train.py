@@ -27,7 +27,7 @@ class Trainer:
         self.patience_count = patience_count
         self.criterion = loss_function[loss_function_name]
 
-    def reconstruction_accuracy(self, predicted, actual, current_index, training: bool):
+    def reconstruction_accuracy(self, predicted, actual):
         """ Computes average sequence identity between input and output sequences
         """
         # if input.shape != output.shape:
@@ -53,7 +53,7 @@ class Trainer:
         loss = recon_loss.item()
         # reconstruction accuracy
         # TODO this needs to change once new features are added into the vector
-        recon_accuracy = self.reconstruction_accuracy(predicted, x, i * x.shape[0], training)
+        recon_accuracy = self.reconstruction_accuracy(predicted, x)
 
         # backward pass
         if training:
