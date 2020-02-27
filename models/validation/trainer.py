@@ -9,56 +9,32 @@ class TrainLinear:
     def __init__(self, config, dataset, model, device):
 
         self.config = config
-        self.targets = dataset
+        self.dataset = dataset
         self.model = model
         self.device = device
-        self.optimizer = torch.optim.Adam(params=self.model.model().parameters(),
+        self.optimizer = torch.optim.Adam(params=self.model.parameters(),
                                           lr=self.config.get('lr'),
                                           weight_decay=self.config.get('wd'))
 
     def train(self):
         self.model.train()
         self.optimizer.zero_grad()
-        logits = self.model.model()
+        logits = self.model(torch.randn(300, 300))
 
         # imb_wc = torch.bincount(self.targets, minlength=int(self.targets.max())).float().clamp(
         #     min=1e-10, max=1e10) / self.targets.shape[0]
         # weights = (1 / imb_wc) / (sum(1 / imb_wc))
 
         # loss = f.cross_entropy(logits, self.targets, weight=weights)
-        loss = f.cross_entropy(logits, self.targets)
+        loss = f.cross_entropy(logits)
         loss.backward()
         self.optimizer.step()
 
-    def test(self) -> list:
+    def test(self) -> None:
         self.model.eval()
-        logits = self.model()
-        accs, auroc_scores, f1_scores = [], [], []
-        s_logits = f.softmax(input=logits, dim=1)  # To account for the unknown class
+        logits = self.model.model()
 
-        for mask in [self.train_mask, self.val_mask, self.test_mask]:
-            # pred = logits.max(1)[1]
-
-            # Add calculation for accuracy
-            # Add calculation for f1_score
-
-            if len(np.unique(self.targets)) > 2:
-                average = self.config.get('auroc_average')
-                multi_class = self.config.get('auroc_multi_class')
-            else:
-                average = None
-                multi_class = None
-
-            auroc = roc_auc_score(y_true=self.targets[mask].to('cpu').numpy(),
-                                  y_score=np.amax(s_logits[mask].to('cpu').data.numpy(), axis=1),
-                                  average=average,
-                                  multi_class=multi_class)
-
-            # accs.append(acc)
-            # f1_scores.append(f1)
-            auroc_scores.append(auroc)
-
-        return [accs, f1_scores, np.asarray(auroc_scores)]
+        return None
 
     def logs(self):
         pass
@@ -67,10 +43,11 @@ class TrainLinear:
 
         output = None
         for epoch in range(self.config.get('epochs') + 1):
-            start = datetime.datetime.now()
-            self.train()
-            output = self.test()
-            print(f'{datetime.datetime.now() - start} since epoch-{epoch - 1}')
+            for local_batch, local_labels in self.dataset:
+                start = datetime.datetime.now()
+                train_output = self.train()
+                test_output = self.test()
+                print(f'{datetime.datetime.now() - start} since epoch-{epoch - 1}')
 
-        return output
+        return train_output, test_output
 
