@@ -1,11 +1,11 @@
 {
-  "dataset": "small",
-  "protein_length": 50,
+  "dataset": "large",
+  "protein_length": 200,
   "class": "bacteria",
-  "batch_size": 10,
+  "batch_size": 300,
   "epochs": 50,
   "feature_length": 30,
   "added_length": 0,
-  "hidden_size": 50,
-  "embedding_size": 30
+  "hidden_size": 200,
+  "embedding_size": 40
 }
