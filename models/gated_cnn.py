@@ -26,7 +26,7 @@ class GatedCNN(VaeTemplate, nn.Module):
         embedding.weight.requires_grad = False
         super(GatedCNN, self).__init__(None, None, device, hidden_size, embedding_size, embedding=embedding)
         self.embedding = nn.Embedding(vocab_size, embd_size)
-        padding = int((kernel[0]-1)/2)
+        padding = int((kernel[0] - 1) / 2)
         # nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, ...
         self.conv_0 = nn.Conv2d(1, out_chs, kernel, padding=(padding, 0))
         self.b_0 = nn.Parameter(torch.randn(1, out_chs, 1, 1))
@@ -55,7 +55,6 @@ class GatedCNN(VaeTemplate, nn.Module):
         self.conv_gate_l = nn.Conv2d(1, vocab_size, kernel, padding=(padding, 0))
         self.c_l = nn.Parameter(torch.randn(1, vocab_size, 1, 1))
         self.sigmoid = nn.Sigmoid()
-
 
     def forward(self, x):
         # x: (N, seq_len)
@@ -101,10 +100,10 @@ class GatedCNN(VaeTemplate, nn.Module):
             if i % self.res_block_count == 0:  # size of each residual block
                 h += res_input
                 res_input = h
-        A = self.conv_l(x)  # (bs, Cout, seq_len, 1)
+        A = self.conv_l(h)  # (bs, Cout, seq_len, 1)
         A += self.b_l.repeat(1, 1, seq_len, 1)
-        B = self.conv_gate_l(x)  # (bs, Cout, seq_len, 1)
+        B = self.conv_gate_l(h)  # (bs, Cout, seq_len, 1)
         B += self.c_l.repeat(1, 1, seq_len, 1)
         h = A * self.sigmoid(B)
-        h=h.squeeze(3)
+        h = h.squeeze(3)
         return h
