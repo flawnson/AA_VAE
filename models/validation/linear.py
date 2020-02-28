@@ -25,7 +25,16 @@ if __name__ == "__main__":
     json_config = json.load(json_file)
 
     data_config = json_config.get('data_config')
-    dataset = QuinaryLabels(json_data)
+    if data_config['task'] == "binary":
+        dataset = BinaryLabels(json_data)
+    elif data_config['task'] == "quaternary":
+        dataset = QuaternaryLabels(json_data)
+    elif data_config['task'] == "quinary":
+        dataset = QuinaryLabels(json_data)
+    elif data_config['task'] == "protein":
+        dataset = ProteinLabels(json_data)
+    else:
+        raise NotImplementedError("Task described is not implemented")
 
     model_config = json_config.get('model_config')
     model = LinearModel(model_config.get('in_size'),

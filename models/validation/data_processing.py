@@ -4,20 +4,29 @@ import os.path as osp
 
 from torch.utils.data.dataset import Dataset
 from abc import ABCMeta, abstractmethod, ABC
+from sklearn.preprocessing import OneHotEncoder
 
 
 class EmbeddingData(Dataset, metaclass=ABCMeta):
     @abstractmethod
-    def __init__(self, embedding_dict):
+    def __init__(self, embedding_dict, onehot=False):
         """
 
         :param embeddings: torch tensor of embeddings
         :param targets: torch tensor of corresponding targets
         """
         self.x = embedding_dict
+        self.onehot = onehot
 
     def label_mapper(self):
         return {}
+
+    def onehot_encoder(self, label_dict):
+        onehot_encoder = OneHotEncoder(sparse=False)
+        integer_encoded = np.asarray(list(label_dict.values())).reshape(len(list(label_dict.values())), 1)
+        onehot_encoded = onehot_encoder.fit_transform(integer_encoded)
+
+        return onehot_encoded
 
     def preprocessing(self) -> list:
         embed_dict: dict = dict(zip(self.x["gene"].values(), self.x["embeddings"].values()))
@@ -27,14 +36,11 @@ class EmbeddingData(Dataset, metaclass=ABCMeta):
         filter_embed = {key: np.squeeze(value) for key, value in embed_dict.items() if key in intersect}  # Extra dim
         filter_label = {key: value for key, value in label_dict.items() if key in intersect}
 
+        if self.onehot:
+            onehot_labels = self.onehot_encoder(filter_label)
+            filter_label = dict(zip(list(filter_label.keys()), onehot_labels))
+
         pairs = [[filter_embed[gene], filter_label[gene]] for gene in intersect]
-
-        # intersect_mask = np.asarray([True if gene in label_dict.keys() else False for gene in embed_dict.keys()])
-        # embed = np.squeeze(np.asarray(list(embed_dict.values()))[intersect_mask], axis=1)  # Remove redundant dimension
-        # examples = list(zip(embed, list(label_dict.keys())))
-
-        # for embed_gene, label_gene in zip(list(label_dict.keys()), list(embed_dict.keys())):
-        #     if label_gene in embed_gene
 
         return pairs
 
@@ -43,7 +49,7 @@ class EmbeddingData(Dataset, metaclass=ABCMeta):
         return examples[idx][0], examples[idx][1]
 
     def __len__(self):
-        return len(self.x)
+        return len(self.preprocessing())
 
 
 class BinaryLabels(EmbeddingData, ABC):
@@ -90,10 +96,10 @@ class QuaternaryLabels(EmbeddingData, ABC):
 
     def get_label(self, query: str):
         mappings: dict = {
-            'fibrous_proteins': 1,
-            'membrane_proteins': 2,
-            'unstructured_proteins': 3,
-            'globular_proteins': 4
+            'fibrous_proteins': 0,
+            'membrane_proteins': 1,
+            'unstructured_proteins': 2,
+            'globular_proteins': 3
         }
         if mappings.keys().__contains__(query):
             return mappings.get(query)
@@ -116,11 +122,11 @@ class QuinaryLabels(EmbeddingData, ABC):
 
     def get_label(self, query: str):
         mappings: dict = {
-            1000000: 1,
-            1000001: 2,
-            1000002: 3,
-            1000003: 4,
-            1000004: 5
+            1000000: 0,
+            1000001: 1,
+            1000002: 2,
+            1000003: 3,
+            1000004: 4
         }
 
         if mappings.keys().__contains__(query):
@@ -151,10 +157,12 @@ class ProteinLabels(EmbeddingData, ABC):
         return data
 
     def get_label(self, query: str):
-        mappings = dict(zip(np.unique(self.data_file()[1]), list(range(1, len(np.unique(self.data_file()[1]))))))
+        mappings = dict(zip(np.unique(self.data_file()[1]), list(range(0, len(np.unique(self.data_file()[1]))))))
         if mappings.keys().__contains__(query):
             return mappings.get(query)
         else:
+            # BUG: Problem with sklearn's one hot encoder, will return an index error if in case of value without label
+            #      This is due to the fact that sklearn starts its indices at 0
             print("There is a value that cannot be converted to a label")
             return 0
 
