@@ -50,9 +50,9 @@ class GatedCNN(VaeTemplate, nn.Module):
         self.b_d = nn.ParameterList([nn.Parameter(torch.randn(1, out_chs, 1, 1)) for _ in range(n_layers)])
         self.c_d = nn.ParameterList([nn.Parameter(torch.randn(1, out_chs, 1, 1)) for _ in range(n_layers)])
 
-        self.conv_l = nn.Conv2d(1, vocab_size, kernel, padding=(padding, 0))
+        self.conv_l = nn.ConvTranspose2d(out_chs, vocab_size, (kernel[0], 1), padding=(padding, 0))
         self.b_l = nn.Parameter(torch.randn(1, vocab_size, 1, 1))
-        self.conv_gate_l = nn.Conv2d(1, vocab_size, kernel, padding=(padding, 0))
+        self.conv_gate_l = nn.ConvTranspose2d(out_chs, vocab_size, (kernel[0],1), padding=(padding, 0))
         self.c_l = nn.Parameter(torch.randn(1, vocab_size, 1, 1))
         self.sigmoid = nn.Sigmoid()
 
