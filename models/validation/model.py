@@ -19,7 +19,9 @@ class LinearLayer(torch.nn.Module):
         self.dropout = dropout
 
     def input_layer(self) -> nn.Linear:
-        return nn.Linear(self.in_size, self.layer_sizes[0])
+        input_layer = nn.Linear(self.in_size, self.layer_sizes[0])
+        torch.nn.init.xavier_uniform_(input_layer.weight)
+        return input_layer
 
     def hidden_layers(self, layer_in, layer_out, *args, **kwargs) -> nn.Sequential:
         """
@@ -30,18 +32,20 @@ class LinearLayer(torch.nn.Module):
         :param kwargs: Linear arguments (bias, etc.)
         :return:
         """
+        hidden_layer = nn.Linear(layer_in, layer_out, *args, **kwargs)
+        torch.nn.init.xavier_uniform_(hidden_layer.weight)
+
         return nn.Sequential(
-            nn.Linear(layer_in, layer_out, *args, **kwargs),
+            hidden_layer,
             nn.BatchNorm1d(layer_out),
             nn.ReLU(),
             nn.Dropout(self.dropout)
         )
 
     def output_layer(self) -> nn.Linear:
-        return nn.Linear(self.layer_sizes[-1], self.out_size)
-
-    # def forward(self, x):
-    #     return self.model(x)
+        output_layer = nn.Linear(self.layer_sizes[-1], self.out_size)
+        torch.nn.init.xavier_uniform_(output_layer.weight)
+        return output_layer
 
 
 class LinearModel(torch.nn.Module):

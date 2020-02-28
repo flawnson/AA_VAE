@@ -17,6 +17,8 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--config", help="json config file", type=str)
     args = parser.parse_args()
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     embed_file = osp.join(osp.dirname(osp.dirname(osp.dirname(__file__))), "exports", "embeddings.json")
     json_embed = open(embed_file)
     json_data = json.load(json_embed)
@@ -40,9 +42,7 @@ if __name__ == "__main__":
     model = LinearModel(model_config.get('in_size'),
                         model_config.get('out_size'),
                         model_config.get('layer_sizes'),
-                        model_config.get('dropout'))
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+                        model_config.get('dropout')).to(device)
 
     train_config = json_config.get('train_config')
     TrainLinear(train_config, data_config, dataset, model, device).run()

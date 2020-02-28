@@ -13,8 +13,8 @@ class TrainLinear:
         self.dataset = dataset
         self.batch_size = data_donfig.get("batch_size")
         self.test_split = data_donfig.get("test_ratio")
-        self.model = model
         self.device = device
+        self.model = model.to(self.device)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(),
                                           lr=self.train_config.get('lr'),
                                           weight_decay=self.train_config.get('wd'))
@@ -39,8 +39,8 @@ class TrainLinear:
         logits = self.model(batch)
         pred = logits.max(1)[1]
 
-        accuracy = accuracy_score(pred, labels)
-        print(accuracy)
+        accuracy = accuracy_score(pred.cpu(), labels.cpu())
+        print(f"Accuracy: {accuracy}")
 
         return None
 
@@ -63,15 +63,15 @@ class TrainLinear:
                                sampler=test_sampler)
 
         for epoch in range(self.train_config.get('epochs') + 1):
+            # FIXME: Iteration occurs over batches, not epochs, restructuring needed
             start = datetime.datetime.now()
 
             for train_batch, train_labels in train_data:
-                train_output = self.train(train_batch.float(), train_labels)
+                train_output = self.train(train_batch.float().to(self.device), train_labels.to(self.device))
+                print(f'{datetime.datetime.now() - start} since epoch-{epoch}')
 
             for test_batch, test_labels in test_data:
-                test_output = self.test(test_batch.float(), test_labels)
-
-            print(f'{datetime.datetime.now() - start} since epoch-{epoch}')
+                test_output = self.test(test_batch.float().to(self.device), test_labels)
 
         return [None]  # [train_output, test_output]
 
