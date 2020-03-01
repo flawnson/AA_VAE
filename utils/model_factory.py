@@ -21,6 +21,7 @@ def load_data(_config, max_length=-1):
                                          fixed_protein_length=data_length, add_chemical_features=True,
                                          sequence_only=True, pad_sequence=True, fill_itself=False,
                                          max_length=max_length)
+    print(f"Loading the sequence for test data: {test_dataset_name}")
     _test_dataset = data.read_sequences(test_dataset_name,
                                         fixed_protein_length=data_length, add_chemical_features=True,
                                         sequence_only=True, pad_sequence=True, fill_itself=False, max_length=max_length)
