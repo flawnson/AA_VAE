@@ -24,7 +24,7 @@ class Trainer:
 
         self.weights = torch.Tensor([0.6428, 3.3950, 0.7450, 0.9234, 0.7459, 1.2758, 0.8553, 2.2021, 0.8400,
                         2.1896, 0.5179, 1.1491, 1.2546, 1.0246, 0.6837, 0.9261, 0.9258, 4.5166,
-                        0.7591, 1.6835])
+                        0.7591, 1.6835]).to(device)
 
         self.model = model.to(device)
         self.data_length = data_length
