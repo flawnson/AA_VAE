@@ -22,9 +22,7 @@ class Trainer:
             "nll": torch.nn.functional.nll_loss
         }
 
-        self.weights = torch.Tensor([0.6428, 3.3950, 0.7450, 0.9234, 0.7459, 1.2758, 0.8553, 2.2021, 0.8400,
-                        2.1896, 0.5179, 1.1491, 1.2546, 1.0246, 0.6837, 0.9261, 0.9258, 4.5166,
-                        0.7591, 1.6835, 0, 0]).to(device)
+
 
         self.model = model.to(device)
         self.data_length = data_length
@@ -62,7 +60,7 @@ class Trainer:
         # forward pass
         predicted, mu, var = self.model(x)
 
-        recon_loss = loss_function(self.criterion(predicted, x, weight=self.weights, ignore_index=22), mu, var)
+        recon_loss = loss_function(self.criterion(predicted, x, ignore_index=22), mu, var)
 
         loss = recon_loss.item()
         # reconstruction accuracy
