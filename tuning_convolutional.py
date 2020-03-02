@@ -17,21 +17,21 @@ import os
 import os.path as osp
 
 
-def tuner_run(config):
+def tuner_run(config__):
     track.init()
-    print(config)
-    tuning: bool = config["tuning"]
-    model, optimizer, device = create_model(config, config)
+    print(config__)
+    tuning: bool = config__["tuning"]
+    model, optimizer, device = create_model(config__, config__)
     max_dataset_length = 20000
-    data_length = config["protein_length"]
-    train_dataset, test_dataset, train_iterator, test_iterator = load_data(config, max_dataset_length)
-    train = Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device,
+    data_length = config__["protein_length"]
+    train_dataset, test_dataset, train_iterator, test_iterator = load_data(config__, max_dataset_length)
+    train = Trainer(model, config__["protein_length"], train_iterator, test_iterator, config__["feature_length"], device,
                     optimizer,
                     len(train_dataset),
                     len(test_dataset), 0, vocab_size=data_length)
     train_dataset_len = train_dataset.shape[0]
     test_dataset_len = test_dataset.shape[0]
-    epochs = config["epochs"]
+    epochs = config__["epochs"]
     for e in range(epochs):
         train_loss, train_recon_accuracy = train.train()
         test_loss, test_recon_accuracy = train.test()
@@ -47,6 +47,7 @@ def tuner_run(config):
 def tuner(smoke_test: bool, config_):
     cpus = int(multiprocessing.cpu_count())
     gpus = torch.cuda.device_count()
+
 
     model_config = {
         "model_name": "convolutional_vae",

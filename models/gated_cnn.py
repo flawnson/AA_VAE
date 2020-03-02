@@ -62,19 +62,15 @@ class GatedCNN(VaeTemplate, nn.Module):
         self.conv_l.apply(init_weights)
         self.conv_gate_l.apply(init_weights)
 
-    def forward(self, x):
-        # x: (N, seq_len)
+    def representation(self, x):
 
-        # Embedding
         bs = x.size(0)  # batch size
         seq_len = x.size(1)
         x = self.embedding(x)  # (bs, seq_len, embd_size)
 
         # CNN
         x = x.unsqueeze(1)  # (bs, Cin, seq_len, embd_size), insert Channnel-In dim
-        # Conv2d
-        #    Input : (bs, Cin,  Hin,  Win )
-        #    Output: (bs, Cout, Hout, Wout)
+
         A = self.conv_0(x)  # (bs, Cout, seq_len, 1)
         A += self.b_0.repeat(1, 1, seq_len, 1)
         B = self.conv_gate_0(x)  # (bs, Cout, seq_len, 1)
@@ -92,7 +88,36 @@ class GatedCNN(VaeTemplate, nn.Module):
 
         h = h.view(bs, -1)  # (bs, Cout*seq_len)
         h = self.fc(h)  # (bs, ans_size)
-        #        out = F.log_softmax(out)
+        z, _, _ = self.bottleneck(h)
+
+        return z
+
+    def forward(self, x):
+        # Embedding
+        bs = x.size(0)  # batch size
+        seq_len = x.size(1)
+        x = self.embedding(x)  # (bs, seq_len, embd_size)
+
+        # CNN
+        x = x.unsqueeze(1)  # (bs, Cin, seq_len, embd_size), insert Channnel-In dim
+
+        A = self.conv_0(x)  # (bs, Cout, seq_len, 1)
+        A += self.b_0.repeat(1, 1, seq_len, 1)
+        B = self.conv_gate_0(x)  # (bs, Cout, seq_len, 1)
+        B += self.c_0.repeat(1, 1, seq_len, 1)
+        h = A * self.sigmoid(B)  # (bs, Cout, seq_len, 1)
+        res_input = h
+
+        for i, (conv, conv_gate) in enumerate(zip(self.conv, self.conv_gate)):
+            A = conv(h) + self.b[i].repeat(1, 1, seq_len, 1)
+            B = conv_gate(h) + self.c[i].repeat(1, 1, seq_len, 1)
+            h = A * self.sigmoid(B)  # (bs, Cout, seq_len, 1)
+            if i % self.res_block_count == 0:  # size of each residual block
+                h += res_input
+                res_input = h
+
+        h = h.view(bs, -1)  # (bs, Cout*seq_len)
+        h = self.fc(h)  # (bs, ans_size)
         z, _, _ = self.bottleneck(h)
         z = self.fc3(z)
 
