@@ -1,6 +1,8 @@
 import argparse
 import json
 import multiprocessing
+import os
+import os.path as osp
 
 import numpy as np
 import torch
@@ -12,54 +14,44 @@ from utils.model_factory import create_model
 from utils.model_factory import load_data
 from utils.train import Trainer
 
-import tensorflow as tf  # Needed to prevent get_global_worker attribute error
-import os
-import os.path as osp
 
-
-def tuner_run(config__):
+def tuner_run(config):
     track.init()
-    print(config__)
-    tuning: bool = config__["tuning"]
-    model, optimizer, device = create_model(config__, config__)
+    print(config)
+    tuning: bool = config["tuning"]
+    model, optimizer, device = create_model(config, config)
     max_dataset_length = 20000
-    data_length = config__["protein_length"]
-    train_dataset, test_dataset, train_iterator, test_iterator = load_data(config__, max_dataset_length)
-    train = Trainer(model, config__["protein_length"], train_iterator, test_iterator, config__["feature_length"], device,
+    data_length = config["protein_length"]
+    train_dataset, test_dataset, train_iterator, test_iterator = load_data(config, max_dataset_length)
+    train = Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device,
                     optimizer,
                     len(train_dataset),
                     len(test_dataset), 0, vocab_size=data_length)
     train_dataset_len = train_dataset.shape[0]
     test_dataset_len = test_dataset.shape[0]
-    epochs = config__["epochs"]
+    epochs = config["epochs"]
     for e in range(epochs):
         train_loss, train_recon_accuracy = train.train()
-        test_loss, test_recon_accuracy = train.test()
 
         train_loss /= train_dataset_len
-        test_loss /= test_dataset_len
-        print(
-            f'Epoch {e}, Train Loss: {train_loss:.8f}, Test Loss: {test_loss:.8f}, Train accuracy {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
+        print(f'Epoch {e}, Train Loss: {train_loss:.8f} Train accuracy {train_recon_accuracy * 100.0:.2f}%')
         if tuning:
-            track.log(mean_accuracy=test_recon_accuracy * 100)
+            track.log(mean_accuracy=train_recon_accuracy * 100)
 
 
 def tuner(smoke_test: bool, config_):
     cpus = int(multiprocessing.cpu_count())
     gpus = torch.cuda.device_count()
 
-
     model_config = {
-        "model_name": "convolutional_vae",
-        "encoder_sizes": [30, 16, 8, 4, 1],
-        "decoder_sizes": [23, 16, 8, 4, 1],
-        "kernel_sizes_encoder": tune.grid_search([5, 10, 20, 50, 100, 150]),
-        "stride_sizes_encoder": tune.grid_search([2, 5, 10, 15, 30]),
-        "kernel_sizes_decoder": tune.grid_search([5, 10, 20, 50, 100, 150]),
-        "stride_sizes_decoder": tune.grid_search([2, 5, 10, 15, 30]),
-        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00001, 1)),
-        "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.0001, 0.1)),
-        "tuning": True
+        "model_name": "gated_cnn",
+        "layers": {"grid_search": [4, 6, 8, 16]},
+        "kernel_size_0": {"grid_search": [7, 9, 11, 17]},
+        "kernel_size_1": 30,
+        "channels": {"grid_search": [4, 6, 8]},
+        "residual": {"grid_search": [2, 4]},
+        "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
+        "weight_decay": tune.uniform(0, 0.9)
     }
 
     dataset_type = config["dataset"]  # (small|medium|large)
