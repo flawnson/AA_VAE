@@ -39,8 +39,6 @@ class ConvolutionalVAE(nn.Module):
         out_dim = data_length
         for a in range(len(encoder_sizes)-1):
             out_dim = out_size_conv(out_dim, padding_sizes_encoder, 1, kernel_sizes_encoder, stride_sizes_encoder)
-        # h_dim = out_dim
-        # encoder = nn.Sequential(
         self.bne1 = nn.BatchNorm1d(encoder_sizes[0])
         self.ce1 = nn.Conv1d(in_channels=encoder_sizes[0], out_channels=encoder_sizes[1],
                              kernel_size=kernel_sizes_encoder,

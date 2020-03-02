@@ -41,14 +41,12 @@ def tuner_run(config):
         print(
             f'Epoch {e}, Train Loss: {train_loss:.8f}, Test Loss: {test_loss:.8f}, Train accuracy {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
         if tuning:
-            track.log(mean_accuracy=test_recon_accuracy.clone().detach().to("cpu").item() * 100)
+            track.log(mean_accuracy=test_recon_accuracy * 100)
 
 
 def tuner(smoke_test: bool, config_):
     cpus = int(multiprocessing.cpu_count())
     gpus = torch.cuda.device_count()
-    if gpus > 1:
-        gpus = 1
 
     model_config = {
         "model_name": "convolutional_vae",
