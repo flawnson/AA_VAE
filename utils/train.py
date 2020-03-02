@@ -123,8 +123,8 @@ class Trainer:
 
             train_loss /= self.train_dataset_len
             test_loss /= self.test_dataset_len
-            print(f'Epoch {e}, Train Loss: {train_loss:.8f}, Test Loss: {test_loss:.8f}, Train accuracy ')
-            print(f'{train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
+            print(f'Epoch {e}, Train Loss: {train_loss:.8f}, Test Loss: {test_loss:.8f}, ')
+            print(f'Train accuracy: {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
 
             if train_recon_accuracy > 0.97 and test_recon_accuracy > 0.97:
                 break
