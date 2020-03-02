@@ -124,8 +124,10 @@ class Trainer:
                 patience_counter += 1
 
             print("Patience value at {}".format(patience_counter))
-            if patience_counter > 100:
+            if patience_counter > 500:
                 break
+            if e % 100 == 0:
+                self.save_snapshot()
 
         self.save_snapshot()
 
