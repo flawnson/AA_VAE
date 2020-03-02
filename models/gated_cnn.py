@@ -7,7 +7,6 @@ from models.vae_template import VaeTemplate
 def init_weights(m):
     if type(m) == nn.Conv2d or type(m) == nn.ConvTranspose2d:
         nn.init.xavier_uniform_(m.weight)
-        # m.bias.data.fill_(0.01)
 
 
 class GatedCNN(VaeTemplate, nn.Module):
@@ -22,7 +21,6 @@ class GatedCNN(VaeTemplate, nn.Module):
         out_chs = model_config["channels"]
         res_block_count = model_config["residual"]
         ans_size = hidden_size
-        # super(GatedCNN, self).__init__()
         self.out_chs = out_chs
         self.res_block_count = res_block_count
 

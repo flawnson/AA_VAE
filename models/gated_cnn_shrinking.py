@@ -88,9 +88,11 @@ class GatedCNNShrinking(VaeTemplate, nn.Module):
                 res_input = h
 
         h = h.view(bs, -1)
-        h = self.fc(h)
+        h = self.fc_e(h)
+        h = self.fc_h1(h)
         z, _, _ = self.bottleneck(h)
-        z = self.fc3(z)
+        z = self.fc_h2(z)
+        z = self.fc_d(z)
 
         res_input = self.fc_d(z)
         res_input = res_input.view(bs, self.out_chs, seq_len, -1)
