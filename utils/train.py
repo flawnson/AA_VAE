@@ -1,6 +1,16 @@
 import torch
 
 
+def loss_function(recon_x, mu, logvar):
+    # see Appendix B from VAE paper:
+    # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
+    # https://arxiv.org/abs/1312.6114
+    # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
+    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+
+    return recon_x + KLD
+
+
 class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, input_dim, device, optimizer,
                  train_dataset, test_dataset, n_epochs, loss_function_name="bce",
@@ -11,6 +21,10 @@ class Trainer:
             "bce": torch.nn.functional.cross_entropy,
             "nll": torch.nn.functional.nll_loss
         }
+
+        self.weights = [0.6428, 3.3950, 0.7450, 0.9234, 0.7459, 1.2758, 0.8553, 2.2021, 0.8400,
+                        2.1896, 0.5179, 1.1491, 1.2546, 1.0246, 0.6837, 0.9261, 0.9258, 4.5166,
+                        0.7591, 1.6835]
 
         self.model = model.to(device)
         self.data_length = data_length
@@ -46,9 +60,9 @@ class Trainer:
             self.optimizer.zero_grad()
 
         # forward pass
-        predicted = self.model(x)
+        predicted, mu, var = self.model(x)
 
-        recon_loss = self.criterion(predicted, x, ignore_index=22)
+        recon_loss = loss_function(self.criterion(predicted, x, weight=self.weights, ignore_index=22), mu, var)
 
         loss = recon_loss.item()
         # reconstruction accuracy
@@ -111,8 +125,8 @@ class Trainer:
 
             train_loss /= self.train_dataset_len
             test_loss /= self.test_dataset_len
-            print(
-                f'Epoch {e}, Train Loss: {train_loss:.8f}, Test Loss: {test_loss:.8f}, Train accuracy {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
+            print(f'Epoch {e}, Train Loss: {train_loss:.8f}, Test Loss: {test_loss:.8f}, Train accuracy ')
+            print(f'{train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
 
             if train_recon_accuracy > 0.97 and test_recon_accuracy > 0.97:
                 break

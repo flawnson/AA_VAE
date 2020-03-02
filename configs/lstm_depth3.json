@@ -1,0 +1,12 @@
+{
+  "model_name": "lstm_vae",
+  "batch_size": 1000,
+  "epochs": 500,
+  "layers": 10,
+  "bidirectional": "True",
+  "lr": 1e-2,
+  "weight_decay": 0.0,
+  "flatten" : "False",
+  "embed_depth": 3,
+  "compressed": 3
+}
