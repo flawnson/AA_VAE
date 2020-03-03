@@ -56,7 +56,7 @@ def one_to_number(res_str):
 
 
 def get_embedding_matrix():
-    return seq_to_one_hot(amino_acids, True)
+    return seq_to_one_hot(amino_acids, False)
 
 
 def to_categorical(y, num_classes):
@@ -136,8 +136,5 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
                 proteins.append(seq_to_one_hot(protein_sequence, add_chemical_features=add_chemical_features))
         else:
             continue
-#            raise Exception(f"Unknown character in sequence {protein_sequence}")
-        # if (i % 100000) == 99999:
-        #     print(f"{i} {len(proteins), proteins[i].shape[0]}")
         i = i + 1
     return torch.stack(proteins)
