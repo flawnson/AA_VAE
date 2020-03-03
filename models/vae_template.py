@@ -38,9 +38,9 @@ class VaeTemplate(nn.Module):
         if self.preprocess is not None:
             x = self.preprocess(x)
         h = self.encoder(x)
-        z, _, _ = self.bottleneck(h)
+        z, mu, var = self.bottleneck(h)
         z = self.fc3(z)
         val = self.decoder(z)
         if self.postprocess is not None:
             val = self.postprocess(val)
-        return val
+        return val, mu, var
