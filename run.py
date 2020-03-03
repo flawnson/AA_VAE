@@ -4,7 +4,8 @@ This code is a variation of simple VAE from https://graviraja.github.io/vanillav
 import argparse
 import json
 import os
-from utils.model_factory import create_model, load_data
+from utils.model_factory import create_model
+from utils.data import load_data
 from utils.train import Trainer
 
 if __name__ == "__main__":
@@ -28,7 +29,7 @@ if __name__ == "__main__":
         test_dataset_name = "test_mammalian.json"
     config["train_dataset_name"] = os.getcwd() + "/" + train_dataset_name
     config["test_dataset_name"] = os.getcwd() + "/" + test_dataset_name
-    train_dataset, test_dataset, train_iterator, test_iterator = load_data(config)
+    train_dataset, test_dataset, train_iterator, test_iterator, c, score = load_data(config)
 
     print(f"Creating the model")
     model, optimizer, device = create_model(config, model_config)
@@ -37,4 +38,4 @@ if __name__ == "__main__":
     # optimizer
     Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device, optimizer,
             len(train_dataset),
-            len(test_dataset), number_of_epochs, vocab_size=data_length).trainer()
+            len(test_dataset), number_of_epochs, vocab_size=data_length, weights=score).trainer()

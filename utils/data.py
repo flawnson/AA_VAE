@@ -1,8 +1,8 @@
-import pandas as pd
-import torch
-import json
-import os
 import collections
+import json
+
+from torch.utils.data import DataLoader
+import torch
 
 """
 Valid amino acids
@@ -15,6 +15,28 @@ VOCABULARY_SIZE = len(amino_acids)
 
 amino_acids_to_byte_map = {r: amino_acids.index(r) for r in amino_acids}
 amino_acids_set = {r for r in amino_acids}
+
+
+def load_data(_config, max_length=-1):
+    data_length = _config["protein_length"]
+    batch_size = _config["batch_size"]  # number of data points in each batch
+    train_dataset_name = _config["train_dataset_name"]
+    test_dataset_name = _config["test_dataset_name"]
+
+    print(f"Loading the sequence for train data: {train_dataset_name} and test data: {test_dataset_name}")
+    train_dataset, c, score = read_sequences(train_dataset_name,
+                                             fixed_protein_length=data_length, add_chemical_features=True,
+                                             sequence_only=True, pad_sequence=True, fill_itself=False,
+                                             max_length=max_length)
+    print(f"Loading the sequence for test data: {test_dataset_name}")
+    test_dataset, ct, scoret = read_sequences(test_dataset_name,
+                                              fixed_protein_length=data_length, add_chemical_features=True,
+                                              sequence_only=True, pad_sequence=True, fill_itself=False,
+                                              max_length=max_length)
+    print(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
+    _train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
+    _test_iterator = DataLoader(test_dataset, batch_size=batch_size)
+    return train_dataset, test_dataset, _train_iterator, _test_iterator, c, score
 
 
 def aa_features():
@@ -141,6 +163,7 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
             continue
         i = i + 1
     scores = {}
+    length = sum(c.values())
     for k in c.keys():
         if c[k] > 0 and amino_acids_to_byte_map[k] < 20:
             scores[amino_acids_to_byte_map[k]] = length / c[k]
