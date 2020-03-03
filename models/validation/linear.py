@@ -28,13 +28,13 @@ if __name__ == "__main__":
 
     data_config = json_config.get('data_config')
     if data_config['task'] == "binary":
-        dataset = BinaryLabels(json_data)
+        dataset = BinaryLabels(json_data, data_config.get("onehot"))
     elif data_config['task'] == "quaternary":
-        dataset = QuaternaryLabels(json_data)
+        dataset = QuaternaryLabels(json_data, data_config.get("onehot"))
     elif data_config['task'] == "quinary":
-        dataset = QuinaryLabels(json_data)
+        dataset = QuinaryLabels(json_data, data_config.get("onehot"))
     elif data_config['task'] == "protein":
-        dataset = ProteinLabels(json_data)
+        dataset = ProteinLabels(json_data, data_config.get("onehot"))
     else:
         raise NotImplementedError("Task described is not implemented")
 

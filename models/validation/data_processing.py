@@ -10,7 +10,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 class EmbeddingData(Dataset, metaclass=ABCMeta):
     @abstractmethod
-    def __init__(self, embedding_dict, onehot=False):
+    def __init__(self, embedding_dict, onehot):
         """
 
         :param embeddings: torch tensor of embeddings
@@ -19,6 +19,7 @@ class EmbeddingData(Dataset, metaclass=ABCMeta):
         self.onehot = onehot
         self.x = embedding_dict
         self.y = [item[1] for item in self.preprocessing()]
+        self.k = np.array([item[1] for item in self.preprocessing()]) != 0
 
     def label_mapper(self):
         return {}
@@ -27,8 +28,9 @@ class EmbeddingData(Dataset, metaclass=ABCMeta):
         onehot_encoder = OneHotEncoder(sparse=False)
         integer_encoded = np.asarray(list(label_dict.values())).reshape(len(list(label_dict.values())), 1)
         onehot_encoded = onehot_encoder.fit_transform(integer_encoded)
+        filter_label = dict(zip(list(label_dict.keys()), onehot_encoded))
 
-        return onehot_encoded
+        return filter_label
 
     def preprocessing(self) -> list:
         embed_dict: dict = dict(zip(self.x["gene"].values(), self.x["embeddings"].values()))
@@ -39,8 +41,7 @@ class EmbeddingData(Dataset, metaclass=ABCMeta):
         filter_label = {key: value for key, value in label_dict.items() if key in intersect}
 
         if self.onehot:
-            onehot_labels = self.onehot_encoder(filter_label)
-            filter_label = dict(zip(list(filter_label.keys()), onehot_labels))
+            filter_label = self.onehot_encoder(filter_label)
 
         pairs = [[filter_embed[gene], filter_label[gene]] for gene in intersect]
 
@@ -48,15 +49,15 @@ class EmbeddingData(Dataset, metaclass=ABCMeta):
 
     def __getitem__(self, idx):
         examples = self.preprocessing()
-        return examples[idx][0], examples[idx][1]
+        return examples[idx][0], examples[idx][1], self.k[idx]
 
     def __len__(self):
         return len(self.preprocessing())
 
 
 class BinaryLabels(EmbeddingData, ABC):
-    def __init__(self, embedding_dict):
-        super(BinaryLabels, self).__init__(embedding_dict=embedding_dict)
+    def __init__(self, embedding_dict, onehot):
+        super(BinaryLabels, self).__init__(embedding_dict=embedding_dict, onehot=onehot)
 
     def get_label(self, positive, negative):
         """
@@ -93,8 +94,8 @@ class BinaryLabels(EmbeddingData, ABC):
 
 
 class QuaternaryLabels(EmbeddingData, ABC):
-    def __init__(self, embedding_dict):
-        super(QuaternaryLabels, self).__init__(embedding_dict=embedding_dict)
+    def __init__(self, embedding_dict, onehot):
+        super(QuaternaryLabels, self).__init__(embedding_dict=embedding_dict, onehot=onehot)
 
     def get_label(self, query: str):
         mappings: dict = {
@@ -119,8 +120,8 @@ class QuaternaryLabels(EmbeddingData, ABC):
 
 
 class QuinaryLabels(EmbeddingData, ABC):
-    def __init__(self, embedding_dict):
-        super(QuinaryLabels, self).__init__(embedding_dict=embedding_dict)
+    def __init__(self, embedding_dict, onehot):
+        super(QuinaryLabels, self).__init__(embedding_dict=embedding_dict, onehot=onehot)
 
     def get_label(self, query: str):
         mappings: dict = {
@@ -147,8 +148,8 @@ class QuinaryLabels(EmbeddingData, ABC):
 
 
 class ProteinLabels(EmbeddingData, ABC):
-    def __init__(self, embedding_dict):
-        super(ProteinLabels, self).__init__(embedding_dict=embedding_dict)
+    def __init__(self, embedding_dict, onehot):
+        super(ProteinLabels, self).__init__(embedding_dict=embedding_dict, onehot=onehot)
 
     def data_file(self):
         node_labels = pd.read_csv(osp.join(osp.dirname(__file__), "raw_data", "protein_labels.csv"), header=0)
