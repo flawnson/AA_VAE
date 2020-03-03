@@ -39,8 +39,8 @@ class ConvolutionalVAE(nn.Module):
         out_dim = data_length
         for a in range(len(encoder_sizes)-1):
             out_dim = out_size_conv(out_dim, padding_sizes_encoder, 1, kernel_sizes_encoder, stride_sizes_encoder)
-        self.bne1 = nn.BatchNorm1d(encoder_sizes[0])
-        self.ce1 = nn.Conv1d(in_channels=encoder_sizes[0], out_channels=encoder_sizes[1],
+        self.bne1 = nn.BatchNorm1d(embeddings_static.shape[0])
+        self.ce1 = nn.Conv1d(in_channels=embeddings_static.shape[0], out_channels=encoder_sizes[1],
                              kernel_size=kernel_sizes_encoder,
                              stride=stride_sizes_encoder,
                              padding=padding_sizes_encoder, groups=1)
@@ -94,7 +94,7 @@ class ConvolutionalVAE(nn.Module):
         self.rd4 = nn.ReLU()
         self.cd4.apply(init_weights)
 
-        embedding = nn.Embedding(23, encoder_sizes[0], max_norm=1)
+        embedding = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1], max_norm=1)
         embedding.weight.data.copy_(embeddings_static)
         embedding.weight.requires_grad = False
         self.embedding = embedding
@@ -129,11 +129,11 @@ class ConvolutionalVAE(nn.Module):
         h = self.re3(self.ce3((self.bne3(h))))
         h = self.re4(self.ce4((self.bne4(h))))
         h = self.le2(self.le1(h))
-        z, _, _ = self.bottleneck(h)
+        z, mu, var = self.bottleneck(h)
         z = self.fc3(z)
         x = self.rd1(self.cd1(z))
         x = self.rd2(self.cd2((self.bnd1(x))))
         x = self.rd3(self.cd3((self.bnd2(x))))
         x = self.rd4(self.cd4((self.bnd3(x))))
         x = self.fc4(x)
-        return x
+        return x, mu, var

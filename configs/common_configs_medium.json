@@ -1,0 +1,10 @@
+{
+  "dataset": "medium",
+  "protein_length": 200,
+  "class": "bacteria",
+  "batch_size": 1000,
+  "epochs": 5000,
+  "feature_length": 30,
+  "hidden_size": 200,
+  "embedding_size": 120
+}

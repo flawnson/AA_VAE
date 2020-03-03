@@ -1,6 +1,16 @@
 import torch
 
 
+def loss_function(recon_x, mu, logvar):
+    # see Appendix B from VAE paper:
+    # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
+    # https://arxiv.org/abs/1312.6114
+    # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
+    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+
+    return recon_x + KLD
+
+
 class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, input_dim, device, optimizer,
                  train_dataset, test_dataset, n_epochs, loss_function_name="bce",
@@ -11,6 +21,8 @@ class Trainer:
             "bce": torch.nn.functional.cross_entropy,
             "nll": torch.nn.functional.nll_loss
         }
+
+
 
         self.model = model.to(device)
         self.data_length = data_length
@@ -46,9 +58,9 @@ class Trainer:
             self.optimizer.zero_grad()
 
         # forward pass
-        predicted = self.model(x)
+        predicted, mu, var = self.model(x)
 
-        recon_loss = self.criterion(predicted, x, ignore_index=22)
+        recon_loss = loss_function(self.criterion(predicted, x, ignore_index=22), mu, var)
 
         loss = recon_loss.item()
         # reconstruction accuracy
@@ -111,8 +123,8 @@ class Trainer:
 
             train_loss /= self.train_dataset_len
             test_loss /= self.test_dataset_len
-            print(
-                f'Epoch {e}, Train Loss: {train_loss:.8f}, Test Loss: {test_loss:.8f}, Train accuracy {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
+            print(f'Epoch {e}, Train Loss: {train_loss:.8f}, Test Loss: {test_loss:.8f}, ')
+            print(f'Train accuracy: {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
 
             if train_recon_accuracy > 0.97 and test_recon_accuracy > 0.97:
                 break

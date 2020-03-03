@@ -91,6 +91,7 @@ def valid_protein(protein_sequence):
     """
     for aa in protein_sequence:
         if aa not in amino_acids_set:
+            print(aa)
             return False
     return True
 
@@ -134,7 +135,8 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
             else:
                 proteins.append(seq_to_one_hot(protein_sequence, add_chemical_features=add_chemical_features))
         else:
-            raise Exception(f"Unknown character in sequence {protein_sequence}")
+            continue
+#            raise Exception(f"Unknown character in sequence {protein_sequence}")
         # if (i % 100000) == 99999:
         #     print(f"{i} {len(proteins), proteins[i].shape[0]}")
         i = i + 1

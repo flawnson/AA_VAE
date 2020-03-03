@@ -21,7 +21,7 @@ class Convolutional_Linear_VAE(nn.Module):
         super(Convolutional_Linear_VAE, self).__init__()
         sizes: list = model_config["encoder_sizes"]
         encoder = nn.Sequential(
-            nn.Conv1d(in_channels=sizes[0], out_channels=sizes[1], kernel_size=5, stride=1, padding=2, groups=1),
+            nn.Conv1d(in_channels=embeddings_static.shape[1], out_channels=sizes[1], kernel_size=5, stride=1, padding=2, groups=1),
             nn.ReLU(),
             nn.Conv1d(in_channels=sizes[1], out_channels=sizes[2], kernel_size=5, stride=1, padding=2, groups=1),
             nn.ReLU(),
@@ -49,9 +49,8 @@ class Convolutional_Linear_VAE(nn.Module):
             nn.ConvTranspose1d(sizes[1], out_dim, kernel_size=5, stride=1, padding=2)
         )
         decoder.apply(init_weights)
-        embedding = nn.Embedding(23, sizes[0])
+        embedding = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
         embedding.weight.data.copy_(embeddings_static)
-        embedding.weight.requires_grad = False
         self.embedding = embedding
         self.encoder: nn.Module = encoder
         self.fc1: nn.Module = nn.Linear(linear_config[1], z_dim)
