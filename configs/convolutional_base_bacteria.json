@@ -1,0 +1,6 @@
+{
+  "model_name": "convolutional_basic",
+  "kernel_size_scale": 21,
+  "layers": 4,
+  "scale": 2
+}

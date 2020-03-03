@@ -1,7 +1,7 @@
 import torch
 
 
-def loss_function(recon_x, mu, logvar):
+def total_loss_function(recon_x, mu, logvar):
     # see Appendix B from VAE paper:
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
     # https://arxiv.org/abs/1312.6114
@@ -17,12 +17,10 @@ class Trainer:
                  vocab_size=23,
                  patience_count=1000):
 
-        loss_function = {
+        loss_functions = {
             "bce": torch.nn.functional.cross_entropy,
             "nll": torch.nn.functional.nll_loss
         }
-
-
 
         self.model = model.to(device)
         self.data_length = data_length
@@ -37,7 +35,7 @@ class Trainer:
         self.n_epochs = n_epochs
         self.vocab_size = vocab_size
         self.patience_count = patience_count
-        self.criterion = loss_function[loss_function_name]
+        self.criterion = loss_functions[loss_function_name]
 
     def reconstruction_accuracy(self, predicted, actual):
         """ Computes average sequence identity between input and output sequences
@@ -60,7 +58,7 @@ class Trainer:
         # forward pass
         predicted, mu, var = self.model(x)
 
-        recon_loss = loss_function(self.criterion(predicted, x, ignore_index=22), mu, var)
+        recon_loss = total_loss_function(self.criterion(predicted, x, ignore_index=22), mu, var)
 
         loss = recon_loss.item()
         # reconstruction accuracy
@@ -124,7 +122,8 @@ class Trainer:
             train_loss /= self.train_dataset_len
             test_loss /= self.test_dataset_len
             print(f'Epoch {e}, Train Loss: {train_loss:.8f}, Test Loss: {test_loss:.8f}, ')
-            print(f'Train accuracy: {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
+            print(
+                f'Train accuracy: {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
 
             if train_recon_accuracy > 0.97 and test_recon_accuracy > 0.97:
                 break

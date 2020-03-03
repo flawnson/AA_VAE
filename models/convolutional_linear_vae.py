@@ -1,23 +1,6 @@
-import torch
 import torch.nn as nn
 
-from models.vae_template import VaeTemplate
-
-
-def reparameterization(mu, log_var: torch.Tensor, device):
-    std = log_var.mul(0.5).exp_()
-    std = std.to(device)
-    esp = torch.randn(*mu.size()).to(device)
-    z = mu + std * esp
-    return z
-
-
-def out_size_conv(current_layer, padding, dilation, kernel_size, stride):
-    return ((current_layer + 2 * padding - dilation * (kernel_size - 1) - 1) / stride) + 1
-
-
-def out_size_transpose(current_layer, padding, dilation, kernel_size, stride):
-    return (current_layer - 1) * stride - 2 * padding + dilation * (kernel_size - 1) + padding + 1
+from utils.model_common import *
 
 
 class ConvolutionalBlock(nn.Module):
@@ -35,6 +18,7 @@ class ConvolutionalBlock(nn.Module):
 class ConvolutionalTransposeBlock(nn.Module):
     def __init__(self, in_c, out_c, kernel_size):
         super().__init__()
+
         self.conv_block = nn.Sequential(
             nn.BatchNorm1d(out_c),
             nn.ELU(),
@@ -46,20 +30,24 @@ class ConvolutionalTransposeBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, layers, kernel_size, h_dim, input_size, input_channels: int, scale_factor):
+    def __init__(self, layers, kernel_size, input_size, input_channels: int, scale_factor):
         super(Encoder).__init__()
+
         self.conv_layers = nn.ModuleList()
+
         output_channels = 2 ** ((input_channels - 1).bit_length())
         out_size = input_size
+
         for n in range(layers):
             block = ConvolutionalBlock(input_channels, output_channels, kernel_size)
             self.conv_layers.append(block)
+
             input_channels = output_channels
-            output_channels = output_channels * scale_factor
+            output_channels = int(output_channels * scale_factor)
             out_size = out_size_conv(out_size, 0, 1, kernel_size, 1)
+
         self.out_size = out_size
         self.out_channels = output_channels
-        self.linear_layer = nn.Linear(out_size * output_channels, h_dim)
 
     def forward(self, x):
         x = self.conv_layers(x)
@@ -68,52 +56,68 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, layers, kernel_size, output_expected, input_size, input_channels: int, output_channels_expected, scale_factor):
+    def __init__(self, layers, kernel_size, output_expected, input_size, input_channels: int, output_channels_expected,
+                 scale_factor):
         super(Decoder).__init__()
         self.conv_layers = nn.ModuleList()
+
         output_channels = 2 ** ((input_channels - 1).bit_length())
         out_size = input_size
+
         for n in range(layers - 1):
             block = ConvolutionalTransposeBlock(input_channels, output_channels, kernel_size)
             self.conv_layers.append(block)
+
             input_channels = output_channels
-            output_channels = output_channels / scale_factor
+            output_channels = int(output_channels / scale_factor)
             out_size = out_size_transpose(out_size, 0, 1, kernel_size, 1)
+
         block = ConvolutionalTransposeBlock(input_channels, output_channels_expected, kernel_size)
         out_size = out_size_transpose(out_size, 0, 1, kernel_size, 1)
         self.conv_layers.append(block)
+
         self.out_size = out_size
-        self.out_channels = output_channels
-        self.linear_layer = nn.Linear(out_size * output_channels_expected, output_expected)
+        assert out_size == output_expected
 
     def forward(self, x):
         x = self.conv_layers(x)
         return self.linear_layer(x)
 
 
-class ConvolutionalVAE(VaeTemplate, nn.Module):
-    def __init__(self, model_config, h_dim, z_dim, out_dim, device, embeddings_static):
-        sizes: list = model_config["sizes"]
-        input_size = model_config["input_size"]
+class ConvolutionalBaseVAE(nn.Module):
+    def __init__(self, model_config, h_dim, z_dim, input_size, device, embeddings_static):
+        super(ConvolutionalBaseVAE, self).__init__()
+        self.name = "convolutional_basic"
         kernel_size = model_config["kernel_size"]
-        encoder = Encoder(4, kernel_size, h_dim, input_size, embeddings_static.shape[1], 2)
+        layers = model_config["layers"]
+        scale = model_config["scale"]
 
-        decoder = Decoder(4, kernel_size, input_size, z_dim, out_dim, )
+        self.device = device
+        self.encoder = Encoder(layers, kernel_size, input_size, embeddings_static.shape[1], scale)
+        h_dim = self.encoder.out_size * self.encoder.out_channels
+        self.decoder = Decoder(layers, kernel_size, input_size, h_dim, 1, embeddings_static.shape[0], scale)
 
-        super(ConvolutionalVAE, self).__init__(encoder, decoder, device, h_dim, z_dim)
-
+        self.fc1: nn.Module = nn.Linear(h_dim, z_dim)
+        self.fc2: nn.Module = nn.Linear(h_dim, z_dim)
+        self.fc3: nn.Module = nn.Linear(z_dim, h_dim)
         embedding = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
         embedding.weight.data.copy_(embeddings_static)
-        self.embedding = embedding
-        self.deembed = nn.Linear(sizes[0], sizes[0])
 
+        self.embedding = embedding
         self.smax = nn.Sigmoid()
+
+    def bottleneck(self, h):
+        mu = self.fc1(h)
+        log_var = self.fc2(h)
+        z = reparameterization(mu, log_var, self.device)
+        return z, mu, log_var
+
+    def representation(self, x):
+        return self.bottleneck(self.encoder(x))[0]
 
     def forward(self, x):
         h = self.encoder(self.embedding(x).transpose(1, 2))
         z, mu, log_var = self.bottleneck(h)
         z = self.fc3(z)
         val = self.smax((self.decoder(z).transpose(1, 2)))
-        if self.postprocess is not None:
-            val = self.postprocess(val)
         return val.transpose(1, 2), mu, log_var
