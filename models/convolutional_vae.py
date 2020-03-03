@@ -129,11 +129,11 @@ class ConvolutionalVAE(nn.Module):
         h = self.re3(self.ce3((self.bne3(h))))
         h = self.re4(self.ce4((self.bne4(h))))
         h = self.le2(self.le1(h))
-        z, _, _ = self.bottleneck(h)
+        z, mu, var = self.bottleneck(h)
         z = self.fc3(z)
         x = self.rd1(self.cd1(z))
         x = self.rd2(self.cd2((self.bnd1(x))))
         x = self.rd3(self.cd3((self.bnd2(x))))
         x = self.rd4(self.cd4((self.bnd3(x))))
         x = self.fc4(x)
-        return x
+        return x, mu, var

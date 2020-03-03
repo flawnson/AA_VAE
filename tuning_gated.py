@@ -28,7 +28,6 @@ def tuner_run(config):
                     len(train_dataset),
                     len(test_dataset), 0, vocab_size=data_length)
     train_dataset_len = train_dataset.shape[0]
-    test_dataset_len = test_dataset.shape[0]
     epochs = config["epochs"]
     for e in range(epochs):
         train_loss, train_recon_accuracy = train.train()
@@ -97,10 +96,14 @@ if __name__ == "__main__":
                    'feature_length': 30, 'added_length': 0, 'hidden_size': 50, 'embedding_size': 20,
                    'train_dataset_name': '/home/jyothish/PycharmProjects/simple-vae/data/train_set_small_50.json',
                    'test_dataset_name': '/home/jyothish/PycharmProjects/simple-vae/data/test_set_small_50.json',
-                   'model_name': 'convolutional_vae', 'encoder_sizes': [30, 16, 8, 4, 1],
-                   'decoder_sizes': [23, 16, 8, 4, 1], 'kernel_sizes_encoder': 5, 'stride_sizes_encoder': 2,
-                   'kernel_sizes_decoder': 5, 'stride_sizes_decoder': 2, 'lr': 0.00939812052381224,
-                   'weight_decay': 0.004428770037319564,
+                   "model_name": "gated_cnn",
+                   "layers": 5,
+                   "kernel_size_0": 11,
+                   "kernel_size_1": 30,
+                   "channels": 6,
+                   "residual": 2,
+                   "lr": 0.00020297,
+                   "weight_decay": 0.0,
                    "tuning": False}
         tuner_run(config_)
     else:
