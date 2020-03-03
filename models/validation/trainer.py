@@ -6,6 +6,7 @@ from torch.nn import functional as f
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from sklearn.metrics import accuracy_score, roc_auc_score
 
+
 class TrainLinear:
     def __init__(self, train_config, data_donfig, dataset, model, device):
 
@@ -18,17 +19,16 @@ class TrainLinear:
         self.optimizer = torch.optim.Adam(params=self.model.parameters(),
                                           lr=self.train_config.get('lr'),
                                           weight_decay=self.train_config.get('wd'))
+        self.imb_wc = torch.bincount(torch.tensor(self.dataset.y)) / torch.tensor(self.dataset.y).shape[0]
+        self.weights = (1 / self.imb_wc) / (sum(1 / self.imb_wc))
 
     def train(self, batch, labels):
         self.model.train()
+        torch.set_grad_enabled(True)
         self.optimizer.zero_grad()
         logits = self.model(batch)
 
-        # imb_wc = torch.bincount(self.targets, minlength=int(self.targets.max())).float().clamp(
-        #     min=1e-10, max=1e10) / self.targets.shape[0]
-        # weights = (1 / imb_wc) / (sum(1 / imb_wc))
-
-        loss = f.cross_entropy(logits, labels)  # weight=weights)
+        loss = f.cross_entropy(logits, labels, weight=self.weights.float())
         loss.backward()
         self.optimizer.step()
         print(f"Loss: {loss}")
@@ -40,6 +40,7 @@ class TrainLinear:
         pred = logits.max(1)[1]
 
         accuracy = accuracy_score(pred.cpu(), labels.cpu())
+        auroc = roc_auc_score(labels.cpu(), logits)
         print(f"Accuracy: {accuracy}")
 
         return None
@@ -64,13 +65,9 @@ class TrainLinear:
 
         for epoch in range(self.train_config.get('epochs') + 1):
             # FIXME: Iteration occurs over batches, not epochs, restructuring needed
-            start = datetime.datetime.now()
 
-            for train_batch, train_labels in train_data:
+            for (train_batch, train_labels), (test_batch, test_labels) in zip(train_data, test_data):
                 train_output = self.train(train_batch.float().to(self.device), train_labels.to(self.device))
-                print(f'{datetime.datetime.now() - start} since epoch-{epoch}')
-
-            for test_batch, test_labels in test_data:
                 test_output = self.test(test_batch.float().to(self.device), test_labels)
 
         return [None]  # [train_output, test_output]

@@ -1,3 +1,4 @@
+import torch
 import numpy as np
 import pandas as pd
 import os.path as osp
@@ -15,8 +16,9 @@ class EmbeddingData(Dataset, metaclass=ABCMeta):
         :param embeddings: torch tensor of embeddings
         :param targets: torch tensor of corresponding targets
         """
-        self.x = embedding_dict
         self.onehot = onehot
+        self.x = embedding_dict
+        self.y = [item[1] for item in self.preprocessing()]
 
     def label_mapper(self):
         return {}

@@ -1,18 +1,18 @@
 {
   "data_config": {
-    "task": "quinary",
-    "batch_size": 50,
+    "task": "binary",
+    "batch_size": 16,
     "test_ratio": 0.3
   },
   "model_config": {
     "in_size": 300,
-    "out_size": 5,
-    "layer_sizes": [128, 64, 32],
+    "out_size": 3,
+    "layer_sizes": [256, 128, 64, 32],
     "dropout": 0.25
   },
   "train_config": {
     "epochs": 10,
-    "lr": 0.01,
+    "lr": 0.001,
     "wd": 5e-5,
     "auroc_average": "macro",
     "auroc_multi_class": "ovr"
