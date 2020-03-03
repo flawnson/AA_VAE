@@ -6,8 +6,8 @@ def total_loss_function(recon_x, mu, logvar):
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
     # https://arxiv.org/abs/1312.6114
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    # KLD =0
+    # KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    KLD =0
     return recon_x + KLD
 
 
@@ -15,7 +15,7 @@ class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, input_dim, device, optimizer,
                  train_dataset, test_dataset, n_epochs, loss_function_name="bce",
                  vocab_size=23,
-                 patience_count=1000):
+                 patience_count=1000, weights =None):
 
         loss_functions = {
             "bce": torch.nn.functional.cross_entropy,

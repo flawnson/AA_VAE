@@ -2,6 +2,7 @@ import pandas as pd
 import torch
 import json
 import os
+import collections
 
 """
 Valid amino acids
@@ -101,6 +102,7 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
     """ Reads and converts valid protein sequences"
     """
     proteins = []
+    c = collections.Counter()
     sequences = []
     with open(file) as json_file:
         data = json.load(json_file)
@@ -118,6 +120,7 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
 
         if valid_protein(protein_sequence):
             protein_sequence = protein_sequence[:fixed_protein_length]
+            c.update(protein_sequence)
             # pad sequence
             if pad_sequence:
                 if len(protein_sequence) < fixed_protein_length:
@@ -137,4 +140,11 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
         else:
             continue
         i = i + 1
-    return torch.stack(proteins)
+    scores = {}
+    for k in c.keys():
+        if c[k] > 0 and amino_acids_to_byte_map[k] < 20:
+            scores[amino_acids_to_byte_map[k]] = length / c[k]
+        else:
+            scores[k] = 0
+
+    return torch.stack(proteins), c, scores
