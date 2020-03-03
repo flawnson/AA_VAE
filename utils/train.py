@@ -1,14 +1,14 @@
 import torch
 
 
-def total_loss_function(recon_x, mu, logvar):
+def total_loss_function(recon_x, mu, logvar, scale: float):
     # see Appendix B from VAE paper:
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
     # https://arxiv.org/abs/1312.6114
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-    # KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    KLD = 0
-    return recon_x + KLD
+    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    scale = scale % 1
+    return recon_x + (KLD * scale)
 
 
 class Trainer:
@@ -16,10 +16,10 @@ class Trainer:
                  train_dataset, test_dataset, n_epochs, loss_function_name="bce",
                  vocab_size=23,
                  patience_count=1000, weights=None):
-        self.weights = torch.FloatTensor(weights)
+        self.weights = torch.FloatTensor(weights).to(device)
 
         loss_functions = {
-            "bce": torch.nn.functional.cross_entropy,
+            "bce": self.cross_entropy_wrapper,
             "nll": torch.nn.functional.nll_loss
         }
 
@@ -39,7 +39,8 @@ class Trainer:
         self.criterion = loss_functions[loss_function_name]
 
     def cross_entropy_wrapper(self, predicted, actual):
-        return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22, weight=self.weights)
+        return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22, weight=self.weights,
+                                                 reduction="none").sum()
 
     def reconstruction_accuracy(self, predicted, actual):
         """ Computes average sequence identity between input and output sequences
@@ -62,7 +63,7 @@ class Trainer:
         # forward pass
         predicted, mu, var = self.model(x)
 
-        recon_loss = total_loss_function(self.criterion(predicted, x, ignore_index=22), mu, var)
+        recon_loss = total_loss_function(self.criterion(predicted, x), mu, var, float(i) / 1000)
 
         loss = recon_loss.item()
         # reconstruction accuracy

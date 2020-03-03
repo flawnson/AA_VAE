@@ -162,12 +162,12 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
         else:
             continue
         i = i + 1
-    scores = {}
+    scores = []
     length = sum(c.values())
-    for k in c.keys():
+    for k in amino_acids:
         if c[k] > 0 and amino_acids_to_byte_map[k] < 20:
-            scores[amino_acids_to_byte_map[k]] = length / c[k]
+            scores.append(length / c[k])
         else:
-            scores[k] = 0
+            scores.append(0)
 
     return torch.stack(proteins), c, scores
