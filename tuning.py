@@ -169,4 +169,4 @@ if __name__ == "__main__":
 
         tuner_run(config_)
     else:
-        tuner(True, args.model)
+        tuner(False, args.model)
