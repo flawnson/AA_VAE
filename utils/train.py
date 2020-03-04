@@ -17,7 +17,6 @@ class Trainer:
                  train_dataset, test_dataset, n_epochs, loss_function_name="bce",
                  vocab_size=23,
                  patience_count=1000, weights=None):
-        self.weights = torch.FloatTensor(weights).to(device)
 
         loss_functions = {
             "bce": self.cross_entropy_wrapper,
@@ -38,10 +37,11 @@ class Trainer:
         self.vocab_size = vocab_size
         self.patience_count = patience_count
         self.criterion = loss_functions[loss_function_name]
+        self.weights = torch.FloatTensor(weights).to(device) / self.data_length
 
     def cross_entropy_wrapper(self, predicted, actual):
         return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22, reduction="mean",
-                                                 weight=self.weights / self.data_length)
+                                                 weight=self.weights)
         # )
 
     def reconstruction_accuracy(self, predicted, actual):
