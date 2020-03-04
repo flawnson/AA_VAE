@@ -34,7 +34,6 @@ model_tuning_configs = {
         "model_name": "gated_cnn",
         "layers": {"grid_search": [4, 6, 8, 16]},
         "kernel_size_0": {"grid_search": [7, 9, 11, 17]},
-        "kernel_size_1": 30,
         "channels": {"grid_search": [4, 6, 8]},
         "residual": {"grid_search": [2, 4]},
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
@@ -79,7 +78,7 @@ def tuner_run(config):
     train_dataset_len = train_dataset.shape[0]
     epochs = config["epochs"]
     for e in range(epochs):
-        train_loss, train_recon_accuracy = train.train()
+        train_loss, train_recon_accuracy = train.train(e)
 
         train_loss /= train_dataset_len
         print(f'Epoch {e}, Train Loss: {train_loss:.8f} Train accuracy {train_recon_accuracy * 100.0:.2f}%')

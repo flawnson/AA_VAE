@@ -39,6 +39,13 @@ def load_data(_config, max_length=-1):
     return train_dataset, test_dataset, _train_iterator, _test_iterator, c, score
 
 
+def get_shuffled_sample(data: torch.Tensor, n_samples):
+    if n_samples > data.shape[0]:
+        n_samples = data.shape[0]
+    ids = torch.randperm(data.shape[0])[:n_samples]
+    return data[ids]
+
+
 def load_from_saved_tensor(filename):
     return torch.load(filename)
 
@@ -87,7 +94,7 @@ def one_to_number(res_str):
 
 
 def get_embedding_matrix():
-    return seq_to_one_hot(amino_acids, False)
+    return seq_to_one_hot(amino_acids, True)
 
 
 def to_categorical(y, num_classes):
@@ -173,8 +180,12 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
     scores = []
     length = sum(c.values())
     for k in amino_acids:
-        if c[k] > 0 and amino_acids_to_byte_map[k] <= 20:
-            scores.append(length / c[k])
+        if (c[k]/length > 0.01) and amino_acids_to_byte_map[k] <= 20:
+            rarity = length/c[k]
+            rarity = rarity / 100
+            if rarity > 100:
+                rarity = 50
+            scores.append(rarity)
         else:
             scores.append(0)
 

@@ -17,7 +17,7 @@ class GatedCNN(VaeTemplate, nn.Module):
         vocab_size = embeddings_static.shape[0]
         embd_size = embeddings_static.shape[1]
         n_layers = model_config["layers"]
-        kernel = [model_config["kernel_size_0"], model_config["kernel_size_1"]]
+        kernel = [model_config["kernel_size_0"], embeddings_static.shape[1]]
         out_chs = model_config["channels"]
         res_block_count = model_config["residual"]
         ans_size = hidden_size
