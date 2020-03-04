@@ -19,7 +19,12 @@ class TrainLinear:
         self.optimizer = torch.optim.Adam(params=self.model.parameters(),
                                           lr=self.train_config.get('lr'),
                                           weight_decay=self.train_config.get('wd'))
-        self.imb_wc = torch.bincount(torch.tensor(self.dataset.y)).clamp(min=1e-10, max=1e10) / float(torch.tensor(self.dataset.y).shape[0])
+        if data_config.get("onehot"):
+            self.imb_wc = torch.bincount(torch.argmax(torch.tensor(self.dataset.y), dim=1)).clamp(min=1e-10, max=1e10) \
+                          / float(torch.tensor(self.dataset.y).shape[0])
+        else:
+            self.imb_wc = torch.bincount(torch.tensor(self.dataset.y)).clamp(min=1e-10, max=1e10) / float(
+                torch.tensor(self.dataset.y).shape[0])
         self.weights = (1 / self.imb_wc) / (sum(1 / self.imb_wc))
 
     def train(self, batch, labels, mask):
@@ -63,10 +68,12 @@ class TrainLinear:
 
         train_data = DataLoader(dataset=self.dataset,
                                 batch_size=self.batch_size,
-                                sampler=train_sampler)
+                                sampler=train_sampler,
+                                pin_memory=True)
         test_data = DataLoader(dataset=self.dataset,
                                batch_size=self.batch_size,
-                               sampler=test_sampler)
+                               sampler=test_sampler,
+                               pin_memory=True)
 
         for epoch in range(self.train_config.get('epochs') + 1):
             # FIXME: Iteration occurs over batches, not epochs, restructuring needed

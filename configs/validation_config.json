@@ -1,13 +1,13 @@
 {
   "data_config": {
-    "task": "quinary",
+    "task": "quaternary",
     "onehot": true,
     "batch_size": 16,
     "test_ratio": 0.3
   },
   "model_config": {
     "in_size": 300,
-    "out_size": 5,
+    "out_size": 4,
     "layer_sizes": [256, 128, 64, 32],
     "dropout": 0.25
   },
