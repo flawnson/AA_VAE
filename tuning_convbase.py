@@ -57,7 +57,7 @@ def tuner(smoke_test: bool, config_):
     model_config = {
         "model_name": "convolutional_basic",
         "kernel_size": {"grid_search": [11, 21, 31]},
-        "scale": {"grid_search": [2, 3]},
+        "scale": {"grid_search": [1, 2]},
         "layers": {"grid_search": [4, 6, 8, 16]},
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
         "weight_decay": tune.uniform(0, 0.9)

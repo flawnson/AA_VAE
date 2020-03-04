@@ -19,8 +19,8 @@ from utils.train import Trainer
 model_tuning_configs = {
     "convolutionalBasic": {
         "model_name": "convolutional_basic",
-        "kernel_size": {"grid_search": [11, 21, 31]},
-        "scale": {"grid_search": [2, 3]},
+        "kernel_size": {"grid_search": [11, 21, 31, 51, 101]},
+        "scale": {"grid_search": [1, 2]},
         "layers": {"grid_search": [4, 6, 8, 16]},
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
         "weight_decay": tune.uniform(0, 0.9)
