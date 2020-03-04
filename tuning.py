@@ -129,7 +129,7 @@ def tuner(smoke_test: bool, model):
         name="exp",
         scheduler=sched,
         stop={
-            "training_iteration": 5 if smoke_test else 50
+            "training_iteration": 5 if smoke_test else 20
         },
         resources_per_trial={
             "cpu": cpus,
