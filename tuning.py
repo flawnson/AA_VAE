@@ -100,7 +100,7 @@ def tuner(smoke_test: bool, model):
     else:
         train_dataset_name = "data/train_set_large_1500_mammalian.json"
 
-    max_dataset_length = 10000
+    max_dataset_length = 100000
 
     train_dataset, c, score = data.read_sequences(train_dataset_name,
                                                   fixed_protein_length=data_length, add_chemical_features=True,
@@ -129,7 +129,7 @@ def tuner(smoke_test: bool, model):
         name="exp",
         scheduler=sched,
         stop={
-            "training_iteration": 5 if smoke_test else 100
+            "training_iteration": 5 if smoke_test else 50
         },
         resources_per_trial={
             "cpu": cpus,
