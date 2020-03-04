@@ -148,7 +148,7 @@ if __name__ == "__main__":
                         type=str)
     parser.add_argument("-d", "--debug", help="Debugging or full scale", type=str)
     args = parser.parse_args()
-    debug = True
+    debug = False
     if debug:
         ray.init()
         train_dataset = data.load_from_saved_tensor(
