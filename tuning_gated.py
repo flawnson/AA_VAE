@@ -11,7 +11,7 @@ from ray.tune import track
 from ray.tune.schedulers import AsyncHyperBandScheduler
 
 from utils.model_factory import create_model
-from utils.model_factory import load_data
+from utils.data import load_data
 from utils.train import Trainer
 
 

@@ -1,20 +1,17 @@
 import argparse
 import json
 import multiprocessing
+import os
+import os.path as osp
 
-import numpy as np
 import torch
 from ray import tune
 from ray.tune import track
 from ray.tune.schedulers import AsyncHyperBandScheduler
 
+from utils.data import load_data
 from utils.model_factory import create_model
-from utils.model_factory import load_data
 from utils.train import Trainer
-
-import tensorflow as tf  # Needed to prevent get_global_worker attribute error
-import os
-import os.path as osp
 
 
 def tuner_run(config__):
@@ -25,7 +22,8 @@ def tuner_run(config__):
     max_dataset_length = 20000
     data_length = config__["protein_length"]
     train_dataset, test_dataset, train_iterator, test_iterator = load_data(config__, max_dataset_length)
-    train = Trainer(model, config__["protein_length"], train_iterator, test_iterator, config__["feature_length"], device,
+    train = Trainer(model, config__["protein_length"], train_iterator, test_iterator, config__["feature_length"],
+                    device,
                     optimizer,
                     len(train_dataset),
                     len(test_dataset), 0, vocab_size=data_length)
@@ -47,7 +45,6 @@ def tuner_run(config__):
 def tuner(smoke_test: bool, config_):
     cpus = int(multiprocessing.cpu_count())
     gpus = torch.cuda.device_count()
-
 
     model_config = {
         "model_name": "convolutional_vae",

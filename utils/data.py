@@ -1,8 +1,8 @@
 import collections
 import json
 
-from torch.utils.data import DataLoader
 import torch
+from torch.utils.data import DataLoader
 
 """
 Valid amino acids
@@ -37,6 +37,14 @@ def load_data(_config, max_length=-1):
     _train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, batch_size=batch_size)
     return train_dataset, test_dataset, _train_iterator, _test_iterator, c, score
+
+
+def load_from_saved_tensor(filename):
+    return torch.load(filename)
+
+
+def save_tensor_to_file(filename, tensor):
+    return torch.save(tensor, filename)
 
 
 def aa_features():
@@ -170,4 +178,4 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
         else:
             scores.append(0)
 
-    return torch.stack(proteins), c, scores
+    return torch.stack(proteins), c, torch.FloatTensor(scores)
