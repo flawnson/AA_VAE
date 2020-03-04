@@ -6,7 +6,7 @@ def total_loss_function(recon_x, mu, logvar, scale: float):
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
     # https://arxiv.org/abs/1312.6114
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-    KLD:torch.Tensor = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    KLD: torch.Tensor = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     scaled_kld = KLD * scale
     # scaled_kld = 0
     return recon_x + scaled_kld
@@ -40,8 +40,9 @@ class Trainer:
         self.criterion = loss_functions[loss_function_name]
 
     def cross_entropy_wrapper(self, predicted, actual):
-        return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22, reduction="sum") # , weight=self.weights)
-                                                #)
+        return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22, reduction="mean",
+                                                 weight=self.weights / self.data_length)
+        # )
 
     def reconstruction_accuracy(self, predicted, actual):
         """ Computes average sequence identity between input and output sequences

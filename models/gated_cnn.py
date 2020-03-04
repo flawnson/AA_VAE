@@ -29,20 +29,19 @@ class GatedCNN(VaeTemplate, nn.Module):
         padding = int((kernel[0] - 1) / 2)
         # nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, ...
         self.conv_0 = nn.Conv2d(1, out_chs, kernel, padding=(padding, 0))
-        self.b_0 = nn.Parameter(torch.randn(1, out_chs, 1, 1))
+        self.b_0 = nn.Parameter(torch.randn(1, out_chs, 1, 1), requires_grad=True)
         self.conv_gate_0 = nn.Conv2d(1, out_chs, kernel, padding=(padding, 0))
-        self.c_0 = nn.Parameter(torch.randn(1, out_chs, 1, 1))
+        self.c_0 = nn.Parameter(torch.randn(1, out_chs, 1, 1), requires_grad=True)
 
-        self.conv_0.apply(init_weights)
-        self.conv_gate_0.apply(init_weights)
         self.conv = nn.ModuleList(
             [nn.Conv2d(out_chs, out_chs, (kernel[0], 1), padding=(padding, 0)) for _ in range(n_layers)])
         self.conv_gate = nn.ModuleList(
             [nn.Conv2d(out_chs, out_chs, (kernel[0], 1), padding=(padding, 0)) for _ in range(n_layers)])
-        self.b = nn.ParameterList([nn.Parameter(torch.randn(1, out_chs, 1, 1)) for _ in range(n_layers)])
-        self.c = nn.ParameterList([nn.Parameter(torch.randn(1, out_chs, 1, 1)) for _ in range(n_layers)])
-        self.conv.apply(init_weights)
-        self.conv_gate.apply(init_weights)
+        self.b = nn.ParameterList(
+            [nn.Parameter(torch.randn(1, out_chs, 1, 1), requires_grad=True) for _ in range(n_layers)])
+        self.c = nn.ParameterList(
+            [nn.Parameter(torch.randn(1, out_chs, 1, 1), requires_grad=True) for _ in range(n_layers)])
+
         self.fc = nn.Linear(out_chs * seq_len, ans_size)
         self.fc_d = nn.Linear(ans_size, out_chs * seq_len)
 
@@ -50,15 +49,23 @@ class GatedCNN(VaeTemplate, nn.Module):
             [nn.ConvTranspose2d(out_chs, out_chs, (kernel[0], 1), padding=(padding, 0)) for _ in range(n_layers)])
         self.conv_gate_d = nn.ModuleList(
             [nn.ConvTranspose2d(out_chs, out_chs, (kernel[0], 1), padding=(padding, 0)) for _ in range(n_layers)])
-        self.b_d = nn.ParameterList([nn.Parameter(torch.randn(1, out_chs, 1, 1)) for _ in range(n_layers)])
-        self.c_d = nn.ParameterList([nn.Parameter(torch.randn(1, out_chs, 1, 1)) for _ in range(n_layers)])
+        self.b_d = nn.ParameterList(
+            [nn.Parameter(torch.randn(1, out_chs, 1, 1), requires_grad=True) for _ in range(n_layers)])
+        self.c_d = nn.ParameterList(
+            [nn.Parameter(torch.randn(1, out_chs, 1, 1), requires_grad=True) for _ in range(n_layers)])
+
+        self.conv_l = nn.ConvTranspose2d(out_chs, vocab_size, (kernel[0], 1), padding=(padding, 0))
+        self.b_l = nn.Parameter(torch.randn(1, vocab_size, 1, 1), requires_grad=True)
+        self.conv_gate_l = nn.ConvTranspose2d(out_chs, vocab_size, (kernel[0], 1), padding=(padding, 0))
+        self.c_l = nn.Parameter(torch.randn(1, vocab_size, 1, 1), requires_grad=True)
+        self.sigmoid = nn.Sigmoid()
+
+        self.conv.apply(init_weights)
+        self.conv_gate.apply(init_weights)
         self.conv_d.apply(init_weights)
         self.conv_gate_d.apply(init_weights)
-        self.conv_l = nn.ConvTranspose2d(out_chs, vocab_size, (kernel[0], 1), padding=(padding, 0))
-        self.b_l = nn.Parameter(torch.randn(1, vocab_size, 1, 1))
-        self.conv_gate_l = nn.ConvTranspose2d(out_chs, vocab_size, (kernel[0], 1), padding=(padding, 0))
-        self.c_l = nn.Parameter(torch.randn(1, vocab_size, 1, 1))
-        self.sigmoid = nn.Sigmoid()
+        self.conv_0.apply(init_weights)
+        self.conv_gate_0.apply(init_weights)
         self.conv_l.apply(init_weights)
         self.conv_gate_l.apply(init_weights)
 

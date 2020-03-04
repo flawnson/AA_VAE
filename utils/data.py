@@ -180,11 +180,11 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
     scores = []
     length = sum(c.values())
     for k in amino_acids:
-        if (c[k]/length > 0.01) and amino_acids_to_byte_map[k] <= 20:
+        if c[k] > 0 and amino_acids_to_byte_map[k] <= 20:
             rarity = length/c[k]
-            rarity = rarity / 100
             if rarity > 100:
-                rarity = 50
+                rarity = 5
+            rarity = rarity / 100
             scores.append(rarity)
         else:
             scores.append(0)
