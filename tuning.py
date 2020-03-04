@@ -30,12 +30,12 @@ model_tuning_configs = {
     },
     "gated_conv": {
         "model_name": "gated_cnn",
-        "layers": {"grid_search": [4, 6, 8, 16]},
-        "kernel_size_0": {"grid_search": [7, 9, 11, 17]},
-        "channels": {"grid_search": [4, 6, 8]},
-        "residual": {"grid_search": [2, 4]},
+        "layers": {"grid_search": [6, 8, 16]},
+        "kernel_size_0": {"grid_search": [11, 21, 31, 51]},
+        "channels": {"grid_search": [8, 16, 32]},
+        "residual": {"grid_search": [2, 4, 6]},
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
-        "weight_decay": tune.uniform(0, 0.9)
+        "weight_decay": tune.uniform(0, 0.05)
     },
     "convolutional_old": {
         "model_name": "convolutional_vae",
