@@ -40,7 +40,7 @@ class Trainer:
         self.criterion = loss_functions[loss_function_name]
 
     def cross_entropy_wrapper(self, predicted, actual):
-        return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22) # , weight=self.weights)
+        return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22, reduction="sum") # , weight=self.weights)
                                                 #)
 
     def reconstruction_accuracy(self, predicted, actual):

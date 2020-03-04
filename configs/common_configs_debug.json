@@ -7,5 +7,5 @@
   "feature_length": 30,
   "added_length": 0,
   "hidden_size": 200,
-  "embedding_size": 60
+  "embedding_size": 120
 }

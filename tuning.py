@@ -1,5 +1,4 @@
 import argparse
-import json
 import multiprocessing
 import os
 import os.path as osp
@@ -12,13 +11,12 @@ from ray.tune.schedulers import AsyncHyperBandScheduler
 from torch.utils.data import DataLoader
 
 import utils.data as data
-from utils.data import read_sequences
 from utils.model_factory import create_model
 from utils.train import Trainer
 
 config_common = {
-    'dataset': 'small', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 3000, 'epochs': 150,
-    'feature_length': 23, 'added_length': 0, 'hidden_size': 1500, 'embedding_size': 450
+    'dataset': 'small', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 4000, 'epochs': 150,
+    'feature_length': 23, 'added_length': 0, 'hidden_size': 1500, 'embedding_size': 600, "tuning": True
 }
 
 model_tuning_configs = {
@@ -57,7 +55,7 @@ model_tuning_configs = {
 def tuner_run(config):
     track.init()
     print(config)
-    tuning: bool = config["tuning"]
+
     model, optimizer, device = create_model(config, config)
 
     data_length = config["protein_length"]
@@ -82,44 +80,41 @@ def tuner_run(config):
 
         train_loss /= train_dataset_len
         print(f'Epoch {e}, Train Loss: {train_loss:.8f} Train accuracy {train_recon_accuracy * 100.0:.2f}%')
-        if tuning:
+        if not debug:
             track.log(mean_accuracy=train_recon_accuracy * 100)
 
 
-def tuner(smoke_test: bool, config_, model):
+def tuner(smoke_test: bool, model):
     cpus = int(multiprocessing.cpu_count())
     gpus = torch.cuda.device_count()
 
     model_config = model_tuning_configs[model]
 
-    dataset_type = config["dataset"]  # (small|medium|large)
-    data_length = config["protein_length"]
-    if config["class"] != "mammalian":
+    dataset_type = config_common["dataset"]  # (small|medium|large)
+    data_length = config_common["protein_length"]
+    if config_common["class"] != "mammalian":
         train_dataset_name = f"data/train_set_{dataset_type}_{data_length}.json"
     else:
         train_dataset_name = "data/train_set_large_1500_mammalian.json"
 
     max_dataset_length = 10000
 
-    train_dataset, _, _ = read_sequences(train_dataset_name,
-                                         fixed_protein_length=data_length, add_chemical_features=True,
-                                         sequence_only=True, pad_sequence=True, fill_itself=False,
-                                         max_length=max_dataset_length)
+    train_dataset, c, score = data.read_sequences(train_dataset_name,
+                                                  fixed_protein_length=data_length, add_chemical_features=True,
+                                                  sequence_only=True, pad_sequence=True, fill_itself=False,
+                                                  max_length=-1)
 
-    _, c, score = read_sequences(train_dataset_name,
-                                 fixed_protein_length=data_length, add_chemical_features=True,
-                                 sequence_only=True, pad_sequence=True, fill_itself=False,
-                                 max_length=-1)
+    train_dataset = data.get_shuffled_sample(train_dataset, max_dataset_length)
 
-    tensor_filename = "{}_{}_{}_tuning.pt".format(config["class"], data_length, max_dataset_length)
-    weights_filename = "{}.{}.{}.wt".format(config["class"], data_length, max_dataset_length)
+    tensor_filename = "{}_{}_{}_tuning.pt".format(config_common["class"], data_length, max_dataset_length)
+    weights_filename = "{}.{}.{}.wt".format(config_common["class"], data_length, max_dataset_length)
     data.save_tensor_to_file(tensor_filename, train_dataset)
     data.save_tensor_to_file(weights_filename, score)
-    config_["tuning_dataset_name"] = os.getcwd() + "/" + tensor_filename
-    config_["tuning_weights"] = os.getcwd() + "/" + weights_filename
+    config_common["tuning_dataset_name"] = os.getcwd() + "/" + tensor_filename
+    config_common["tuning_weights"] = os.getcwd() + "/" + weights_filename
 
-    config_["epochs"] = 150
-    config_tune = {**config_, **model_config}
+    config_common["epochs"] = 150
+    config_tune = {**config_common, **model_config}
     local_dir = osp.join(os.getcwd(), "logs", "model")
 
     sched = AsyncHyperBandScheduler(
@@ -144,28 +139,25 @@ def tuner(smoke_test: bool, config_, model):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Config file parser")
-    parser.add_argument("-c", "--config", help="common config file", type=str)
     parser.add_argument("-m", "--model",
                         help="Name of the model, options are : convolutionalBasic, gated_conv, convolutional_old",
                         type=str)
     parser.add_argument("-d", "--debug", help="Debugging or full scale", type=str)
     args = parser.parse_args()
-    config: dict = json.load(open(args.config))
-    if args.debug == "True":
-        config_ = {'dataset': 'small', 'protein_length': 50, 'class': 'bacteria', 'batch_size': 20, 'epochs': 4,
-                   'feature_length': 30, 'added_length': 0, 'hidden_size': 50, 'embedding_size': 20,
-                   'train_dataset_name': '/home/jyothish/PycharmProjects/simple-vae/data/train_set_small_50.json',
-                   'test_dataset_name': '/home/jyothish/PycharmProjects/simple-vae/data/test_set_small_50.json',
-                   "model_name": "gated_cnn",
-                   "layers": 5,
-                   "kernel_size_0": 11,
-                   "kernel_size_1": 30,
-                   "channels": 6,
-                   "residual": 2,
-                   "lr": 0.00020297,
+    debug = True
+    if debug:
+        config_ = {'dataset': 'small', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 4000, 'epochs': 150,
+                   'feature_length': 23, 'added_length': 0, 'hidden_size': 1500, 'embedding_size': 600,
+                   'tuning_dataset_name': '/home/jyothish/PycharmProjects/simple-vae/mammalian_1500_10000_tuning.pt',
+                   'tuning_weights': '/home/jyothish/PycharmProjects/simple-vae/mammalian.1500.10000.wt',
+                   'model_name': 'gated_cnn', 'layers': 4,
+                   'kernel_size_0': 7, 'channels': 4,
+                   'residual': 2,
+                   "lr": 0.005,
                    "weight_decay": 0.0,
-                   "tuning": False}
+                   "tuning": True
+                   }
+
         tuner_run(config_)
     else:
-        model = args.model
-        tuner(False, config, model)
+        tuner(True, args.model)
