@@ -88,6 +88,7 @@ def tuner_run(config):
 
 
 def tuner(smoke_test: bool, model):
+    ray.init()
     cpus = int(multiprocessing.cpu_count())
     gpus = torch.cuda.device_count()
 
