@@ -77,7 +77,7 @@ class Trainer:
 
         return loss, recon_accuracy
 
-    def train(self):
+    def train(self, iter):
         # set the train mode
         self.model.train()
 
@@ -88,13 +88,13 @@ class Trainer:
 
         for i, x in enumerate(self.train_iterator):
             # reshape the data into [batch_size, FIXED_PROTEIN_LENGTH*23]
-            loss, accuracy = self.__inner_iteration(x, True, i)
+            loss, accuracy = self.__inner_iteration(x, True, iter)
             train_loss += loss
             recon_accuracy += accuracy
 
         return train_loss, recon_accuracy / len(self.train_iterator)
 
-    def test(self):
+    def test(self, iter):
         # set the evaluation mode
         self.model.eval()
 
@@ -108,7 +108,7 @@ class Trainer:
             for i, x in enumerate(self.test_iterator):
                 # update the gradients to zero
 
-                loss, accuracy = self.__inner_iteration(x, False, i)
+                loss, accuracy = self.__inner_iteration(x, False, iter)
 
                 # backward pass
                 test_loss += loss
@@ -121,8 +121,8 @@ class Trainer:
         patience_counter = 0
         for e in range(self.n_epochs):
 
-            train_loss, train_recon_accuracy = self.train()
-            test_loss, test_recon_accuracy = self.test()
+            train_loss, train_recon_accuracy = self.train(e)
+            test_loss, test_recon_accuracy = self.test(e)
 
             train_loss /= self.train_dataset_len
             test_loss /= self.test_dataset_len
