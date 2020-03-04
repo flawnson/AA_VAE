@@ -23,7 +23,7 @@ def create_model(config, model_config):
               "convolutional_linear": Convolutional_Linear_VAE,
               "convolutional_basic": ConvolutionalBaseVAE,
               "gated_cnn": GatedCNN}
-    device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model = models.get(model_config["model_name"])(model_config, config["hidden_size"],
                                                    config["embedding_size"], config["protein_length"], device,

@@ -173,7 +173,7 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
     scores = []
     length = sum(c.values())
     for k in amino_acids:
-        if c[k] > 0 and amino_acids_to_byte_map[k] < 20:
+        if c[k] > 0 and amino_acids_to_byte_map[k] <= 20:
             scores.append(length / c[k])
         else:
             scores.append(0)
