@@ -37,7 +37,7 @@ model_tuning_configs = {
         "channels": {"grid_search": [8, 16, 32]},
         "residual": {"grid_search": [2, 4, 6]},
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
-        "weight_decay": tune.uniform(0, 0.05)
+        "weight_decay": 0.0
     },
     "convolutional_old": {
         "model_name": "convolutional_vae",
