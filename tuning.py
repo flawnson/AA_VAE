@@ -28,7 +28,7 @@ model_tuning_configs = {
         "scale": {"grid_search": [1, 2]},
         "layers": {"grid_search": [4, 6, 8, 10]},
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
-        "weight_decay": tune.uniform(0, 0.9)
+        "weight_decay": tune.uniform(0, 0.05)
     },
     "gated_conv": {
         "model_name": "gated_cnn",
@@ -48,7 +48,7 @@ model_tuning_configs = {
         "kernel_sizes_decoder": tune.grid_search([5, 10, 20, 50, 100, 150]),
         "stride_sizes_decoder": tune.grid_search([2, 5, 10, 15, 30]),
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000001, 1)),
-        "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.0, 0.1)),
+        "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.0, 0.05)),
         "tuning": True
     }
 }
