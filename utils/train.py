@@ -37,7 +37,7 @@ class Trainer:
         self.vocab_size = vocab_size
         self.patience_count = patience_count
         self.criterion = loss_functions[loss_function_name]
-        self.weights = torch.FloatTensor(weights).to(device) / self.data_length
+        self.weights = torch.FloatTensor(weights).to(device)
 
     def cross_entropy_wrapper(self, predicted, actual):
         count = actual.le(21).sum()
