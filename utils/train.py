@@ -40,9 +40,9 @@ class Trainer:
         self.weights = torch.FloatTensor(weights).to(device) / self.data_length
 
     def cross_entropy_wrapper(self, predicted, actual):
-        return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22, reduction="mean",
-                                                 weight=self.weights)
-        # )
+        return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22, reduction="none",
+                                                 weight=self.weights).sum()/actual.shape[0]
+
 
     def reconstruction_accuracy(self, predicted, actual):
         """ Computes average sequence identity between input and output sequences
@@ -122,6 +122,7 @@ class Trainer:
     def trainer(self):
         best_training_loss = float('inf')
         patience_counter = 0
+        train_recon_accuracy = -1
         for e in range(self.n_epochs):
 
             train_loss, train_recon_accuracy = self.train(e)
@@ -139,6 +140,7 @@ class Trainer:
             if best_training_loss > train_loss:
                 best_training_loss = train_loss
                 patience_counter = 1
+                self.save_snapshot(train_recon_accuracy)
             else:
                 patience_counter += 1
 
@@ -146,15 +148,15 @@ class Trainer:
             if patience_counter > 500:
                 break
             if e % 100 == 99:
-                self.save_snapshot()
+                self.save_snapshot(train_recon_accuracy)
 
-        self.save_snapshot()
+        self.save_snapshot(train_recon_accuracy)
 
-    def save_snapshot(self):
+    def save_snapshot(self, accuracy):
         from datetime import datetime
 
         now = datetime.now()
 
         date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
 
-        torch.save(self.model.state_dict(), f"saved_models/{self.model.name}_{date_time}")
+        torch.save(self.model.state_dict(), f"saved_models/{self.model.name}_{accuracy}_{date_time}")
