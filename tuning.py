@@ -28,7 +28,7 @@ model_tuning_configs = {
         "scale": {"grid_search": [1, 2]},
         "layers": {"grid_search": [4, 6, 8, 10]},
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
-        "weight_decay": tune.uniform(0, 0.05)
+        "weight_decay": 0.0
     },
     "gated_conv": {
         "model_name": "gated_cnn",
@@ -130,7 +130,7 @@ def tuner(smoke_test: bool, model):
         name="exp",
         scheduler=sched,
         stop={
-            "training_iteration": 5 if smoke_test else 20
+            "training_iteration": 5 if smoke_test else 15
         },
         resources_per_trial={
             "cpu": cpus,
