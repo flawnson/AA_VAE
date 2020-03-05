@@ -40,8 +40,9 @@ class Trainer:
         self.weights = torch.FloatTensor(weights).to(device) / self.data_length
 
     def cross_entropy_wrapper(self, predicted, actual):
+        count = actual.le(21).sum()
         return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22, reduction="none",
-                                                 weight=self.weights).sum()/actual.shape[0]
+                                                 weight=self.weights).sum() / count
 
 
     def reconstruction_accuracy(self, predicted, actual):
