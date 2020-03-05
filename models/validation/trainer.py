@@ -33,7 +33,7 @@ class TrainLinear:
         self.optimizer.zero_grad()
         logits = self.model(batch)
 
-        loss = F.cross_entropy(logits[mask], labels[mask], weight=self.weights.float())
+        loss = F.cross_entropy(logits, torch.argmax(labels, dim=1), weight=self.weights.float())
         loss.backward()
         self.optimizer.step()
         print(f"Loss: {loss}")
@@ -45,7 +45,7 @@ class TrainLinear:
         # s_logits = F.softmax(input=logits)
         pred = logits.max(1)[1]
 
-        accuracy = accuracy_score(pred.cpu()[mask], labels.cpu()[mask])
+        accuracy = accuracy_score(pred.cpu(), torch.argmax(labels, dim=1).cpu())
         # auroc = roc_auc_score(labels.cpu(),
         #                       s_logits,
         #                       average=self.train_config.get("auroc_average"),

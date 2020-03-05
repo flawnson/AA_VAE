@@ -99,10 +99,10 @@ class QuaternaryLabels(EmbeddingData, ABC):
 
     def get_label(self, query: str):
         mappings: dict = {
-            'fibrous_proteins': 0,
-            'membrane_proteins': 1,
-            'unstructured_proteins': 2,
-            'globular_proteins': 3
+            'fibrous_proteins': 1,
+            'membrane_proteins': 2,
+            'unstructured_proteins': 3,
+            'globular_proteins': 4
         }
         if mappings.keys().__contains__(query):
             return mappings.get(query)
@@ -125,11 +125,11 @@ class QuinaryLabels(EmbeddingData, ABC):
 
     def get_label(self, query: str):
         mappings: dict = {
-            1000000: 0,
-            1000001: 1,
-            1000002: 2,
-            1000003: 3,
-            1000004: 4
+            1000000: 1,
+            1000001: 2,
+            1000002: 3,
+            1000003: 4,
+            1000004: 5
         }
 
         if mappings.keys().__contains__(query):
@@ -160,7 +160,7 @@ class ProteinLabels(EmbeddingData, ABC):
         return data
 
     def get_label(self, query: str):
-        mappings = dict(zip(np.unique(self.data_file()[1]), list(range(0, len(np.unique(self.data_file()[1]))))))
+        mappings = dict(zip(np.unique(self.data_file()[1]), list(range(1, len(np.unique(self.data_file()[1]))))))
         if mappings.keys().__contains__(query):
             return mappings.get(query)
         else:
