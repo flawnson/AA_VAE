@@ -1,6 +1,11 @@
 import torch
 
 
+def ramp_function(index, length, depth, max_height):
+    width = length + depth
+    current_epoch = int(max_height / width)
+    delta = float(max_height) / float(width)
+
 def total_loss_function(recon_x, mu, logvar, scale: float):
     # see Appendix B from VAE paper:
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -9,8 +14,8 @@ def total_loss_function(recon_x, mu, logvar, scale: float):
     if scale > 1:
         scale = 1
     KLD: torch.Tensor = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
+    # scaled_kld = KLD * scale
     scaled_kld = KLD * scale
-    # scaled_kld = 0
     return recon_x + scaled_kld
 
 
@@ -41,17 +46,16 @@ class Trainer:
         self.criterion = loss_functions[loss_function_name]
         self.weights = torch.FloatTensor(weights).to(device)
 
-    def cross_entropy_wrapper(self, predicted, actual):
-        count = actual.le(21).sum()
+    def cross_entropy_wrapper(self, predicted, actual, count):
+        # count = mask.sum()
         return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22, reduction="none",
                                                  weight=self.weights).sum() / count
 
-    def reconstruction_accuracy(self, predicted, actual):
+    def reconstruction_accuracy(self, predicted, actual, mask):
         """ Computes average sequence identity between input and output sequences
         """
         # if input.shape != output.shape:
         #     raise Exception("Input and output can't have different shapes")
-        mask = actual.le(21)
         output_sequences = torch.masked_select(actual, mask)
         input_sequences = torch.masked_select(predicted.argmax(axis=1), mask)
 
@@ -66,17 +70,17 @@ class Trainer:
 
         # forward pass
         predicted, mu, var = self.model(x)
-        recon_loss = self.criterion(predicted, x)
-        # if i > 200:
-        scale = i - 500
-        if scale < 0:
-            scale = 0
-        recon_loss = total_loss_function(recon_loss, mu, var, float(scale) / 1000)
+        mask = x.le(21)
+
+        scale = mask.sum()
+        recon_loss = self.criterion(predicted, x, mask)
+
+        recon_loss = total_loss_function(recon_loss, mu, var, scale)
 
         loss = recon_loss.item()
         # reconstruction accuracy
         # TODO this needs to change once new features are added into the vector
-        recon_accuracy = self.reconstruction_accuracy(predicted, x)
+        recon_accuracy = self.reconstruction_accuracy(predicted, x, mask)
 
         # backward pass
         if training:

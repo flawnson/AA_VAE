@@ -23,7 +23,7 @@ class GatedCNN(VaeTemplate, nn.Module):
         ans_size = hidden_size
         self.out_chs = out_chs
         self.res_block_count = res_block_count
-        hidden_size = out_chs * seq_len
+        # hidden_size = out_chs * seq_len
         super(GatedCNN, self).__init__(None, None, device, hidden_size, embedding_size, embedding=None)
         self.embedding = nn.Embedding(vocab_size, embd_size)
         padding = int((kernel[0] - 1) / 2)
@@ -42,8 +42,8 @@ class GatedCNN(VaeTemplate, nn.Module):
         self.c = nn.ParameterList(
             [nn.Parameter(torch.randn(1, out_chs, 1, 1), requires_grad=True) for _ in range(n_layers)])
 
-        # self.fc = nn.Linear(out_chs * seq_len, ans_size)
-        # self.fc_d = nn.Linear(ans_size, out_chs * seq_len)
+        self.fc = nn.Linear(out_chs * seq_len, ans_size)
+        self.fc_d = nn.Linear(ans_size, out_chs * seq_len)
 
         self.conv_d = nn.ModuleList(
             [nn.ConvTranspose2d(out_chs, out_chs, (kernel[0], 1), padding=(padding, 0)) for _ in range(n_layers)])
@@ -69,7 +69,7 @@ class GatedCNN(VaeTemplate, nn.Module):
         self.conv_l.apply(init_weights)
         self.conv_gate_l.apply(init_weights)
 
-    def encode(self, x):
+    def representation(self, x):
         # Embedding
         bs = x.size(0)  # batch size
         seq_len = x.size(1)
@@ -92,8 +92,8 @@ class GatedCNN(VaeTemplate, nn.Module):
             if i % self.res_block_count == 0:  # size of each residual block
                 h += res_input
                 res_input = h
-
         h = h.view(bs, -1)  # (bs, Cout*seq_len)
+        h = self.fc(h)
         return self.bottleneck(h)
 
     def forward(self, x):
