@@ -7,7 +7,7 @@ def total_loss_function(recon_x, mu, logvar, scale: float):
     # https://arxiv.org/abs/1312.6114
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     KLD: torch.Tensor = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
-    scaled_kld = KLD * scale
+    scaled_kld = KLD
     # scaled_kld = 0
     return recon_x + scaled_kld
 
@@ -146,7 +146,7 @@ class Trainer:
                 patience_counter += 1
 
             print("Patience value at {}".format(patience_counter))
-            if patience_counter > 500:
+            if patience_counter > 1000:
                 break
             if e % 100 == 99:
                 self.save_snapshot(train_recon_accuracy)
