@@ -66,10 +66,10 @@ class Trainer:
         predicted, mu, var = self.model(x)
         recon_loss = self.criterion(predicted, x)
         # if i > 200:
-        x = i - 500
-        if x < 0:
-            x = 0
-        recon_loss = total_loss_function(recon_loss, mu, var, float(x) / 1000)
+        scale = i - 500
+        if scale < 0:
+            scale = 0
+        recon_loss = total_loss_function(recon_loss, mu, var, float(scale) / 1000)
 
         loss = recon_loss.item()
         # reconstruction accuracy
