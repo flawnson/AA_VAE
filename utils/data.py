@@ -1,5 +1,6 @@
 import collections
 import json
+import os
 
 import torch
 from torch.utils.data import DataLoader
@@ -141,6 +142,9 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
     proteins = []
     c = collections.Counter()
     sequences = []
+    pt_file = f"{file}_{fixed_protein_length}_{add_chemical_features}_{sequence_only}_{max_length}.pt"
+    if os.path.exists(pt_file):
+        return load_from_saved_tensor(pt_file)
     with open(file) as json_file:
         data = json.load(json_file)
         if "sequence" in data:
@@ -188,4 +192,6 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
         else:
             scores.append(0)
 
-    return torch.stack(proteins), c, torch.FloatTensor(scores)
+    data = torch.stack(proteins), c, torch.FloatTensor(scores)
+    save_tensor_to_file(pt_file, data)
+    return data
