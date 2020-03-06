@@ -141,10 +141,11 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
     """
     proteins = []
     c = collections.Counter()
+    lengths = []
     sequences = []
     pt_file = f"{file}_{fixed_protein_length}_{add_chemical_features}_{sequence_only}_{max_length}.pt"
-    if os.path.exists(pt_file):
-        return load_from_saved_tensor(pt_file)
+    # if os.path.exists(pt_file):
+    #     return load_from_saved_tensor(pt_file)
     with open(file) as json_file:
         data = json.load(json_file)
         if "sequence" in data:
@@ -160,6 +161,7 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
                 break
 
         if valid_protein(protein_sequence):
+            lengths.append(len(protein_sequence))
             protein_sequence = protein_sequence[:fixed_protein_length]
             c.update(protein_sequence)
             # pad sequence
@@ -192,6 +194,7 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
         else:
             scores.append(0)
 
-    data = torch.stack(proteins), c, torch.FloatTensor(scores)
+    length_counter = collections.Counter(lengths)
+    data = torch.stack(proteins), c, torch.FloatTensor(scores), length_counter
     save_tensor_to_file(pt_file, data)
     return data

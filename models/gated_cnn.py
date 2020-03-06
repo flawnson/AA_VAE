@@ -94,7 +94,8 @@ class GatedCNN(VaeTemplate, nn.Module):
                 res_input = h
         h = h.view(bs, -1)  # (bs, Cout*seq_len)
         h = self.fc(h)
-        return self.bottleneck(h)
+        h, mu,_ = self.bottleneck(h)
+        return mu
 
     def forward(self, x):
         bs = x.size(0)  # batch size
