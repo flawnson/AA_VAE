@@ -17,8 +17,8 @@ from utils.model_factory import create_model
 from utils.train import Trainer
 
 config_common = {
-    'dataset': 'small', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 1000, 'epochs': 150,
-    'feature_length': 23, 'added_length': 0, 'hidden_size': 1500, 'embedding_size': 600, "tuning": True
+    'dataset': 'small', 'protein_length': 500, 'class': 'mammalian', 'batch_size': 3000, 'epochs': 150,
+    'feature_length': 23, 'added_length': 0, 'hidden_size': 500, 'embedding_size': 200, "tuning": True
 }
 
 model_tuning_configs = {
