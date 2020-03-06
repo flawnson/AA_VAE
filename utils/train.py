@@ -7,7 +7,7 @@ def total_loss_function(recon_x, mu, logvar, scale: float):
     # https://arxiv.org/abs/1312.6114
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     KLD: torch.Tensor = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
-    scaled_kld = KLD
+    scaled_kld = KLD * (scale % 1)
     # scaled_kld = 0
     return recon_x + scaled_kld
 
@@ -44,7 +44,6 @@ class Trainer:
         return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22, reduction="none",
                                                  weight=self.weights).sum() / count
 
-
     def reconstruction_accuracy(self, predicted, actual):
         """ Computes average sequence identity between input and output sequences
         """
@@ -67,7 +66,10 @@ class Trainer:
         predicted, mu, var = self.model(x)
         recon_loss = self.criterion(predicted, x)
         # if i > 200:
-        recon_loss = total_loss_function(recon_loss, mu, var, float(i + 1) / 1000)
+        x = i - 500
+        if x < 0:
+            x = 0
+        recon_loss = total_loss_function(recon_loss, mu, var, float(x) / 1000)
 
         loss = recon_loss.item()
         # reconstruction accuracy
