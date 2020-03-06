@@ -2,7 +2,7 @@ import torch
 import torch.optim as optim
 
 from models.convolutional_linear import Convolutional_Linear_VAE
-from models.convolutional_linear_vae import ConvolutionalBaseVAE
+from models.convolutional_base_vae import ConvolutionalBaseVAE
 from models.convolutional_vae import ConvolutionalVAE
 from models.gated_cnn import GatedCNN
 from models.linear_vae import LinearVAE
