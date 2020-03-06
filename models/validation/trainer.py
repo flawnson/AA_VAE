@@ -14,26 +14,29 @@ class TrainLinear:
         self.dataset = dataset
         self.batch_size = data_config.get("batch_size")
         self.test_split = data_config.get("test_ratio")
+        self.onehot = data_config.get("onehot")
         self.device = device
         self.model = model.to(self.device)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(),
                                           lr=self.train_config.get('lr'),
                                           weight_decay=self.train_config.get('wd'))
-        if data_config.get("onehot"):
+        if self.onehot:
             self.imb_wc = torch.bincount(torch.argmax(torch.tensor(self.dataset.y), dim=1)).clamp(min=1e-10, max=1e10) \
                           / float(torch.tensor(self.dataset.y).shape[0])
+            self.weights = (1 / self.imb_wc) / (sum(1 / self.imb_wc))
         else:
-            self.imb_wc = torch.bincount(torch.tensor(self.dataset.y)).clamp(min=1e-10, max=1e10) / float(
-                torch.tensor(self.dataset.y).shape[0])
-        self.weights = (1 / self.imb_wc) / (sum(1 / self.imb_wc))
+            self.imb_wc = torch.bincount(torch.tensor(np.asarray(self.dataset.y))).clamp(min=1e-10, max=1e10) / float(
+                torch.tensor(np.asarray(self.dataset.y)).shape[0])
+            self.weights = (1 / self.imb_wc[1:]) / (sum(1 / self.imb_wc[1:]))
 
     def train(self, batch, labels, mask):
         self.model.train()
         torch.set_grad_enabled(True)
         self.optimizer.zero_grad()
         logits = self.model(batch)
-
-        loss = F.cross_entropy(logits, torch.argmax(labels, dim=1), weight=self.weights.float())
+        if self.onehot:
+            labels = torch.argmax(labels, dim=1)
+        loss = F.cross_entropy(logits, labels, weight=self.weights.float())
         loss.backward()
         self.optimizer.step()
         print(f"Loss: {loss}")
