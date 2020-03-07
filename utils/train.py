@@ -18,18 +18,6 @@ def kl_loss_function(mu, logvar, scale: float):
     return KLD * scale
 
 
-def total_loss_function(recon_x, mu, logvar, scale: float):
-    # see Appendix B from VAE paper:
-    # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
-    # https://arxiv.org/abs/1312.6114
-    # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-    if scale > 1:
-        scale = 1
-    KLD: torch.Tensor = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
-    scaled_kld = KLD * scale
-    return recon_x + scaled_kld
-
-
 class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
                  train_dataset, test_dataset, n_epochs, loss_function_name="bce",
@@ -58,7 +46,7 @@ class Trainer:
 
     def cross_entropy_wrapper(self, predicted, actual, count):
         # count = mask.sum()
-        return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22, reduction="none",
+        return torch.nn.functional.cross_entropy(predicted, actual, reduction="none",
                                                  weight=self.weights).sum() / count
 
     def reconstruction_accuracy(self, predicted, actual, mask):
@@ -80,14 +68,14 @@ class Trainer:
 
         # forward pass
         predicted, mu, var = self.model(x)
-        mask = x.le(21)
+        mask = x.le(20)
 
         scale = mask.sum()
         recon_loss = self.criterion(predicted, x, scale)
 
         kl_loss = kl_loss_function(mu, var, float(scale) / mask.numel())
         total_loss = kl_loss + recon_loss
-        recon_loss = total_loss_function(recon_loss, mu, var, float(scale) / mask.numel())
+        # recon_loss = total_loss_function(recon_loss, mu, var, float(scale) / mask.numel())
 
         # reconstruction accuracy
         # TODO this needs to change once new features are added into the vector

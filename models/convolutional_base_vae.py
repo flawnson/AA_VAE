@@ -122,7 +122,7 @@ class ConvolutionalBaseVAE(nn.Module):
         embedding.weight.requires_grad = False
 
         self.embedding = embedding
-        self.smax = nn.Sigmoid()
+        self.smax = nn.Softmax(dim=2)
 
     def bottleneck(self, h):
         mu = self.fc1(h)
