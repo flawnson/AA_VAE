@@ -131,14 +131,14 @@ def tuner(smoke_test: bool, model):
         name="exp",
         scheduler=sched,
         stop={
-            "training_iteration": 5 if smoke_test else 15
+            "training_iteration": 5 if smoke_test else 10
         },
         resources_per_trial={
             "cpu": cpus,
             "gpu": gpus
         },
         local_dir=local_dir,
-        num_samples=1 if smoke_test else 3,
+        num_samples=1 if smoke_test else 2,
         config=config_tune)
     print("Best config is:", analysis.get_best_config(metric="mean_accuracy"))
 
