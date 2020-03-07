@@ -119,6 +119,7 @@ class ConvolutionalBaseVAE(nn.Module):
         self.fc3.apply(init_weights)
         embedding = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
         embedding.weight.data.copy_(embeddings_static)
+        embedding.weight.requires_grad = False
 
         self.embedding = embedding
         self.smax = nn.Sigmoid()

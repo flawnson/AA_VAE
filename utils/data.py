@@ -186,6 +186,7 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
             rarity = length / (20 * c[k])
             if rarity > 5:
                 rarity = 0.25
+            rarity = 1
             scores.append(rarity)
         else:
             scores.append(0)
