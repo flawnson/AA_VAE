@@ -26,6 +26,7 @@ class GatedCNN(VaeTemplate, nn.Module):
         # hidden_size = out_chs * seq_len
         super(GatedCNN, self).__init__(None, None, device, hidden_size, embedding_size, embedding=None)
         self.embedding = nn.Embedding(vocab_size, embd_size)
+        self.embedding.weight.data.copy_(embeddings_static)
         padding = int((kernel[0] - 1) / 2)
         # nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, ...
         self.conv_0 = nn.Conv2d(1, out_chs, kernel, padding=(padding, 0))

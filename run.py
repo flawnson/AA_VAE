@@ -3,12 +3,14 @@ This code is a variation of simple VAE from https://graviraja.github.io/vanillav
 """
 import argparse
 import json
+import torch
 import os
 from utils.model_factory import create_model
 from utils.data import load_data
 from utils.train import Trainer
 
 if __name__ == "__main__":
+    torch.manual_seed(0)
     parser = argparse.ArgumentParser(description="Config file parser")
     parser.add_argument("-c", "--config", help="common config file", type=str)
     parser.add_argument("-m", "--model", help="model config file", type=str)

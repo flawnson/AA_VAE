@@ -1,5 +1,5 @@
 {
-  "dataset": "medium",
+  "dataset": "small",
   "protein_length": 200,
   "class": "bacteria",
   "batch_size": 4000,

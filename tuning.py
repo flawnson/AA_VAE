@@ -84,7 +84,7 @@ def tuner_run(config):
         train_loss /= train_dataset_len
         print(f'Epoch {e}, Train Loss: {train_loss:.8f} Train accuracy {train_recon_accuracy * 100.0:.2f}%')
         if not debug:
-            track.log(mean_accuracy=train_recon_accuracy * 100)
+            track.log(mean_loss=1-train_loss)
 
 
 def tuner(smoke_test: bool, model):

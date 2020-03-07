@@ -1,6 +1,6 @@
 import collections
 import json
-
+import os
 import torch
 from torch.utils.data import DataLoader
 
@@ -97,7 +97,7 @@ def get_embedding_matrix(features: bool = True):
     return seq_to_one_hot(amino_acids, features)
 
 
-def to_categorical(y, num_classes):
+def to_categorical(num_classes):
     """ Converts a class vector to binary class matrix. """
     categorical = torch.eye(num_classes)
     unused = [21, 22]
@@ -112,7 +112,7 @@ def seq_to_one_hot(res_seq_one, add_chemical_features=False):
 
     ints = one_to_number(res_seq_one)
 
-    onehot = to_categorical(ints, num_classes=len(amino_acids))
+    onehot = to_categorical(num_classes=len(amino_acids))
 
     if add_chemical_features:
         new_ints = torch.LongTensor(ints)

@@ -27,7 +27,7 @@ def create_model(config, model_config):
 
     model = models.get(model_config["model_name"])(model_config, config["hidden_size"],
                                                    config["embedding_size"], config["protein_length"], device,
-                                                   data.get_embedding_matrix()).to(device)
+                                                   data.get_embedding_matrix(True)).to(device)
 
     # optimizer
     return model, get_optimizer(model_config, model), device
