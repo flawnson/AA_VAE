@@ -17,7 +17,7 @@ from utils.model_factory import create_model
 from utils.train import Trainer
 
 config_common = {
-    'dataset': 'small', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 3000, 'epochs': 150,
+    'dataset': 'small', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 500, 'epochs': 150,
     "chem_features": "False",
     'added_length': 0, 'hidden_size': 1500, 'embedding_size': 300, "tuning": True
 }
@@ -87,6 +87,9 @@ def tuner_run(config):
         print(f'Epoch {e}, Train Loss: {train_loss:.8f}, {recon_loss:.8f} Train accuracy {train_recon_accuracy * 100.0:.2f}%')
         if not debug:
             track.log(mean_loss=1-(train_loss+recon_loss))
+            track.log(accuracy=train_recon_accuracy)
+            track.log(kl_loss=train_loss)
+            track.log(recon_loss=recon_loss)
 
 
 def tuner(smoke_test: bool, model):
