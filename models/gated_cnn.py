@@ -5,7 +5,7 @@ from models.vae_template import VaeTemplate
 
 
 def init_weights(m):
-    if type(m) == nn.Conv2d or type(m) == nn.ConvTranspose2d:
+    if type(m) == nn.Conv2d or type(m) == nn.ConvTranspose2d or type(m) == nn.Linear:
         nn.init.xavier_uniform_(m.weight)
 
 

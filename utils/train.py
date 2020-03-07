@@ -20,7 +20,7 @@ def total_loss_function(recon_x, mu, logvar, scale: float):
 
 
 class Trainer:
-    def __init__(self, model, data_length, train_iterator, test_iterator, input_dim, device, optimizer,
+    def __init__(self, model, data_length, train_iterator, test_iterator,  device, optimizer,
                  train_dataset, test_dataset, n_epochs, loss_function_name="bce",
                  vocab_size=23,
                  patience_count=1000, weights=None):
@@ -34,7 +34,6 @@ class Trainer:
         self.data_length = data_length
         self.train_iterator = train_iterator
         self.test_iterator = test_iterator
-        self.input_dim = input_dim
         self.device = device
         self.optimizer = optimizer
         self.train_dataset_len = train_dataset

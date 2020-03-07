@@ -1,6 +1,7 @@
 import collections
 import json
 import os
+
 import torch
 from torch.utils.data import DataLoader
 
@@ -100,7 +101,7 @@ def get_embedding_matrix(features: bool = True):
 def to_categorical(num_classes):
     """ Converts a class vector to binary class matrix. """
     categorical = torch.eye(num_classes)
-    unused = [21, 22]
+    unused = [amino_acids_to_byte_map['X'], amino_acids_to_byte_map['0']]
     for x in unused:
         categorical[[x, x]] = 0
     return categorical
@@ -192,6 +193,3 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
     data = torch.stack(proteins), c, torch.FloatTensor(scores)
     save_tensor_to_file(pt_file, data)
     return data
-
-
-

@@ -1,8 +1,8 @@
 import torch
 import torch.optim as optim
 
-from models.convolutional_linear import Convolutional_Linear_VAE
 from models.convolutional_base_vae import ConvolutionalBaseVAE
+from models.convolutional_linear import Convolutional_Linear_VAE
 from models.convolutional_vae import ConvolutionalVAE
 from models.gated_cnn import GatedCNN
 from models.linear_vae import LinearVAE
@@ -25,9 +25,10 @@ def create_model(config, model_config):
               "gated_cnn": GatedCNN}
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    model = models.get(model_config["model_name"])(model_config, config["hidden_size"],
-                                                   config["embedding_size"], config["protein_length"], device,
-                                                   data.get_embedding_matrix(True)).to(device)
+    model = models.get(model_config["model_name"])(
+        model_config, config["hidden_size"],
+        config["embedding_size"], config["protein_length"], device,
+        data.get_embedding_matrix(config["chem_features"] == "True")).to(device)
 
     # optimizer
     return model, get_optimizer(model_config, model), device

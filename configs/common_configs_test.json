@@ -3,7 +3,7 @@
   "protein_length": 50,
   "class": "bacteria",
   "batch_size": 20,
-  "feature_length": 23,
+  "chem_features": "False",
   "added_length": 0,
   "hidden_size": 50,
   "embedding_size": 60

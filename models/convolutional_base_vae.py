@@ -2,6 +2,10 @@ import torch.nn as nn
 
 from utils.model_common import *
 
+def init_weights(m):
+    if type(m) == nn.Conv1d or type(m) == nn.ConvTranspose1d or type(m) == nn.Linear:
+        nn.init.xavier_uniform_(m.weight)
+
 
 class ConvolutionalBlock(nn.Module):
     def __init__(self, in_c, out_c, kernel_size):
@@ -30,7 +34,7 @@ class ConvolutionalTransposeBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, layers, kernel_size, input_size, input_channels: int, scale_factor):
+    def __init__(self, layers, kernel_size, input_size, input_channels: int, scale_factor, max_channels = 64):
         super().__init__()
 
         conv_layers = []
@@ -44,6 +48,8 @@ class Encoder(nn.Module):
 
             input_channels = output_channels
             output_channels = int(output_channels * scale_factor)
+            if output_channels > max_channels:
+                output_channels = max_channels
             out_size = out_size_conv(out_size, 0, 1, kernel_size, 1)
 
         self.out_size = out_size
@@ -59,7 +65,7 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
     def __init__(self, layers, kernel_size, output_expected, input_size, input_channels: int, output_channels_expected,
-                 scale_factor):
+                 scale_factor, max_channels = 64):
         super().__init__()
         conv_layers = []
 
@@ -72,6 +78,8 @@ class Decoder(nn.Module):
 
             input_channels = output_channels
             output_channels = int(output_channels / scale_factor)
+            if output_channels > max_channels:
+                output_channels = max_channels
             out_size = out_size_transpose(out_size, 0, 1, kernel_size, 1)
 
         block = ConvolutionalTransposeBlock(input_channels, output_channels_expected, kernel_size)
@@ -101,9 +109,14 @@ class ConvolutionalBaseVAE(nn.Module):
         self.decoder = Decoder(layers, kernel_size, input_size, self.encoder.out_size, self.encoder.out_channels,
                                embeddings_static.shape[0], scale)
 
+        self.encoder.apply(init_weights)
+        self.decoder.apply(init_weights)
         self.fc1: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc2: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc3: nn.Module = nn.Linear(z_dim, h_dim)
+        self.fc1.apply(init_weights)
+        self.fc2.apply(init_weights)
+        self.fc3.apply(init_weights)
         embedding = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
         embedding.weight.data.copy_(embeddings_static)
 

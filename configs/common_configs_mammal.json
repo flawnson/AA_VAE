@@ -4,7 +4,7 @@
   "class": "mammalian",
   "batch_size": 5000,
   "epochs": 50000,
-  "feature_length": 500,
+  "chem_features": "False",
   "added_length": 0,
   "hidden_size": 500,
   "embedding_size": 200

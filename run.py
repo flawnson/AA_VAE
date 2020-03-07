@@ -38,6 +38,6 @@ if __name__ == "__main__":
 
     print(f"Start the training")
     # optimizer
-    Trainer(model, config["protein_length"], train_iterator, test_iterator, config["feature_length"], device, optimizer,
+    Trainer(model, config["protein_length"], train_iterator, test_iterator, device, optimizer,
             len(train_dataset),
             len(test_dataset), number_of_epochs, vocab_size=data_length, weights=score).trainer()

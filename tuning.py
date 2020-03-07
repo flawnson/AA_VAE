@@ -18,6 +18,7 @@ from utils.train import Trainer
 
 config_common = {
     'dataset': 'small', 'protein_length': 500, 'class': 'mammalian', 'batch_size': 3000, 'epochs': 150,
+    "chem_features": "False",
     'feature_length': 23, 'added_length': 0, 'hidden_size': 500, 'embedding_size': 200, "tuning": True
 }
 
@@ -71,7 +72,7 @@ def tuner_run(config):
     train_dataset = get_pinned_object(pinned_dataset)
     weights = data.load_from_saved_tensor(weights_name)
     train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
-    train = Trainer(model, config["protein_length"], train_iterator, None, config["feature_length"], device,
+    train = Trainer(model, config["protein_length"], train_iterator, None,  device,
                     optimizer,
                     len(train_dataset),
                     0, 0, vocab_size=data_length, weights=weights)
