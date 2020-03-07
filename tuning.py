@@ -17,19 +17,19 @@ from utils.model_factory import create_model
 from utils.train import Trainer
 
 config_common = {
-    'dataset': 'small', 'protein_length': 500, 'class': 'mammalian', 'batch_size': 3000, 'epochs': 150,
+    'dataset': 'small', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 3000, 'epochs': 150,
     "chem_features": "False",
-    'feature_length': 23, 'added_length': 0, 'hidden_size': 500, 'embedding_size': 200, "tuning": True
+    'added_length': 0, 'hidden_size': 1500, 'embedding_size': 300, "tuning": True
 }
 
 model_tuning_configs = {
     "convolutionalBasic": {
         "model_name": "convolutional_basic",
-        "kernel_size": {"grid_search": [11, 21, 31, 51]},
+        "kernel_size": {"grid_search": [17, 26, 33, 49]},
         "scale": {"grid_search": [1, 2]},
         "layers": {"grid_search": [4, 6, 8, 10]},
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
-        "weight_decay": 0.0
+        "weight_decay":  tune.sample_from(lambda spec: tune.loguniform(0.01, 0.1))
     },
     "gated_conv": {
         "model_name": "gated_cnn",
@@ -38,7 +38,7 @@ model_tuning_configs = {
         "channels": {"grid_search": [8, 16, 32]},
         "residual": {"grid_search": [2, 4, 6]},
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
-        "weight_decay": 0.0
+        "weight_decay":  tune.sample_from(lambda spec: tune.loguniform(0.01, 0.05))
     },
     "convolutional_old": {
         "model_name": "convolutional_vae",
