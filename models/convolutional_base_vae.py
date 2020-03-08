@@ -97,6 +97,7 @@ class Decoder(nn.Module):
 
 class ConvolutionalBaseVAE(nn.Module):
     def __init__(self, model_config, h_dim, z_dim, input_size, device, embeddings_static):
+        torch.manual_seed(0)
         super(ConvolutionalBaseVAE, self).__init__()
         self.name = "convolutional_basic"
         kernel_size = model_config["kernel_size"]
