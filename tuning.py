@@ -25,7 +25,7 @@ config_common = {
 model_tuning_configs = {
     "convolutionalBasic": {
         "model_name": "convolutional_basic",
-        "kernel_size": {"grid_search": [17, 21, 25]},
+        "kernel_size": {"grid_search": [17, 21, 25, 33, 49]},
         "scale": {"grid_search": [1]},
         "layers": {"grid_search": [4, 5]},
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000000001, 0.001)),
