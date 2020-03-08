@@ -18,7 +18,6 @@ from utils.train import Trainer
 
 config_common = {
     'dataset': 'small', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 500, 'epochs': 150,
-    "chem_features": "False",
     'added_length': 0, 'hidden_size': 1500, 'embedding_size': 300, "tuning": True
 }
 
@@ -27,7 +26,8 @@ model_tuning_configs = {
         "model_name": "convolutional_basic",
         "kernel_size": {"grid_search": [17, 21, 25, 33, 49]},
         "scale": {"grid_search": [1]},
-        "layers": {"grid_search": [4, 5]},
+        "layers": {"grid_search": [4, 5, 6]},
+        "chem_features": {"grid_search": ["False", "True"]},
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000000001, 0.001)),
         "weight_decay":  tune.sample_from(lambda spec: tune.loguniform(0.0001, 0.1))
     },
@@ -37,6 +37,7 @@ model_tuning_configs = {
         "kernel_size_0": {"grid_search": [11, 21, 31, 51]},
         "channels": {"grid_search": [8, 16, 32]},
         "residual": {"grid_search": [2, 4, 6]},
+        "chem_features": "False",
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
         "weight_decay":  tune.sample_from(lambda spec: tune.loguniform(0.01, 0.05))
     },
@@ -48,6 +49,7 @@ model_tuning_configs = {
         "stride_sizes_encoder": tune.grid_search([2, 5, 10, 15, 30]),
         "kernel_sizes_decoder": tune.grid_search([5, 10, 20, 50, 100, 150]),
         "stride_sizes_decoder": tune.grid_search([2, 5, 10, 15, 30]),
+        "chem_features": "False",
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000001, 1)),
         "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.0, 0.05)),
         "tuning": True
@@ -106,7 +108,7 @@ def tuner(smoke_test: bool, model):
     else:
         train_dataset_name = "data/train_set_large_1500_mammalian.json"
 
-    max_dataset_length = 20000
+    max_dataset_length = 50000
 
     train_dataset, c, score = data.read_sequences(train_dataset_name,
                                                   fixed_protein_length=data_length, add_chemical_features=True,
