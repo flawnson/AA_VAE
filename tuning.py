@@ -88,10 +88,8 @@ def tuner_run(config):
         recon_loss /= train_dataset_len
         print(f'Epoch {e}, Train Loss: {train_loss:.8f}, {recon_loss:.8f} Train accuracy {train_recon_accuracy * 100.0:.2f}%')
         if not debug:
-            track.log(mean_loss=1-(train_loss+recon_loss))
-            track.log(accuracy=train_recon_accuracy)
-            track.log(kl_loss=train_loss)
-            track.log(recon_loss=recon_loss)
+            track.log(mean_loss=1-(train_loss+recon_loss), accuracy=train_recon_accuracy, kl_loss=train_loss,
+                      recon_loss=recon_loss)
 
 
 def tuner(smoke_test: bool, model):
@@ -130,7 +128,7 @@ def tuner(smoke_test: bool, model):
     global pinned_dataset
     pinned_dataset = pin_in_object_store(train_dataset)
     sched = AsyncHyperBandScheduler(
-        time_attr="training_iteration", metric="mean_loss")
+        time_attr="training_iteration", metric="accuracy")
 
     analysis = tune.run(
         tuner_run,
@@ -146,7 +144,7 @@ def tuner(smoke_test: bool, model):
         local_dir=local_dir,
         num_samples=1 if smoke_test else 2,
         config=config_tune)
-    print("Best config is:", analysis.get_best_config(metric="mean_loss"))
+    print("Best config is:", analysis.get_best_config(metric="accuracy"))
 
 
 if __name__ == "__main__":
