@@ -33,6 +33,7 @@ model_tuning_configs = {
         "expansion_factor": {"grid_search": [1, 2, 4]},
         "scale": {"grid_search": [1, 2]},
         "layers": {"grid_search": [4, 5, 6, 8]},
+        "embedding_gradient": "True",
         "chem_features": {"grid_search": ["False", "True"]},
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000000001, 0.001)),
         "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001))
