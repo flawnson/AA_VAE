@@ -4,8 +4,8 @@ import os
 import os.path as osp
 
 import numpy as np
-import torch
 import ray
+import torch
 from ray import tune
 from ray.tune import track
 from ray.tune.schedulers import AsyncHyperBandScheduler
@@ -16,7 +16,12 @@ import utils.data as data
 from utils.model_factory import create_model
 from utils.train import Trainer
 
-config_common = {
+config_common_mammalian = {
+    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 200, 'epochs': 150,
+    'added_length': 0, 'hidden_size': 1500, 'embedding_size': 750, "tuning": True
+}
+
+config_common_bacteria = {
     'dataset': 'medium', 'protein_length': 200, 'class': 'bacteria', 'batch_size': 200, 'epochs': 150,
     'added_length': 0, 'hidden_size': 200, 'embedding_size': 40, "tuning": True
 }
@@ -24,12 +29,13 @@ config_common = {
 model_tuning_configs = {
     "convolutionalBasic": {
         "model_name": "convolutional_basic",
-        "kernel_size": {"grid_search": [17, 21, 25, 33]},
+        "kernel_size": {"grid_search": [2, 4, 6, 8]},
+        "expansion_factor": {"grid_search": [1, 2, 4]},
         "scale": {"grid_search": [1, 2]},
-        "layers": {"grid_search": [4, 5, 6]},
+        "layers": {"grid_search": [4, 5, 6, 8]},
         "chem_features": {"grid_search": ["False", "True"]},
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000000001, 0.001)),
-        "weight_decay":  tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001))
+        "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001))
     },
     "gated_conv": {
         "model_name": "gated_cnn",
@@ -39,16 +45,16 @@ model_tuning_configs = {
         "residual": {"grid_search": [2, 4, 6]},
         "chem_features": "False",
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
-        "weight_decay":  tune.sample_from(lambda spec: tune.loguniform(0.01, 0.05))
+        "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.01, 0.05))
     },
     "convolutional_old": {
         "model_name": "convolutional_vae",
         "encoder_sizes": [30, 16, 8, 4, 1],
         "decoder_sizes": [23, 16, 8, 4, 1],
-        "kernel_sizes_encoder": tune.grid_search([5, 10, 20, 50, 100, 150]),
-        "stride_sizes_encoder": tune.grid_search([2, 5, 10, 15, 30]),
-        "kernel_sizes_decoder": tune.grid_search([5, 10, 20, 50, 100, 150]),
-        "stride_sizes_decoder": tune.grid_search([2, 5, 10, 15, 30]),
+        "kernel_sizes_encoder": {"grid_search": [5, 10, 20, 50, 100, 150]},
+        "stride_sizes_encoder": {"grid_search": [2, 5, 10, 15, 30]},
+        "kernel_sizes_decoder": {"grid_search": [5, 10, 20, 50, 100, 150]},
+        "stride_sizes_decoder": {"grid_search": [2, 5, 10, 15, 30]},
         "chem_features": "False",
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000001, 1)),
         "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.0, 0.05)),
@@ -74,7 +80,7 @@ def tuner_run(config):
     train_dataset = get_pinned_object(pinned_dataset)
     weights = data.load_from_saved_tensor(weights_name)
     train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
-    train = Trainer(model, config["protein_length"], train_iterator, None,  device,
+    train = Trainer(model, config["protein_length"], train_iterator, None, device,
                     optimizer,
                     len(train_dataset),
                     0, 0, vocab_size=data_length, weights=weights)
@@ -86,14 +92,19 @@ def tuner_run(config):
 
         train_loss /= train_dataset_len
         recon_loss /= train_dataset_len
-        print(f'Epoch {e}, Train Loss: {train_loss:.8f}, {recon_loss:.8f} Train accuracy {train_recon_accuracy * 100.0:.2f}%')
+        print(
+            f'Epoch {e}, Train Loss: {train_loss:.8f}, {recon_loss:.8f} Train accuracy {train_recon_accuracy * 100.0:.2f}%')
         if not debug:
-            track.log(mean_loss=(train_loss+recon_loss), accuracy=train_recon_accuracy, kl_loss=train_loss,
+            track.log(mean_loss=(train_loss + recon_loss), accuracy=train_recon_accuracy, kl_loss=train_loss,
                       recon_loss=recon_loss)
 
 
-def tuner(smoke_test: bool, model):
+def tuner(smoke_test: bool, model, config_type):
     ray.init()
+    if config_type == "bacteria":
+        config_common = config_common_bacteria
+    else:
+        config_common = config_common_mammalian
     cpus = int(multiprocessing.cpu_count())
     gpus = torch.cuda.device_count()
 
@@ -153,7 +164,9 @@ if __name__ == "__main__":
                         help="Name of the model, options are : convolutionalBasic, gated_conv, convolutional_old",
                         type=str)
     parser.add_argument("-d", "--debug", help="Debugging or full scale", type=str)
+    parser.add_argument("-t", "--type", help="Bacteria or mammalian", type=str)
     args = parser.parse_args()
+
     debug = False
     if debug:
         ray.init()
@@ -175,4 +188,4 @@ if __name__ == "__main__":
 
         tuner_run(config_)
     else:
-        tuner(False, args.model)
+        tuner(False, args.model, args.type)
