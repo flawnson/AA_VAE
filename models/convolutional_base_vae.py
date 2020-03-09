@@ -56,7 +56,7 @@ class Encoder(nn.Module):
                 output_channels = max_channels
             out_size = out_size_conv(out_size, 0, 1, base_kernel_size, 1)
 
-        self.out_size = out_size
+        self.out_size = int(out_size)
         self.out_channels = int(input_channels)
         self.final_kernel_size = base_kernel_size
         self.conv_layers = nn.Sequential(*conv_layers)
@@ -73,7 +73,7 @@ class Decoder(nn.Module):
         super().__init__()
         conv_layers = []
 
-        output_channels = int((2 ** ((input_channels - 1).bit_length())) / 2)
+        output_channels = input_channels
         out_size = input_size
         base_kernel_size = kernel_size
 
@@ -86,7 +86,8 @@ class Decoder(nn.Module):
             if output_channels > max_channels:
                 output_channels = max_channels
             out_size = out_size_transpose(out_size, 0, 1, base_kernel_size, 1)
-            base_kernel_size = kernel_size + 1
+            if expansion_factor > 1:
+                base_kernel_size = kernel_size + 1
 
         block = ConvolutionalTransposeBlock(input_channels, output_channels_expected, base_kernel_size)
         out_size = out_size_transpose(out_size, 0, 1, base_kernel_size, 1)
