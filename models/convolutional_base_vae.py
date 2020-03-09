@@ -2,6 +2,7 @@ import torch.nn as nn
 
 from utils.model_common import *
 
+
 def init_weights(m):
     if type(m) == nn.Conv1d or type(m) == nn.ConvTranspose1d or type(m) == nn.Linear:
         nn.init.xavier_uniform_(m.weight)
@@ -34,7 +35,7 @@ class ConvolutionalTransposeBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, layers, kernel_size, input_size, input_channels: int, scale_factor, max_channels = 64):
+    def __init__(self, layers, kernel_size, input_size, input_channels: int, scale_factor, max_channels=64):
         super().__init__()
 
         conv_layers = []
@@ -65,11 +66,11 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
     def __init__(self, layers, kernel_size, output_expected, input_size, input_channels: int, output_channels_expected,
-                 scale_factor, max_channels = 64):
+                 scale_factor, max_channels=64):
         super().__init__()
         conv_layers = []
 
-        output_channels = int((2 ** ((input_channels - 1).bit_length()))/2)
+        output_channels = int((2 ** ((input_channels - 1).bit_length())) / 2)
         out_size = input_size
 
         for n in range(layers - 1):
@@ -96,7 +97,7 @@ class Decoder(nn.Module):
 
 
 class ConvolutionalBaseVAE(nn.Module):
-    def __init__(self, model_config, h_dim, z_dim, input_size, device, embeddings_static):
+    def __init__(self, model_config, h_dim, z_dim, input_size, device, embeddings_static, requires_grad=True):
         torch.manual_seed(0)
         super(ConvolutionalBaseVAE, self).__init__()
         self.name = "convolutional_basic"
@@ -119,8 +120,8 @@ class ConvolutionalBaseVAE(nn.Module):
         self.fc2.apply(init_weights)
         self.fc3.apply(init_weights)
         embedding = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
-        embedding.weight.data.copy_(embeddings_static)
-        embedding.weight.requires_grad = False
+        # embedding.weight.data.copy_(embeddings_static)
+        embedding.weight.requires_grad = requires_grad
 
         self.embedding = embedding
         self.smax = nn.Softmax(dim=2)

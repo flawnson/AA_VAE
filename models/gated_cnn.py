@@ -11,7 +11,8 @@ def init_weights(m):
 
 class GatedCNN(VaeTemplate, nn.Module):
 
-    def __init__(self, model_config, hidden_size, embedding_size, data_length, device, embeddings_static):
+    def __init__(self, model_config, hidden_size, embedding_size, data_length, device, embeddings_static,
+                 requires_grad = False):
         self.name = "gated_cnn"
         seq_len = data_length
         vocab_size = embeddings_static.shape[0]
@@ -27,7 +28,7 @@ class GatedCNN(VaeTemplate, nn.Module):
         super(GatedCNN, self).__init__(None, None, device, hidden_size, embedding_size, embedding=None)
         self.embedding = nn.Embedding(vocab_size, embd_size)
         self.embedding.weight.data.copy_(embeddings_static)
-        self.embedding.weight.requires_grad = False
+        self.embedding.weight.requires_grad = requires_grad
         padding = int((kernel[0] - 1) / 2)
         # nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, ...
         self.conv_0 = nn.Conv2d(1, out_chs, kernel, padding=(padding, 0))

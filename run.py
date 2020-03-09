@@ -15,6 +15,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--config", help="common config file", type=str)
     parser.add_argument("-m", "--model", help="model config file", type=str)
     parser.add_argument("-b", "--benchmarking", help="benchmarking run config", type=str)
+    parser.add_argument("-p", "--pretrained", help="pretrained", type=str)
     args = parser.parse_args()
     config: dict = json.load(open(args.config))
 
@@ -34,7 +35,7 @@ if __name__ == "__main__":
     train_dataset, test_dataset, train_iterator, test_iterator, c, score = load_data(config)
 
     print(f"Creating the model")
-    model, optimizer, device = create_model(config, model_config)
+    model, optimizer, device = create_model(config, model_config, args.pretrained)
 
     print(f"Start the training")
     # optimizer

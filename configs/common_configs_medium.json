@@ -4,7 +4,7 @@
   "class": "bacteria",
   "batch_size": 1000,
   "epochs": 5000,
-  "chem_features": "False",
+  "chem_features": "True",
   "hidden_size": 200,
   "embedding_size": 120
 }

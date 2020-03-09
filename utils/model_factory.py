@@ -16,7 +16,7 @@ def get_optimizer(optimizer_config, model):
     return optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
 
-def create_model(config, model_config):
+def create_model(config, model_config, pretrained_model=None):
     models = {"convolutional_vae": ConvolutionalVAE,
               "lstm_vae": LSTMVae,
               "linear_vae": LinearVAE,
@@ -28,7 +28,9 @@ def create_model(config, model_config):
     model = models.get(model_config["model_name"])(
         model_config, config["hidden_size"],
         config["embedding_size"], config["protein_length"], device,
-        data.get_embedding_matrix(config["chem_features"] == "True")).to(device)
-
+        data.get_embedding_matrix(config["chem_features"] == "True"), model_config["embedding_gradient"] == "True")\
+        .to(device)
+    if pretrained_model is not None:
+        model.load_state_dict(torch.load(pretrained_model))
     # optimizer
     return model, get_optimizer(model_config, model), device
