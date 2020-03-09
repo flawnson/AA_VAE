@@ -17,19 +17,19 @@ from utils.model_factory import create_model
 from utils.train import Trainer
 
 config_common = {
-    'dataset': 'small', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 500, 'epochs': 150,
-    'added_length': 0, 'hidden_size': 1500, 'embedding_size': 300, "tuning": True
+    'dataset': 'medium', 'protein_length': 200, 'class': 'bacteria', 'batch_size': 200, 'epochs': 150,
+    'added_length': 0, 'hidden_size': 200, 'embedding_size': 40, "tuning": True
 }
 
 model_tuning_configs = {
     "convolutionalBasic": {
         "model_name": "convolutional_basic",
-        "kernel_size": {"grid_search": [17, 21, 25, 33, 49]},
-        "scale": {"grid_search": [1]},
+        "kernel_size": {"grid_search": [17, 21, 25, 33]},
+        "scale": {"grid_search": [1, 2]},
         "layers": {"grid_search": [4, 5, 6]},
         "chem_features": {"grid_search": ["False", "True"]},
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000000001, 0.001)),
-        "weight_decay":  tune.sample_from(lambda spec: tune.loguniform(0.0001, 0.1))
+        "weight_decay":  tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001))
     },
     "gated_conv": {
         "model_name": "gated_cnn",
