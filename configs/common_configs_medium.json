@@ -3,8 +3,8 @@
   "protein_length": 200,
   "class": "bacteria",
   "batch_size": 1000,
-  "epochs": 5000,
-  "chem_features": "True",
+  "epochs": 500,
+  "chem_features": "False",
   "hidden_size": 200,
-  "embedding_size": 120
+  "embedding_size": 128
 }

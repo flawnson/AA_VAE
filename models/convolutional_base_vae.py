@@ -112,7 +112,7 @@ class ConvolutionalBaseVAE(nn.Module):
         scale = model_config["scale"]
         expansion_factor = model_config["expansion_factor"]
         if expansion_factor == 1:
-            kernel_size = kernel_size * 8
+            kernel_size = kernel_size * 4
 
         self.device = device
         self.encoder = Encoder(layers, kernel_size, input_size, embeddings_static.shape[1], scale,
@@ -132,7 +132,7 @@ class ConvolutionalBaseVAE(nn.Module):
         self.fc3.apply(init_weights)
         embedding = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
         embedding.weight.data.copy_(embeddings_static)
-        embedding.weight.requires_grad = requires_grad
+        embedding.weight.requires_grad = False
 
         self.embedding = embedding
         self.smax = nn.Softmax(dim=2)
