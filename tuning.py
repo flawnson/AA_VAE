@@ -29,10 +29,10 @@ config_common_bacteria = {
 model_tuning_configs = {
     "convolutionalBasic": {
         "model_name": "convolutional_basic",
-        "kernel_size": {"grid_search": [2, 4, 6, 8]},
-        "expansion_factor": {"grid_search": [1, 2, 4]},
+        "kernel_size": {"grid_search": [2, 4]},
+        "expansion_factor": {"grid_search": [1, 2]},
         "scale": {"grid_search": [1, 2]},
-        "layers": {"grid_search": [4, 5, 6, 8]},
+        "layers": {"grid_search": [4, 5, 6]},
         "embedding_gradient": "True",
         "chem_features": {"grid_search": ["False", "True"]},
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000000001, 0.001)),

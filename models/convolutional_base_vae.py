@@ -35,7 +35,7 @@ class ConvolutionalTransposeBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, layers, kernel_size, input_size, input_channels: int, scale_factor, max_channels=64,
+    def __init__(self, layers, kernel_size, input_size, input_channels: int, scale_factor, max_channels=128,
                  expansion_factor=1):
         super().__init__()
 
@@ -69,7 +69,7 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
     def __init__(self, layers, kernel_size, output_expected, input_size, input_channels: int, output_channels_expected,
-                 scale_factor, max_channels=64, expansion_factor=1):
+                 scale_factor, max_channels=128, expansion_factor=1):
         super().__init__()
         conv_layers = []
 
