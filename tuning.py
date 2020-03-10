@@ -23,16 +23,16 @@ config_common_mammalian = {
 
 config_common_bacteria = {
     'dataset': 'medium', 'protein_length': 200, 'class': 'bacteria', 'batch_size': 200, 'epochs': 150,
-    'added_length': 0, 'hidden_size': 200, 'embedding_size': 40, "tuning": True
+    'added_length': 0, 'hidden_size': 200, 'embedding_size': 128, "tuning": True
 }
 
 model_tuning_configs = {
     "convolutionalBasic": {
         "model_name": "convolutional_basic",
-        "kernel_size": {"grid_search": [2, 4]},
-        "expansion_factor": {"grid_search": [1, 2]},
+        "kernel_size": {"grid_search": [2, 3, 4]},
+        "expansion_factor": {"grid_search": [1]},
         "scale": {"grid_search": [1, 2]},
-        "layers": {"grid_search": [4, 5, 6]},
+        "layers": {"grid_search": [4, 5]},
         "embedding_gradient": "True",
         "chem_features": {"grid_search": ["False", "True"]},
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000000001, 0.001)),

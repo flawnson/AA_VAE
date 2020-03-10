@@ -73,7 +73,7 @@ class Trainer:
         scale = mask.sum()
         recon_loss = self.criterion(predicted, x, scale)
 
-        kl_loss = kl_loss_function(mu, var, float(scale) / mask.numel())
+        kl_loss = kl_loss_function(mu, var, 1)
         total_loss = kl_loss + recon_loss
         # recon_loss = total_loss_function(recon_loss, mu, var, float(scale) / mask.numel())
 
