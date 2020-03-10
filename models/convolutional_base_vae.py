@@ -112,7 +112,7 @@ class ConvolutionalBaseVAE(nn.Module):
         scale = model_config["scale"]
         expansion_factor = model_config["expansion_factor"]
         if expansion_factor == 1:
-            kernel_size = kernel_size * 4
+            kernel_size = kernel_size - 1
 
         self.device = device
         self.encoder = Encoder(layers, kernel_size, input_size, embeddings_static.shape[1], scale,
@@ -151,5 +151,5 @@ class ConvolutionalBaseVAE(nn.Module):
         z, mu, log_var = self.bottleneck(h)
         z = self.fc3(z)
         z = z.view(z.shape[0], self.encoder.out_channels, -1)
-        val = self.smax((self.decoder(z).transpose(1, 2)))
+        val = ((self.decoder(z).transpose(1, 2)))
         return val.transpose(1, 2), mu, log_var
