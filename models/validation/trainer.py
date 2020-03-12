@@ -33,7 +33,7 @@ class TrainLinear:
         self.optimizer.zero_grad()
         logits = self.model(batch)
 
-        loss = F.cross_entropy(logits, torch.argmax(labels, dim=1), weight=self.weights.float())
+        loss = F.cross_entropy(logits, torch.argmax(labels, dim=1), weight=self.weights.float().to(self.device))
         loss.backward()
         self.optimizer.step()
         print(f"Loss: {loss}")
