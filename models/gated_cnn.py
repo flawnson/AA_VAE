@@ -5,7 +5,7 @@ from models.vae_template import VaeTemplate
 
 
 def init_weights(m):
-    if type(m) == nn.Conv2d or type(m) == nn.ConvTranspose2d or type(m) == nn.Linear:
+    if type(m) == nn.Conv2d or type(m) == nn.ConvTranspose2d:
         nn.init.xavier_uniform_(m.weight)
 
 
@@ -63,34 +63,20 @@ class GatedCNN(VaeTemplate, nn.Module):
         self.c_l = nn.Parameter(torch.randn(1, vocab_size, 1, 1), requires_grad=True)
         self.sigmoid = nn.Sigmoid()
 
-        self.conv.apply(init_weights)
-        self.conv_gate.apply(init_weights)
-        self.conv_d.apply(init_weights)
-        self.conv_gate_d.apply(init_weights)
-        self.conv_0.apply(init_weights)
-        self.conv_gate_0.apply(init_weights)
-        self.conv_l.apply(init_weights)
-        self.conv_gate_l.apply(init_weights)
-
     def encode(self, x):
         # Embedding
         bs = x.size(0)  # batch size
         seq_len = x.size(1)
         x = self.embedding(x)  # (bs, seq_len, embd_size)
-
         # CNN
         x = x.unsqueeze(1)  # (bs, Cin, seq_len, embd_size), insert Channnel-In dim
-
         A = self.conv_0(x)  # (bs, Cout, seq_len, 1)
-        A += self.b_0.repeat(1, 1, seq_len, 1)
-        B = self.conv_gate_0(x)  # (bs, Cout, seq_len, 1)
-        B += self.c_0.repeat(1, 1, seq_len, 1)
-        h = A * self.sigmoid(B)  # (bs, Cout, seq_len, 1)
-        res_input = h
+        res_input = A
+        h = A
 
         for i, (conv, conv_gate) in enumerate(zip(self.conv, self.conv_gate)):
-            A = conv(h) + self.b[i].repeat(1, 1, seq_len, 1)
-            B = conv_gate(h) + self.c[i].repeat(1, 1, seq_len, 1)
+            A = conv(h)
+            B = conv_gate(h)
             h = A * self.sigmoid(B)  # (bs, Cout, seq_len, 1)
             if i % self.res_block_count == 0:  # size of each residual block
                 h += res_input
@@ -109,16 +95,13 @@ class GatedCNN(VaeTemplate, nn.Module):
         res_input = res_input.view(bs, self.out_chs, seq_len, -1)
         h = res_input
         for i, (conv, conv_gate) in enumerate(zip(self.conv_d, self.conv_gate_d)):
-            A = conv(h) + self.b[i].repeat(1, 1, seq_len, 1)
-            B = conv_gate(h) + self.c[i].repeat(1, 1, seq_len, 1)
+            A = conv(h)
+            B = conv_gate(h)
             h = A * self.sigmoid(B)  # (bs, Cout, seq_len, 1)
             if i % self.res_block_count == 0:  # size of each residual block
                 h += res_input
                 res_input = h
-        A = self.conv_l(h)  # (bs, Cout, seq_len, 1)
-        A += self.b_l.repeat(1, 1, seq_len, 1)
-        B = self.conv_gate_l(h)  # (bs, Cout, seq_len, 1)
-        B += self.c_l.repeat(1, 1, seq_len, 1)
-        h = A * self.sigmoid(B)
-        h = h.squeeze(3)
+        A = self.conv_l(h)
+
+        h = A.squeeze(3)
         return h, mu, var

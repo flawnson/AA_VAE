@@ -40,9 +40,9 @@ model_tuning_configs = {
     },
     "gated_conv": {
         "model_name": "gated_cnn",
-        "layers": {"grid_search": [6, 8, 16]},
-        "kernel_size_0": {"grid_search": [11, 21, 31, 51]},
-        "channels": {"grid_search": [8, 16, 32]},
+        "layers": {"grid_search": [6, 8]},
+        "kernel_size_0": {"grid_search": [21, 31, 51]},
+        "channels": {"grid_search": [32, 64, 128, 256]},
         "residual": {"grid_search": [2, 4, 6]},
         "chem_features": "False",
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
