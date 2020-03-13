@@ -22,12 +22,13 @@ class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
                  train_dataset, test_dataset, n_epochs, loss_function_name="bce",
                  vocab_size=23,
-                 patience_count=1000, weights=None):
+                 patience_count=1000, weights=None, model_name = "default"):
 
         loss_functions = {
             "bce": self.cross_entropy_wrapper,
             "nll": torch.nn.functional.nll_loss
         }
+        self.model_name = model_name
 
         self.model = model.to(device)
         self.data_length = data_length
@@ -174,4 +175,4 @@ class Trainer:
 
         date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
 
-        torch.save(self.model.state_dict(), f"saved_models/{self.model.name}_{accuracy}_{date_time}")
+        torch.save(self.model.state_dict(), f"saved_models/{self.model_name}_{accuracy}_{date_time}")

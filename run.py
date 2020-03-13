@@ -36,10 +36,10 @@ if __name__ == "__main__":
     train_dataset, test_dataset, train_iterator, test_iterator, c, score = load_data(config)
 
     print(f"Creating the model")
-    model, optimizer, device = create_model(config, model_config, args.pretrained, args.multigpu)
+    model, optimizer, device, model_name = create_model(config, model_config, args.pretrained, args.multigpu)
 
     print(f"Start the training")
     # optimizer
     Trainer(model, config["protein_length"], train_iterator, test_iterator, device, optimizer,
             len(train_dataset),
-            len(test_dataset), number_of_epochs, vocab_size=data_length, weights=score).trainer()
+            len(test_dataset), number_of_epochs, vocab_size=data_length, weights=score, model_name=model_name).trainer()

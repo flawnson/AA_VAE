@@ -34,15 +34,15 @@ model_tuning_configs = {
         "scale": {"grid_search": [1]},
         "layers": {"grid_search": [4]},
         "embedding_gradient": "True",
-        "chem_features": {"grid_search": ["False", "True"]},
+        "chem_features": "False",
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000000001, 0.001)),
         "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001))
     },
     "gated_conv": {
         "model_name": "gated_cnn",
         "layers": {"grid_search": [6, 8]},
-        "kernel_size_0": {"grid_search": [21, 31, 51]},
-        "channels": {"grid_search": [32, 64, 128, 256]},
+        "kernel_size_0": {"grid_search": [21, 33, 49, 65]},
+        "channels": {"grid_search": [64, 128, 256]},
         "residual": {"grid_search": [2, 4, 6]},
         "chem_features": "False",
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),

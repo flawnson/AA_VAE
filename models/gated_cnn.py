@@ -12,7 +12,7 @@ def init_weights(m):
 class GatedCNN(VaeTemplate, nn.Module):
 
     def __init__(self, model_config, hidden_size, embedding_size, data_length, device, embeddings_static,
-                 requires_grad = False):
+                 requires_grad=False):
         self.name = "gated_cnn"
         seq_len = data_length
         vocab_size = embeddings_static.shape[0]
