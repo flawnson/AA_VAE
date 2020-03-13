@@ -12,6 +12,11 @@ class EmbeddingData(Dataset, metaclass=ABCMeta):
     @abstractmethod
     def __init__(self, embedding_dict, onehot):
         """
+        Factory class to create datasets that consist of protein embedding and label pairs.
+        self.k represents the known mask (in a semi-supervised task this would be useful,
+        as is implemented in the GAT model. For this linear model however, it is used to
+        ensure any unknown protein embeddings are not learnt by the model (the linear will
+        be trained in a supervised manner)
 
         :param embeddings: torch tensor of embeddings
         :param targets: torch tensor of corresponding targets
@@ -92,7 +97,6 @@ class BinaryLabels(EmbeddingData, ABC):
     def label_mapper(self):
         """
 
-        :param data: HGNC symbol
         :return: Dictionary of labels that can be used to map the data labels to the classes.
         """
         node_labels = pd.read_csv(osp.join(osp.dirname(__file__), "raw_data", "binary_labels.csv"), header=0)
@@ -109,6 +113,12 @@ class QuaternaryLabels(EmbeddingData, ABC):
         super(QuaternaryLabels, self).__init__(embedding_dict=embedding_dict, onehot=onehot)
 
     def get_label(self, query: str):
+        """
+
+        :param query: a gene name that is requesting a label
+        :return: Numerical label
+        """
+
         mappings: dict = {
             'fibrous_proteins': 1,
             'membrane_proteins': 2,
@@ -135,6 +145,11 @@ class QuinaryLabels(EmbeddingData, ABC):
         super(QuinaryLabels, self).__init__(embedding_dict=embedding_dict, onehot=onehot)
 
     def get_label(self, query: str):
+        """
+
+        :param query: a gene name that is requesting a label
+        :return: Numerical label
+        """
         mappings: dict = {
             1000000: 1,
             1000001: 2,
@@ -163,6 +178,11 @@ class ProteinLabels(EmbeddingData, ABC):
         super(ProteinLabels, self).__init__(embedding_dict=embedding_dict, onehot=onehot)
 
     def data_file(self):
+        """
+        Due to how the get_label method functions, the file needs to be opened within the child class
+
+        :return: Numerical label
+        """
         node_labels = pd.read_csv(osp.join(osp.dirname(__file__), "raw_data", "protein_labels.csv"), header=0)
         data = []
         for symbol in ["gene", "label"]:
@@ -171,6 +191,11 @@ class ProteinLabels(EmbeddingData, ABC):
         return data
 
     def get_label(self, query: str):
+        """
+
+        :param query: a gene name that is requesting a label (protein labels are numerous, hence a range(len) is used
+        :return: Numerical label
+        """
         mappings = dict(zip(np.unique(self.data_file()[1]), list(range(1, len(np.unique(self.data_file()[1]))))))
         if mappings.keys().__contains__(query):
             return mappings.get(query)

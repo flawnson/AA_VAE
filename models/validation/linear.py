@@ -39,10 +39,10 @@ if __name__ == "__main__":
         raise NotImplementedError("Task described is not implemented")
 
     model_config = json_config.get('model_config')
-    model = LinearModel(model_config.get('in_size'),
-                        model_config.get('out_size'),
-                        model_config.get('layer_sizes'),
-                        model_config.get('dropout')).to(device)
+    model = LinearModel(len(np.squeeze(list(dataset.x["embeddings"].values())[0])),  # Embedding size
+                        len(dataset.y[0]),  # Number of classes
+                        model_config.get('layer_sizes'),  # List of layer sizes
+                        model_config.get('dropout')).to(device)  # Boolean value
 
     train_config = json_config.get('train_config')
     TrainLinear(train_config, data_config, dataset, model, device).run()
