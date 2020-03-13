@@ -14,6 +14,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Config file parser")
     parser.add_argument("-c", "--config", help="common config file", type=str)
     parser.add_argument("-m", "--model", help="model config file", type=str)
+    parser.add_argument("-g", "--multigpu", help="multigpu mode", type=str)
     parser.add_argument("-b", "--benchmarking", help="benchmarking run config", type=str)
     parser.add_argument("-p", "--pretrained", help="pretrained", type=str)
     args = parser.parse_args()

@@ -13,8 +13,9 @@ class ConvolutionalBlock(nn.Module):
         super().__init__()
         self.conv_block = nn.Sequential(
             nn.Conv1d(in_c, out_c, kernel_size=kernel_size, bias=False, padding=0, groups=1),
-            nn.BatchNorm1d(out_c),
-            nn.ELU())
+            nn.ELU(),
+            nn.BatchNorm1d(out_c)
+        )
 
     def forward(self, x):
         return self.conv_block(x)
@@ -25,8 +26,8 @@ class ConvolutionalTransposeBlock(nn.Module):
         super().__init__()
 
         self.conv_block = nn.Sequential(
-            nn.BatchNorm1d(in_c),
             nn.ELU(),
+            nn.BatchNorm1d(in_c),
             nn.ConvTranspose1d(in_c, out_c, kernel_size=kernel_size, bias=False, padding=0, groups=1)
         )
 
@@ -59,10 +60,18 @@ class Encoder(nn.Module):
         self.out_size = int(out_size)
         self.out_channels = int(input_channels)
         self.final_kernel_size = base_kernel_size
-        self.conv_layers = nn.Sequential(*conv_layers)
+        self.conv_layers = nn.ModuleList(conv_layers)
+        self.residue = 2
 
     def forward(self, x):
-        x = self.conv_layers(x)
+        inv = x
+        i = 1
+        for convolution_layer in self.conv_layers:
+            x = convolution_layer(x)
+            if i % self.residue == 0:
+                out = x + inv
+                inv = out
+                x = out
         x = x.view(x.shape[0], -1)
         return x
 
@@ -93,13 +102,23 @@ class Decoder(nn.Module):
         out_size = out_size_transpose(out_size, 0, 1, base_kernel_size, 1)
         conv_layers.append(block)
 
-        self.conv_layers = nn.Sequential(*conv_layers)
+        self.conv_layers = nn.ModuleList(conv_layers)
 
         self.out_size = out_size
         assert out_size == output_expected
+        self.residue = 2
 
     def forward(self, x):
-        return self.conv_layers(x)
+        inv = x
+        i = 1
+        for convolution_layer in self.conv_layers:
+            x = convolution_layer(x)
+            if i % self.residue == 0:
+                out = x + inv
+                inv = out
+                x = out
+        return x
+        # return self.conv_layers(x)
 
 
 class ConvolutionalBaseVAE(nn.Module):
@@ -151,5 +170,5 @@ class ConvolutionalBaseVAE(nn.Module):
         z, mu, log_var = self.bottleneck(h)
         z = self.fc3(z)
         z = z.view(z.shape[0], self.encoder.out_channels, -1)
-        val = ((self.decoder(z).transpose(1, 2)))
+        val = self.decoder(z).transpose(1, 2)
         return val.transpose(1, 2), mu, log_var
