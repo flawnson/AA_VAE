@@ -31,12 +31,13 @@ class TransformerModel(nn.Module):
         self.model_type = 'Transformer'
         self.src_mask = None
         self.pos_encoder = PositionalEncoding(ninp, dropout)
+        self.embedder = nn.Conv1d(kernel_size=3, in_channels=1, out_channels=ninp, stride=3, padding=0, bias=False)
         encoder_layers = TransformerEncoderLayer(ninp, nhead, nhid, dropout)
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
         self.encoder = nn.Embedding(ntoken, ninp)
         self.ninp = ninp
-        self.decoder = TransformerDecoderLayer(ninp, ntoken)
-        self.transformer_decoder = TransformerDecoder()
+        decoder_layer = TransformerDecoderLayer(ninp, ntoken)
+        self.transformer_decoder = TransformerDecoder(decoder_layer, nlayers)
 
         self.init_weights()
 

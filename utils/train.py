@@ -84,6 +84,7 @@ class Trainer:
         # backward pass
         if training:
             total_loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
             self.optimizer.step()
 
         return kl_loss.item(), recon_loss.item(), recon_accuracy
