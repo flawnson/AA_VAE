@@ -31,7 +31,7 @@ def create_model(config, model_config, pretrained_model=None, multigpu=None):
         data.get_embedding_matrix(config["chem_features"] == "True"), model_config["embedding_gradient"] == "True")\
         .to(device)
 
-    if multigpu is not None:
+    if multigpu:
         model = torch.nn.DataParallel(model)
 
     if pretrained_model is not None:
