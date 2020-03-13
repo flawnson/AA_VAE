@@ -78,7 +78,7 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
     def __init__(self, layers, kernel_size, output_expected, input_size, input_channels: int, output_channels_expected,
-                 scale_factor, max_channels=256, expansion_factor=1):
+                 channel_scale_factor, max_channels=256, kernel_expansion_factor=1):
         super().__init__()
         conv_layers = []
 
@@ -89,13 +89,13 @@ class Decoder(nn.Module):
         for n in range(layers - 1):
             block = ConvolutionalTransposeBlock(input_channels, output_channels, base_kernel_size)
             conv_layers.append(block)
-            kernel_size = int(kernel_size / expansion_factor)
+            kernel_size = int(kernel_size / kernel_expansion_factor)
             input_channels = output_channels
-            output_channels = int(output_channels / scale_factor)
+            output_channels = int(output_channels / channel_scale_factor)
             if output_channels > max_channels:
                 output_channels = max_channels
             out_size = out_size_transpose(out_size, 0, 1, base_kernel_size, 1)
-            if expansion_factor > 1:
+            if kernel_expansion_factor > 1:
                 base_kernel_size = kernel_size + 1
 
         block = ConvolutionalTransposeBlock(input_channels, output_channels_expected, base_kernel_size)
@@ -128,18 +128,18 @@ class ConvolutionalBaseVAE(nn.Module):
         self.name = "convolutional_basic"
         kernel_size = model_config["kernel_size"]
         layers = model_config["layers"]
-        scale = model_config["scale"]
-        expansion_factor = model_config["expansion_factor"]
-        if expansion_factor == 1:
+        channel_scale_factor = model_config["channel_scale_factor"]
+        kernel_expansion_factor = model_config["kernel_expansion_factor"]
+        if kernel_expansion_factor == 1:
             kernel_size = kernel_size - 1
 
         self.device = device
-        self.encoder = Encoder(layers, kernel_size, input_size, embeddings_static.shape[1], scale,
-                               expansion_factor=expansion_factor)
+        self.encoder = Encoder(layers, kernel_size, input_size, embeddings_static.shape[1], channel_scale_factor,
+                               expansion_factor=kernel_expansion_factor)
         h_dim = int(self.encoder.out_size * self.encoder.out_channels)
         self.decoder = Decoder(layers, self.encoder.final_kernel_size, input_size, self.encoder.out_size,
                                self.encoder.out_channels,
-                               embeddings_static.shape[0], scale, expansion_factor=expansion_factor)
+                               embeddings_static.shape[0], channel_scale_factor, kernel_expansion_factor=kernel_expansion_factor)
 
         self.encoder.apply(init_weights)
         self.decoder.apply(init_weights)
