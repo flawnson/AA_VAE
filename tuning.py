@@ -43,7 +43,7 @@ model_tuning_configs = {
         "layers": {"grid_search": [6, 8]},
         "kernel_size_0": {"grid_search": [21, 33, 49, 65]},
         "channels": {"grid_search": [64, 128, 256]},
-        "residual": {"grid_search": [2, 4, 6]},
+        "residual": {"grid_search": [2, 4]},
         "chem_features": "False",
         "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
         "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.01, 0.05))

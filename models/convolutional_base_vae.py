@@ -72,6 +72,7 @@ class Encoder(nn.Module):
                 out = x + inv
                 inv = out
                 x = out
+            i = i + 1
         x = x.view(x.shape[0], -1)
         return x
 
@@ -117,6 +118,7 @@ class Decoder(nn.Module):
                 out = x + inv
                 inv = out
                 x = out
+            i = i + 1
         return x
         # return self.conv_layers(x)
 

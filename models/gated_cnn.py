@@ -98,6 +98,7 @@ class GatedCNN(VaeTemplate, nn.Module):
             A = conv(h)
             B = conv_gate(h)
             h = A * self.sigmoid(B)  # (bs, Cout, seq_len, 1)
+
             if i % self.res_block_count == 0:  # size of each residual block
                 h += res_input
                 res_input = h
