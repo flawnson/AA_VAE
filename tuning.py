@@ -29,9 +29,9 @@ config_common_bacteria = {
 model_tuning_configs = {
     "convolutionalBasic": {
         "model_name": "convolutional_basic",
-        "kernel_size": {"grid_search": [17]},
-        "expansion_factor": {"grid_search": [1]},
-        "scale": {"grid_search": [1]},
+        "kernel_size": {"grid_search": [2]},
+        "expansion_factor": {"grid_search": [2]},
+        "scale": {"grid_search": [2]},
         "layers": {"grid_search": [4]},
         "embedding_gradient": "True",
         "chem_features": "False",
@@ -154,7 +154,7 @@ def tuner(smoke_test: bool, model, config_type):
             "gpu": gpus
         },
         local_dir=local_dir,
-        num_samples=1 if smoke_test else 2,
+        num_samples=1 if smoke_test else 3,
         config=config_tune)
     print("Best config is:", analysis.get_best_config(metric="accuracy"))
 
