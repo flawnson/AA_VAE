@@ -68,7 +68,7 @@ def tuner_run(config):
     track.init()
     print(config)
 
-    model, optimizer, device = create_model(config, config)
+    model, optimizer, device, _  = create_model(config, config, multigpu=True)
 
     data_length = config["protein_length"]
     batch_size = config["batch_size"]  # number of data points in each batch
@@ -77,7 +77,6 @@ def tuner_run(config):
 
     print(f"Loading the sequence for train data: {train_dataset_name}")
 
-    # train_dataset = data.load_from_saved_tensor(train_dataset_name)
     train_dataset = get_pinned_object(pinned_dataset)
     weights = data.load_from_saved_tensor(weights_name)
     train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
@@ -169,24 +168,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     debug = False
-    if debug:
-        ray.init()
-        train_dataset = data.load_from_saved_tensor(
-            '/home/jyothish/PycharmProjects/simple-vae/mammalian_1500_10000_tuning.pt')
-        train_dataset = data.get_shuffled_sample(train_dataset, 10000)
-        pinned_dataset = pin_in_object_store(train_dataset)
-        config_ = {'dataset': 'small', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 1000, 'epochs': 5,
-                   'feature_length': 23, 'added_length': 0, 'hidden_size': 1500, 'embedding_size': 600,
-                   'tuning_dataset_name': '/home/jyothish/PycharmProjects/simple-vae/mammalian_1500_10000_tuning.pt',
-                   'tuning_weights': '/home/jyothish/PycharmProjects/simple-vae/mammalian.1500.10000.wt',
-                   'model_name': 'gated_cnn', 'layers': 4,
-                   'kernel_size_0': 7, 'channels': 4,
-                   'residual': 2,
-                   "lr": 0.005,
-                   "weight_decay": 0.0,
-                   "tuning": True
-                   }
 
-        tuner_run(config_)
-    else:
-        tuner(False, args.model, args.type)
+    tuner(False, args.model, args.type)
