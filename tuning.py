@@ -30,8 +30,8 @@ model_tuning_configs = {
     "convolutionalBasic": {
         "model_name": "convolutional_basic",
         "kernel_size": {"grid_search": [2]},
-        "expansion_factor": {"grid_search": [2]},
-        "scale": {"grid_search": [2]},
+        "kernel_expansion_factor": {"grid_search": [2]},
+        "channel_scale_factor": {"grid_search": [2]},
         "layers": {"grid_search": [4]},
         "embedding_gradient": "True",
         "chem_features": "False",

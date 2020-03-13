@@ -16,7 +16,7 @@ def get_optimizer(optimizer_config, model):
     return optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
 
-def create_model(config, model_config, pretrained_model=None, multigpu=None):
+def create_model(config, model_config, pretrained_model=None, multigpu=False):
     models = {"convolutional_vae": ConvolutionalVAE,
               "lstm_vae": LSTMVae,
               "linear_vae": LinearVAE,
