@@ -16,7 +16,7 @@ def get_optimizer(optimizer_config, model):
     return optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
 
-def create_model(config, model_config, pretrained_model=None):
+def create_model(config, model_config, pretrained_model=None, multigpu=False):
     models = {"convolutional_vae": ConvolutionalVAE,
               "lstm_vae": LSTMVae,
               "linear_vae": LinearVAE,
@@ -30,7 +30,11 @@ def create_model(config, model_config, pretrained_model=None):
         config["embedding_size"], config["protein_length"], device,
         data.get_embedding_matrix(config["chem_features"] == "True"), model_config["embedding_gradient"] == "True")\
         .to(device)
+    model_name = model.name
+    if multigpu:
+        model = torch.nn.DataParallel(model)
+
     if pretrained_model is not None:
         model.load_state_dict(torch.load(pretrained_model))
     # optimizer
-    return model, get_optimizer(model_config, model), device
+    return model, get_optimizer(model_config, model), device, model_name

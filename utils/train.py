@@ -22,12 +22,13 @@ class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
                  train_dataset, test_dataset, n_epochs, loss_function_name="bce",
                  vocab_size=23,
-                 patience_count=1000, weights=None):
+                 patience_count=1000, weights=None, model_name="default"):
 
         loss_functions = {
             "bce": self.cross_entropy_wrapper,
             "nll": torch.nn.functional.nll_loss
         }
+        self.model_name = model_name
 
         self.model = model.to(device)
         self.data_length = data_length
@@ -84,6 +85,7 @@ class Trainer:
         # backward pass
         if training:
             total_loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
             self.optimizer.step()
 
         return kl_loss.item(), recon_loss.item(), recon_accuracy
@@ -102,7 +104,7 @@ class Trainer:
             # reshape the data into [batch_size, FIXED_PROTEIN_LENGTH*23]
             kl_loss, recon_loss, accuracy = self.__inner_iteration(x, True, iter)
             train_kl_loss += kl_loss
-            train_recon_loss+= recon_loss
+            train_recon_loss += recon_loss
             recon_accuracy += accuracy
 
         return train_kl_loss, train_recon_loss, recon_accuracy / len(self.train_iterator)
@@ -138,7 +140,7 @@ class Trainer:
         for e in range(self.n_epochs):
 
             train_kl_loss, train_recon_loss, train_recon_accuracy = self.train(e)
-            test_kl_loss, test_recon_loss,  test_recon_accuracy = self.test(e)
+            test_kl_loss, test_recon_loss, test_recon_accuracy = self.test(e)
             train_recon_loss /= self.train_dataset_len
             test_recon_loss /= self.test_dataset_len
             train_kl_loss /= self.train_dataset_len
@@ -173,4 +175,4 @@ class Trainer:
 
         date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
 
-        torch.save(self.model.state_dict(), f"saved_models/{self.model.name}_{accuracy}_{date_time}")
+        torch.save(self.model.state_dict(), f"saved_models/{self.model_name}_{accuracy}_{date_time}")

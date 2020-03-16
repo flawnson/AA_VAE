@@ -13,8 +13,9 @@ class ConvolutionalBlock(nn.Module):
         super().__init__()
         self.conv_block = nn.Sequential(
             nn.Conv1d(in_c, out_c, kernel_size=kernel_size, bias=False, padding=0, groups=1),
-            nn.BatchNorm1d(out_c),
-            nn.ELU())
+            nn.ELU(),
+            nn.BatchNorm1d(out_c)
+        )
 
     def forward(self, x):
         return self.conv_block(x)
@@ -25,8 +26,8 @@ class ConvolutionalTransposeBlock(nn.Module):
         super().__init__()
 
         self.conv_block = nn.Sequential(
-            nn.BatchNorm1d(in_c),
             nn.ELU(),
+            nn.BatchNorm1d(in_c),
             nn.ConvTranspose1d(in_c, out_c, kernel_size=kernel_size, bias=False, padding=0, groups=1)
         )
 
@@ -35,7 +36,7 @@ class ConvolutionalTransposeBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, layers, kernel_size, input_size, input_channels: int, scale_factor, max_channels=128,
+    def __init__(self, layers, kernel_size, input_size, input_channels: int, scale_factor, max_channels=256,
                  expansion_factor=1):
         super().__init__()
 
@@ -59,17 +60,26 @@ class Encoder(nn.Module):
         self.out_size = int(out_size)
         self.out_channels = int(input_channels)
         self.final_kernel_size = base_kernel_size
-        self.conv_layers = nn.Sequential(*conv_layers)
+        self.conv_layers = nn.ModuleList(conv_layers)
+        self.residue = 2
 
     def forward(self, x):
-        x = self.conv_layers(x)
+        inv = x
+        i = 1
+        for convolution_layer in self.conv_layers:
+            x = convolution_layer(x)
+            if i % self.residue == 0:
+                out = x + inv
+                inv = out
+                x = out
+            i = i + 1
         x = x.view(x.shape[0], -1)
         return x
 
 
 class Decoder(nn.Module):
     def __init__(self, layers, kernel_size, output_expected, input_size, input_channels: int, output_channels_expected,
-                 scale_factor, max_channels=128, expansion_factor=1):
+                 channel_scale_factor, max_channels=256, kernel_expansion_factor=1):
         super().__init__()
         conv_layers = []
 
@@ -80,26 +90,37 @@ class Decoder(nn.Module):
         for n in range(layers - 1):
             block = ConvolutionalTransposeBlock(input_channels, output_channels, base_kernel_size)
             conv_layers.append(block)
-            kernel_size = int(kernel_size / expansion_factor)
+            kernel_size = int(kernel_size / kernel_expansion_factor)
             input_channels = output_channels
-            output_channels = int(output_channels / scale_factor)
+            output_channels = int(output_channels / channel_scale_factor)
             if output_channels > max_channels:
                 output_channels = max_channels
             out_size = out_size_transpose(out_size, 0, 1, base_kernel_size, 1)
-            if expansion_factor > 1:
+            if kernel_expansion_factor > 1:
                 base_kernel_size = kernel_size + 1
 
         block = ConvolutionalTransposeBlock(input_channels, output_channels_expected, base_kernel_size)
         out_size = out_size_transpose(out_size, 0, 1, base_kernel_size, 1)
         conv_layers.append(block)
 
-        self.conv_layers = nn.Sequential(*conv_layers)
+        self.conv_layers = nn.ModuleList(conv_layers)
 
         self.out_size = out_size
         assert out_size == output_expected
+        self.residue = 2
 
     def forward(self, x):
-        return self.conv_layers(x)
+        inv = x
+        i = 1
+        for convolution_layer in self.conv_layers:
+            x = convolution_layer(x)
+            if i % self.residue == 0:
+                out = x + inv
+                inv = out
+                x = out
+            i = i + 1
+        return x
+        # return self.conv_layers(x)
 
 
 class ConvolutionalBaseVAE(nn.Module):
@@ -109,18 +130,18 @@ class ConvolutionalBaseVAE(nn.Module):
         self.name = "convolutional_basic"
         kernel_size = model_config["kernel_size"]
         layers = model_config["layers"]
-        scale = model_config["scale"]
-        expansion_factor = model_config["expansion_factor"]
-        if expansion_factor == 1:
+        channel_scale_factor = model_config["channel_scale_factor"]
+        kernel_expansion_factor = model_config["kernel_expansion_factor"]
+        if kernel_expansion_factor == 1:
             kernel_size = kernel_size - 1
 
         self.device = device
-        self.encoder = Encoder(layers, kernel_size, input_size, embeddings_static.shape[1], scale,
-                               expansion_factor=expansion_factor)
+        self.encoder = Encoder(layers, kernel_size, input_size, embeddings_static.shape[1], channel_scale_factor,
+                               expansion_factor=kernel_expansion_factor)
         h_dim = int(self.encoder.out_size * self.encoder.out_channels)
         self.decoder = Decoder(layers, self.encoder.final_kernel_size, input_size, self.encoder.out_size,
                                self.encoder.out_channels,
-                               embeddings_static.shape[0], scale, expansion_factor=expansion_factor)
+                               embeddings_static.shape[0], channel_scale_factor, kernel_expansion_factor=kernel_expansion_factor)
 
         self.encoder.apply(init_weights)
         self.decoder.apply(init_weights)
@@ -151,5 +172,5 @@ class ConvolutionalBaseVAE(nn.Module):
         z, mu, log_var = self.bottleneck(h)
         z = self.fc3(z)
         z = z.view(z.shape[0], self.encoder.out_channels, -1)
-        val = ((self.decoder(z).transpose(1, 2)))
+        val = self.decoder(z).transpose(1, 2)
         return val.transpose(1, 2), mu, log_var
