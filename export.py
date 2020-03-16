@@ -204,12 +204,7 @@ if __name__ == "__main__":
     for protein in proteins_onehot:
         protein_rep = torch.stack(protein)
         protein_embeddings = model.representation(protein_rep.to(device).long())
-        protein_embeddings = protein_embeddings.view(-1)
-        data = torch.split(protein_embeddings, 300, 0)
-        val = data[0]
-        for x in range(1, len(data) - 1):
-            val += data[x]
-        val = val.to('cpu').detach().numpy()
+        val = protein_embeddings.to('cpu').detach().numpy()
         embedding_list.append(val)
     proteins['embeddings'] = embedding_list
     proteins.to_json("exports/embeddings.json")
