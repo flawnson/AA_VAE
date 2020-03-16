@@ -4,6 +4,7 @@
   "expansion_factor": 2,
   "layers": 4,
   "scale": 2,
+  "embedding_gradient": "False",
   "lr": 1e-6,
   "weight_decay": 0.00
 }

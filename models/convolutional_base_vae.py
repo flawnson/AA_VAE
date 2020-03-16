@@ -36,8 +36,8 @@ class ConvolutionalTransposeBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, layers, kernel_size, input_size, input_channels: int, scale_factor, max_channels=256,
-                 expansion_factor=1):
+    def __init__(self, layers, kernel_size, input_size, input_channels: int, channel_scale_factor, max_channels=256,
+                 kernel_expansion_factor=1):
         super().__init__()
 
         conv_layers = []
@@ -50,9 +50,9 @@ class Encoder(nn.Module):
             base_kernel_size = kernel_size + 1
             block = ConvolutionalBlock(input_channels, output_channels, base_kernel_size)
             conv_layers.append(block)
-            kernel_size = kernel_size * expansion_factor
+            kernel_size = kernel_size * kernel_expansion_factor
             input_channels = output_channels
-            output_channels = int(output_channels * scale_factor)
+            output_channels = int(output_channels * channel_scale_factor)
             if output_channels > max_channels:
                 output_channels = max_channels
             out_size = out_size_conv(out_size, 0, 1, base_kernel_size, 1)
@@ -61,7 +61,7 @@ class Encoder(nn.Module):
         self.out_channels = int(input_channels)
         self.final_kernel_size = base_kernel_size
         self.conv_layers = nn.ModuleList(conv_layers)
-        self.residue = 2
+        self.residue = 200
 
     def forward(self, x):
         inv = x
@@ -137,7 +137,7 @@ class ConvolutionalBaseVAE(nn.Module):
 
         self.device = device
         self.encoder = Encoder(layers, kernel_size, input_size, embeddings_static.shape[1], channel_scale_factor,
-                               expansion_factor=kernel_expansion_factor)
+                               kernel_expansion_factor=kernel_expansion_factor)
         h_dim = int(self.encoder.out_size * self.encoder.out_channels)
         self.decoder = Decoder(layers, self.encoder.final_kernel_size, input_size, self.encoder.out_size,
                                self.encoder.out_channels,

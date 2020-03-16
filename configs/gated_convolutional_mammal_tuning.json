@@ -1,5 +1,6 @@
 {
   "model_name": "gated_cnn",
+  "embedding_gradient": "False",
   "layers": {
     "grid_search": [
       4,

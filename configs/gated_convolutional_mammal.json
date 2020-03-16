@@ -4,6 +4,7 @@
   "kernel_size_0":  31,
   "channels": 6,
   "residual": 2,
+  "embedding_gradient": "False",
   "lr": 0.00010297,
   "weight_decay": 0.0
 }

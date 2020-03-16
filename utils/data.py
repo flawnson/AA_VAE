@@ -193,7 +193,6 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
         else:
             scores.append(0)
 
-    length_counter = collections.Counter(lengths)
-    data = torch.stack(proteins), c, torch.FloatTensor(scores), length_counter
+    data = torch.stack(proteins), c, torch.FloatTensor(scores)
     save_tensor_to_file(pt_file, data)
     return data

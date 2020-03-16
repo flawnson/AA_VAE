@@ -1,5 +1,6 @@
 {
   "model_name": "convolutional_linear_vae",
+  "embedding_gradient": "False",
   "convolutional_parameters": {
     "sizes": [30, 16, 8, 4, 1],
     "linear": [50, 25]

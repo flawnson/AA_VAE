@@ -1,5 +1,6 @@
 {
   "model_name": "convolutional_vae",
+  "embedding_gradient": "False",
   "encoder_sizes": [
     30,
     16,
