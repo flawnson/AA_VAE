@@ -107,7 +107,7 @@ class Decoder(nn.Module):
 
         self.out_size = out_size
         assert out_size == output_expected
-        self.residue = 2
+        self.residue = 200
 
     def forward(self, x):
         inv = x
