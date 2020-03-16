@@ -1,8 +1,10 @@
 {
   "model_name": "convolutional_basic",
-  "kernel_size": 21,
+  "kernel_size": 2,
+  "kernel_expansion_factor": 2,
   "layers": 5,
-  "scale": 1,
-  "lr": 1e-6,
-  "weight_decay": 0.00
+  "channel_scale_factor": 2,
+  "embedding_gradient": "False",
+  "lr": 0.00005279379246234669,
+  "weight_decay": 1.6459309598386149e-06
 }

@@ -6,7 +6,8 @@ def ramp_function(index, length, depth, max_height):
     current_epoch = int(max_height / width)
     delta = float(max_height) / float(width)
 
-def total_loss_function(recon_x, mu, logvar, scale: float):
+
+def kl_loss_function(mu, logvar, scale: float):
     # see Appendix B from VAE paper:
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
     # https://arxiv.org/abs/1312.6114
@@ -14,27 +15,25 @@ def total_loss_function(recon_x, mu, logvar, scale: float):
     if scale > 1:
         scale = 1
     KLD: torch.Tensor = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
-    # scaled_kld = KLD * scale
-    scaled_kld = KLD * scale
-    return recon_x + scaled_kld
+    return KLD * scale
 
 
 class Trainer:
-    def __init__(self, model, data_length, train_iterator, test_iterator, input_dim, device, optimizer,
+    def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
                  train_dataset, test_dataset, n_epochs, loss_function_name="bce",
                  vocab_size=23,
-                 patience_count=1000, weights=None):
+                 patience_count=1000, weights=None, model_name="default"):
 
         loss_functions = {
             "bce": self.cross_entropy_wrapper,
             "nll": torch.nn.functional.nll_loss
         }
+        self.model_name = model_name
 
         self.model = model.to(device)
         self.data_length = data_length
         self.train_iterator = train_iterator
         self.test_iterator = test_iterator
-        self.input_dim = input_dim
         self.device = device
         self.optimizer = optimizer
         self.train_dataset_len = train_dataset
@@ -48,7 +47,7 @@ class Trainer:
 
     def cross_entropy_wrapper(self, predicted, actual, count):
         # count = mask.sum()
-        return torch.nn.functional.cross_entropy(predicted, actual, ignore_index=22, reduction="none",
+        return torch.nn.functional.cross_entropy(predicted, actual, reduction="none",
                                                  weight=self.weights).sum() / count
 
     def reconstruction_accuracy(self, predicted, actual, mask):
@@ -70,48 +69,53 @@ class Trainer:
 
         # forward pass
         predicted, mu, var = self.model(x)
-        mask = x.le(21)
+        mask = x.le(20)
 
         scale = mask.sum()
-        recon_loss = self.criterion(predicted, x, mask)
+        recon_loss = self.criterion(predicted, x, scale)
 
-        recon_loss = total_loss_function(recon_loss, mu, var, scale)
+        kl_loss = kl_loss_function(mu, var, 1)
+        total_loss = kl_loss + recon_loss
+        # recon_loss = total_loss_function(recon_loss, mu, var, float(scale) / mask.numel())
 
-        loss = recon_loss.item()
         # reconstruction accuracy
         # TODO this needs to change once new features are added into the vector
         recon_accuracy = self.reconstruction_accuracy(predicted, x, mask)
 
         # backward pass
         if training:
-            recon_loss.backward()
+            total_loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
             self.optimizer.step()
 
-        return loss, recon_accuracy
+        return kl_loss.item(), recon_loss.item(), recon_accuracy
 
     def train(self, iter):
         # set the train mode
         self.model.train()
 
         # loss of the epoch
-        train_loss = 0
+        train_kl_loss = 0
+        train_recon_loss = 0
 
         recon_accuracy = 0
 
         for i, x in enumerate(self.train_iterator):
             # reshape the data into [batch_size, FIXED_PROTEIN_LENGTH*23]
-            loss, accuracy = self.__inner_iteration(x, True, iter)
-            train_loss += loss
+            kl_loss, recon_loss, accuracy = self.__inner_iteration(x, True, iter)
+            train_kl_loss += kl_loss
+            train_recon_loss += recon_loss
             recon_accuracy += accuracy
 
-        return train_loss, recon_accuracy / len(self.train_iterator)
+        return train_kl_loss, train_recon_loss, recon_accuracy / len(self.train_iterator)
 
     def test(self, iter):
         # set the evaluation mode
         self.model.eval()
 
         # test loss for the data
-        test_loss = 0
+        test_kl_loss = 0
+        test_recon_loss = 0
 
         test_accuracy = 0.0
 
@@ -120,13 +124,14 @@ class Trainer:
             for i, x in enumerate(self.test_iterator):
                 # update the gradients to zero
 
-                loss, accuracy = self.__inner_iteration(x, False, iter)
+                kl_loss, recon_loss, accuracy = self.__inner_iteration(x, False, iter)
 
                 # backward pass
-                test_loss += loss
+                test_kl_loss += kl_loss
+                test_recon_loss += recon_loss
                 test_accuracy += accuracy
 
-        return test_loss, test_accuracy / len(self.test_iterator)
+        return test_kl_loss, test_recon_loss, test_accuracy / len(self.test_iterator)
 
     def trainer(self):
         best_training_loss = float('inf')
@@ -134,18 +139,20 @@ class Trainer:
         train_recon_accuracy = -1
         for e in range(self.n_epochs):
 
-            train_loss, train_recon_accuracy = self.train(e)
-            test_loss, test_recon_accuracy = self.test(e)
-
-            train_loss /= self.train_dataset_len
-            test_loss /= self.test_dataset_len
-            print(f'Epoch {e}, Train Loss: {train_loss:.8f}, Test Loss: {test_loss:.8f}, ')
+            train_kl_loss, train_recon_loss, train_recon_accuracy = self.train(e)
+            test_kl_loss, test_recon_loss, test_recon_accuracy = self.test(e)
+            train_recon_loss /= self.train_dataset_len
+            test_recon_loss /= self.test_dataset_len
+            train_kl_loss /= self.train_dataset_len
+            test_kl_loss /= self.test_dataset_len
+            print(f'Epoch {e}, Train KL Loss: {train_kl_loss:.8f}, Test KL Loss: {test_kl_loss:.8f}, ')
+            print(f'Epoch {e}, Train recon Loss: {train_recon_loss:.8f}, Test recon Loss: {test_recon_loss:.8f}, ')
             print(
                 f'Train accuracy: {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
 
             if train_recon_accuracy > 0.97 and test_recon_accuracy > 0.97:
                 break
-
+            train_loss = train_kl_loss + train_recon_loss
             if best_training_loss > train_loss:
                 best_training_loss = train_loss
                 patience_counter = 1
@@ -168,4 +175,4 @@ class Trainer:
 
         date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
 
-        torch.save(self.model.state_dict(), f"saved_models/{self.model.name}_{accuracy}_{date_time}")
+        torch.save(self.model.state_dict(), f"saved_models/{self.model_name}_{accuracy}_{date_time}")

@@ -1,9 +1,10 @@
 {
   "model_name": "gated_cnn",
-  "layers": 5,
-  "kernel_size_0": 11,
-  "channels": 8,
+  "layers": 4,
+  "kernel_size_0": 21,
+  "channels": 64,
   "residual": 2,
-  "lr": 0.00020297,
-  "weight_decay": 0.0
+  "embedding_gradient": "True",
+  "lr": 0.0000490297,
+  "weight_decay": 0.000
 }

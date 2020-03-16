@@ -11,7 +11,8 @@ def init_weights(m):
 
 class GatedCNN(VaeTemplate, nn.Module):
 
-    def __init__(self, model_config, hidden_size, embedding_size, data_length, device, embeddings_static):
+    def __init__(self, model_config, hidden_size, embedding_size, data_length, device, embeddings_static,
+                 requires_grad=False):
         self.name = "gated_cnn"
         seq_len = data_length
         vocab_size = embeddings_static.shape[0]
@@ -26,6 +27,8 @@ class GatedCNN(VaeTemplate, nn.Module):
         # hidden_size = out_chs * seq_len
         super(GatedCNN, self).__init__(None, None, device, hidden_size, embedding_size, embedding=None)
         self.embedding = nn.Embedding(vocab_size, embd_size)
+        self.embedding.weight.data.copy_(embeddings_static)
+        self.embedding.weight.requires_grad = requires_grad
         padding = int((kernel[0] - 1) / 2)
         # nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, ...
         self.conv_0 = nn.Conv2d(1, out_chs, kernel, padding=(padding, 0))
@@ -60,62 +63,46 @@ class GatedCNN(VaeTemplate, nn.Module):
         self.c_l = nn.Parameter(torch.randn(1, vocab_size, 1, 1), requires_grad=True)
         self.sigmoid = nn.Sigmoid()
 
-        self.conv.apply(init_weights)
-        self.conv_gate.apply(init_weights)
-        self.conv_d.apply(init_weights)
-        self.conv_gate_d.apply(init_weights)
-        self.conv_0.apply(init_weights)
-        self.conv_gate_0.apply(init_weights)
-        self.conv_l.apply(init_weights)
-        self.conv_gate_l.apply(init_weights)
-
-    def representation(self, x):
+    def encode(self, x):
         # Embedding
         bs = x.size(0)  # batch size
         seq_len = x.size(1)
         x = self.embedding(x)  # (bs, seq_len, embd_size)
-
         # CNN
         x = x.unsqueeze(1)  # (bs, Cin, seq_len, embd_size), insert Channnel-In dim
-
         A = self.conv_0(x)  # (bs, Cout, seq_len, 1)
-        A += self.b_0.repeat(1, 1, seq_len, 1)
-        B = self.conv_gate_0(x)  # (bs, Cout, seq_len, 1)
-        B += self.c_0.repeat(1, 1, seq_len, 1)
-        h = A * self.sigmoid(B)  # (bs, Cout, seq_len, 1)
-        res_input = h
+        res_input = A
+        h = A
 
         for i, (conv, conv_gate) in enumerate(zip(self.conv, self.conv_gate)):
-            A = conv(h) + self.b[i].repeat(1, 1, seq_len, 1)
-            B = conv_gate(h) + self.c[i].repeat(1, 1, seq_len, 1)
+            A = conv(h)
+            B = conv_gate(h)
             h = A * self.sigmoid(B)  # (bs, Cout, seq_len, 1)
             if i % self.res_block_count == 0:  # size of each residual block
                 h += res_input
                 res_input = h
+
         h = h.view(bs, -1)  # (bs, Cout*seq_len)
         h = self.fc(h)
-        h, mu,_ = self.bottleneck(h)
-        return mu
+        return self.bottleneck(h)
 
     def forward(self, x):
         bs = x.size(0)  # batch size
         seq_len = x.size(1)
         z, mu, var = self.encode(x)
-        res_input = self.fc3(z)
-
+        z = self.fc3(z)
+        res_input = self.fc_d(z)
         res_input = res_input.view(bs, self.out_chs, seq_len, -1)
         h = res_input
         for i, (conv, conv_gate) in enumerate(zip(self.conv_d, self.conv_gate_d)):
-            A = conv(h) + self.b[i].repeat(1, 1, seq_len, 1)
-            B = conv_gate(h) + self.c[i].repeat(1, 1, seq_len, 1)
+            A = conv(h)
+            B = conv_gate(h)
             h = A * self.sigmoid(B)  # (bs, Cout, seq_len, 1)
+
             if i % self.res_block_count == 0:  # size of each residual block
                 h += res_input
                 res_input = h
-        A = self.conv_l(h)  # (bs, Cout, seq_len, 1)
-        A += self.b_l.repeat(1, 1, seq_len, 1)
-        B = self.conv_gate_l(h)  # (bs, Cout, seq_len, 1)
-        B += self.c_l.repeat(1, 1, seq_len, 1)
-        h = A * self.sigmoid(B)
-        h = h.squeeze(3)
+        A = self.conv_l(h)
+
+        h = A.squeeze(3)
         return h, mu, var

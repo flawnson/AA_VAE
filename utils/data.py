@@ -94,18 +94,16 @@ def one_to_number(res_str):
     return [amino_acids_to_byte_map[r] for r in res_str]
 
 
-def get_embedding_matrix():
-    return seq_to_one_hot(amino_acids, True)
+def get_embedding_matrix(features: bool = True):
+    return seq_to_one_hot(amino_acids, features)
 
 
-def to_categorical(y, num_classes):
+def to_categorical(num_classes):
     """ Converts a class vector to binary class matrix. """
-    new_y = torch.LongTensor(y)
-    n = new_y.size()[0]
-    categorical = torch.zeros(n, num_classes)
-    arangedTensor = torch.arange(0, n)
-    intaranged = arangedTensor.long()
-    categorical[intaranged, new_y] = 1
+    categorical = torch.eye(num_classes)
+    unused = [amino_acids_to_byte_map['X'], amino_acids_to_byte_map['0']]
+    for x in unused:
+        categorical[[x, x]] = 0
     return categorical
 
 
@@ -115,7 +113,7 @@ def seq_to_one_hot(res_seq_one, add_chemical_features=False):
 
     ints = one_to_number(res_seq_one)
 
-    onehot = to_categorical(ints, num_classes=len(amino_acids))
+    onehot = to_categorical(num_classes=len(amino_acids))
 
     if add_chemical_features:
         new_ints = torch.LongTensor(ints)
@@ -187,9 +185,10 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
     length = sum(c.values())
     for k in amino_acids:
         if c[k] > 0 and amino_acids_to_byte_map[k] <= 20:
-            rarity = length/(20 * c[k])
+            rarity = length / (20 * c[k])
             if rarity > 5:
                 rarity = 0.25
+            rarity = 1
             scores.append(rarity)
         else:
             scores.append(0)
