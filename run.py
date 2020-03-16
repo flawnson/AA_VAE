@@ -33,10 +33,10 @@ if __name__ == "__main__":
         test_dataset_name = "data/test_set_large_1500_mammalian.json"
     config["train_dataset_name"] = os.getcwd() + "/" + train_dataset_name
     config["test_dataset_name"] = os.getcwd() + "/" + test_dataset_name
+    model, optimizer, device, model_name = create_model(config, model_config, args.pretrained, args.multigpu)
     train_dataset, test_dataset, train_iterator, test_iterator, c, score = load_data(config)
 
     print(f"Creating the model")
-    model, optimizer, device, model_name = create_model(config, model_config, args.pretrained, args.multigpu)
 
     print(f"Start the training")
     # optimizer
