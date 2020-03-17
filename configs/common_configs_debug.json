@@ -2,7 +2,7 @@
   "dataset": "small",
   "protein_length": 200,
   "class": "bacteria",
-  "batch_size": 100,
+  "batch_size": 60,
   "chem_features": "False",
   "epochs": 500,
   "hidden_size": 200,

@@ -7,6 +7,7 @@ from models.convolutional_vae import ConvolutionalVAE
 from models.gated_cnn import GatedCNN
 from models.linear_vae import LinearVAE
 from models.lstm_vae import LSTMVae
+from models.transformer_vae import TransformerModel
 from utils import data
 
 
@@ -22,7 +23,8 @@ def create_model(config, model_config, pretrained_model=None, multigpu=False):
               "linear_vae": LinearVAE,
               "convolutional_linear": Convolutional_Linear_VAE,
               "convolutional_basic": ConvolutionalBaseVAE,
-              "gated_cnn": GatedCNN}
+              "gated_cnn": GatedCNN,
+              "transformer":TransformerModel}
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model = models.get(model_config["model_name"])(
