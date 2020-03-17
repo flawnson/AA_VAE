@@ -1,7 +1,20 @@
 {
- "model_name": "linear_vae",
-    "encoder_sizes": [30, 8, 8, 4, 1],
-    "decoder_sizes": [23, 8, 8, 4, 1],
-    "lr": 5e-3,
-    "weight_decay": 0.01
+  "model_name": "linear_vae",
+  "encoder_sizes": [
+    30,
+    40,
+    40,
+    40,
+    40
+  ],
+  "decoder_sizes": [
+    23,
+    40,
+    40,
+    40,
+    40
+  ],
+  "embedding_gradient": "True",
+  "lr": 1e-4,
+  "weight_decay": 0.00001
 }

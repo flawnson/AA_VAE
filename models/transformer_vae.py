@@ -24,20 +24,30 @@ class PositionalEncoding(nn.Module):
 
 
 class TransformerModel(nn.Module):
-
-    def __init__(self, ntoken, ninp, nhead, nhid, nlayers, dropout=0.5):
+    def __init__(self, model_config, h_dim, z_dim, input_size, device, embeddings_static, requires_grad=True):
+        torch.manual_seed(0)
+        self.name = "transformer_vae"
+        # def __init__(self, ntoken, ninp, nhead, nhid, nlayers, dropout=0.5):
         super(TransformerModel, self).__init__()
         from torch.nn import TransformerEncoder, TransformerEncoderLayer, TransformerDecoderLayer, TransformerDecoder
         self.model_type = 'Transformer'
         self.src_mask = None
-        self.pos_encoder = PositionalEncoding(ninp, dropout)
-        self.embedder = nn.Conv1d(kernel_size=3, in_channels=1, out_channels=ninp, stride=3, padding=0, bias=False)
-        encoder_layers = TransformerEncoderLayer(ninp, nhead, nhid, dropout)
-        self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
-        self.encoder = nn.Embedding(ntoken, ninp)
-        self.ninp = ninp
-        decoder_layer = TransformerDecoderLayer(ninp, ntoken)
-        self.transformer_decoder = TransformerDecoder(decoder_layer, nlayers)
+        nheads = model_config["heads"]
+        layers = model_config["layers"]
+        moving_dimension = model_config["internal_dimension"]
+        feed_forward_dim = model_config["feed_forward"]
+        self.pos_encoder = PositionalEncoding(moving_dimension)
+        encoder_layers = TransformerEncoderLayer(d_model=moving_dimension, nhead=nheads,
+                                                 dim_feedforward=feed_forward_dim)
+        self.transformer_encoder = TransformerEncoder(encoder_layers, layers)
+        self.encoder = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
+        self.encoder.weight.data.copy_(embeddings_static)
+        self.encoder.weight.requires_grad = False
+
+        self.embedder = nn.Conv1d(kernel_size=3, in_channels=embeddings_static.shape[1],
+                                  out_channels=moving_dimension, stride=1, padding=1, bias=False)
+        decoder_layer = TransformerDecoderLayer(moving_dimension, nhead=nheads, dim_feedforward=feed_forward_dim)
+        self.transformer_decoder = TransformerDecoder(decoder_layer, layers)
 
         self.init_weights()
 
@@ -56,7 +66,9 @@ class TransformerModel(nn.Module):
         self.decoder.weight.data.uniform_(-initrange, initrange)
 
     def forward(self, src, src_mask):
-        src = self.encoder(src) * math.sqrt(self.ninp)
+        src_mask = src.le(20)
+        src = self.encoder(src)
+        src = self.embedder(src)
         src = self.pos_encoder(src)
         output = self.transformer_encoder(src, src_mask)
         output = self.transformer_decoder(output, src_mask)

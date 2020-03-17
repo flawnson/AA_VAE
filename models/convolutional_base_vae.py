@@ -1,38 +1,9 @@
-import torch.nn as nn
-
 from utils.model_common import *
 
 
 def init_weights(m):
     if type(m) == nn.Conv1d or type(m) == nn.ConvTranspose1d or type(m) == nn.Linear:
         nn.init.xavier_uniform_(m.weight)
-
-
-class ConvolutionalBlock(nn.Module):
-    def __init__(self, in_c, out_c, kernel_size):
-        super().__init__()
-        self.conv_block = nn.Sequential(
-            nn.Conv1d(in_c, out_c, kernel_size=kernel_size, bias=False, padding=0, groups=1),
-            nn.ELU(),
-            nn.BatchNorm1d(out_c)
-        )
-
-    def forward(self, x):
-        return self.conv_block(x)
-
-
-class ConvolutionalTransposeBlock(nn.Module):
-    def __init__(self, in_c, out_c, kernel_size):
-        super().__init__()
-
-        self.conv_block = nn.Sequential(
-            nn.ELU(),
-            nn.BatchNorm1d(in_c),
-            nn.ConvTranspose1d(in_c, out_c, kernel_size=kernel_size, bias=False, padding=0, groups=1)
-        )
-
-    def forward(self, x):
-        return self.conv_block(x)
 
 
 class Encoder(nn.Module):
@@ -141,7 +112,8 @@ class ConvolutionalBaseVAE(nn.Module):
         h_dim = int(self.encoder.out_size * self.encoder.out_channels)
         self.decoder = Decoder(layers, self.encoder.final_kernel_size, input_size, self.encoder.out_size,
                                self.encoder.out_channels,
-                               embeddings_static.shape[0], channel_scale_factor, kernel_expansion_factor=kernel_expansion_factor)
+                               embeddings_static.shape[0], channel_scale_factor,
+                               kernel_expansion_factor=kernel_expansion_factor)
 
         self.encoder.apply(init_weights)
         self.decoder.apply(init_weights)
