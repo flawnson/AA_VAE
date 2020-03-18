@@ -44,5 +44,5 @@ if __name__ == "__main__":
                         model_config.get('layer_sizes'),  # List of layer sizes
                         model_config.get('dropout')).to(device)  # Boolean value
 
-    train_config = json_config.get('train_config')
-    TrainLinear(train_config, data_config, dataset, model, device).run()
+    run_config = json_config.get('run_config')
+    TrainLinear(run_config, data_config, dataset, model, device).run()

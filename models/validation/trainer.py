@@ -4,13 +4,13 @@ import numpy as np
 
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, SubsetRandomSampler
-from sklearn.metrics import accuracy_score, roc_auc_score
+from sklearn.metrics import accuracy_score, roc_auc_score, f1_score
 
 
 class TrainLinear:
-    def __init__(self, train_config, data_config, dataset, model, device):
+    def __init__(self, run_config, data_config, dataset, model, device):
 
-        self.train_config = train_config
+        self.run_config = run_config
         self.dataset = dataset
         self.batch_size = data_config.get("batch_size")
         self.test_split = data_config.get("test_ratio")
@@ -18,8 +18,8 @@ class TrainLinear:
         self.device = device
         self.model = model.to(self.device)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(),
-                                          lr=self.train_config.get('lr'),
-                                          weight_decay=self.train_config.get('wd'))
+                                          lr=self.run_config.get('lr'),
+                                          weight_decay=self.run_config.get('wd'))
 
         # The option to use integer labels in available but not recommended as classes have no relation to each other
         if self.onehot:
@@ -42,7 +42,7 @@ class TrainLinear:
         loss = F.cross_entropy(logits, labels, weight=self.weights.float())
         loss.backward()
         self.optimizer.step()
-        print(f"Loss: {loss}")
+        print(f"Loss: {loss:.4f}")
         return loss
 
     def test(self, batch, labels) -> float:
@@ -50,16 +50,25 @@ class TrainLinear:
         self.model.eval()
         torch.set_grad_enabled(False)
         logits = self.model(batch)
-        # s_logits = F.softmax(input=logits)
         pred = logits.max(1)[1]
 
         accuracy = accuracy_score(pred.cpu(), torch.argmax(labels, dim=1).cpu())
-        # auroc = roc_auc_score(labels.cpu(),
-        #                       s_logits,
-        #                       average=self.train_config.get("auroc_average"),
-        #                       multi_class=self.train_config.get("auroc_multi_class"))
-        print(f"Accuracy: {accuracy}")
-        # print(f"Accuracy: {auroc}")
+        output_mask = np.isin(list(range(list(self.model.children())[-1][-1].out_features)),
+                              np.unique(torch.argmax(labels, dim=1)))
+        test = np.apply_along_axis(func1d=lambda arr: arr[output_mask], axis=1,
+                                   arr=logits.to('cpu').data.numpy())
+        s_logits = F.softmax(input=torch.from_numpy(test), dim=1)
+        auroc = roc_auc_score(torch.argmax(labels, dim=1).cpu(),
+                              s_logits,
+                              average=self.run_config.get("auroc_average"),
+                              multi_class=self.run_config.get("auroc_multi_class"))
+        f1 = f1_score(torch.argmax(labels, dim=1).cpu(),
+                      pred.cpu(),
+                      average='macro')
+        print(f"Accuracy: {accuracy:.2f}")
+        print(f"auroc: {auroc:.2f}")
+        print(f"F1: {f1:.2f}")
+        print("-"*20)
 
         return accuracy
 
@@ -85,7 +94,7 @@ class TrainLinear:
                                pin_memory=True)
 
         train_record, test_record = [], []
-        for epoch in range(self.train_config.get('epochs') + 1):
+        for epoch in range(self.run_config.get('epochs') + 1):
             # FIXME: Iteration occurs over batches, not epochs, restructuring needed
 
             for (train_batch, train_labels), (test_batch, test_labels) in zip(train_data, test_data):
