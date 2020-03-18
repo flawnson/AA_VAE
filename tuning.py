@@ -60,6 +60,16 @@ model_tuning_configs = {
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000001, 1)),
         "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.0, 0.05)),
         "tuning": True
+    },
+    "transformer": {
+        "model_name": "transformer",
+        "heads": {"grid_search": [8, 16, 24, 32]},
+        "layers": [4, 8, 10],
+        "internal_dimension": {"grid_search": [64, 128, 256]},
+        "feed_forward": 128,
+        "embedding_gradient": "False",
+        "lr": tune.sample_from(lambda spec: tune.loguniform(0.000000001, 0.001)),
+        "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001))
     }
 }
 
@@ -68,7 +78,7 @@ def tuner_run(config):
     track.init()
     print(config)
 
-    model, optimizer, device, _  = create_model(config, config, multigpu=True)
+    model, optimizer, device, _ = create_model(config, config, multigpu=True)
 
     data_length = config["protein_length"]
     batch_size = config["batch_size"]  # number of data points in each batch

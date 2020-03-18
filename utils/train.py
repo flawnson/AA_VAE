@@ -46,15 +46,12 @@ class Trainer:
         self.weights = torch.FloatTensor(weights).to(device)
 
     def cross_entropy_wrapper(self, predicted, actual, count):
-        # count = mask.sum()
         return torch.nn.functional.cross_entropy(predicted, actual, reduction="none",
                                                  weight=self.weights).sum() / count
 
     def reconstruction_accuracy(self, predicted, actual, mask):
         """ Computes average sequence identity between input and output sequences
         """
-        # if input.shape != output.shape:
-        #     raise Exception("Input and output can't have different shapes")
         output_sequences = torch.masked_select(actual, mask)
         input_sequences = torch.masked_select(predicted.argmax(axis=1), mask)
 
