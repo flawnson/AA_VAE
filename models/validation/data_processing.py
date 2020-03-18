@@ -25,10 +25,8 @@ class EmbeddingData(Dataset, metaclass=ABCMeta):
         self.x = embedding_dict
         if self.onehot:
             self.y = [item[1] for item in self.onehot_encoder()]
-            self.k = np.asarray([item[0] for item in np.asarray(self.y)]) != 0
         else:
             self.y = [item[1] for item in self.integer_encoder()]
-            self.k = np.asarray(self.y) != 0
 
     def label_mapper(self):
         return {}
@@ -65,7 +63,7 @@ class EmbeddingData(Dataset, metaclass=ABCMeta):
             examples = self.onehot_encoder()
         else:
             examples = self.integer_encoder()
-        return examples[idx][0], examples[idx][1], self.k[idx]
+        return examples[idx][0], examples[idx][1]
 
     def __len__(self):
         return len(self.integer_encoder())

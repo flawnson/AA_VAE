@@ -31,7 +31,7 @@ class TrainLinear:
                 torch.tensor(np.asarray(self.dataset.y)).shape[0])
             self.weights = (1 / self.imb_wc[1:]) / (sum(1 / self.imb_wc[1:]))
 
-    def train(self, batch, labels, mask):
+    def train(self, batch, labels):
         # TODO: Need to apply known mask to ignore unknowns (supervised task)
         self.model.train()
         torch.set_grad_enabled(True)
@@ -45,7 +45,7 @@ class TrainLinear:
         print(f"Loss: {loss}")
         return loss
 
-    def test(self, batch, labels, mask) -> float:
+    def test(self, batch, labels) -> float:
         # TODO: Need to imlement the calculations of other metrics
         self.model.eval()
         torch.set_grad_enabled(False)
@@ -88,13 +88,11 @@ class TrainLinear:
         for epoch in range(self.train_config.get('epochs') + 1):
             # FIXME: Iteration occurs over batches, not epochs, restructuring needed
 
-            for (train_batch, train_labels, train_mask), (test_batch, test_labels, test_mask) in zip(train_data, test_data):
+            for (train_batch, train_labels), (test_batch, test_labels) in zip(train_data, test_data):
                 train_record.append(self.train(train_batch.float().to(self.device),
-                                               train_labels.to(self.device),
-                                               train_mask.to(self.device)))
+                                               train_labels.to(self.device)))
                 train_record.append(self.test(test_batch.float().to(self.device),
-                                              test_labels,
-                                              test_mask.to(self.device)))
+                                              test_labels))
 
         return train_record, test_record
 
