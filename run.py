@@ -1,6 +1,3 @@
-"""
-This code is a variation of simple VAE from https://graviraja.github.io/vanillavae/
-"""
 import argparse
 import json
 import torch
@@ -8,6 +5,7 @@ import os
 from utils.model_factory import create_model
 from utils.data import load_data
 from utils.train import Trainer
+from utils.logger import log
 
 if __name__ == "__main__":
     torch.manual_seed(0)
@@ -33,12 +31,11 @@ if __name__ == "__main__":
         test_dataset_name = "data/test_set_large_1500_mammalian.json"
     config["train_dataset_name"] = os.getcwd() + "/" + train_dataset_name
     config["test_dataset_name"] = os.getcwd() + "/" + test_dataset_name
+    log.info("Creating the model")
     model, optimizer, device, model_name = create_model(config, model_config, args.pretrained, args.multigpu)
+    log.info("Loading the data")
     train_dataset, test_dataset, train_iterator, test_iterator, c, score = load_data(config)
-
-    print(f"Creating the model")
-
-    print(f"Start the training")
+    log.info("Start the training")
     # optimizer
     Trainer(model, config["protein_length"], train_iterator, test_iterator, device, optimizer,
             len(train_dataset),

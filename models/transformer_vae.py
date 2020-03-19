@@ -1,25 +1,4 @@
-import math
-
 from utils.model_common import *
-
-
-class PositionalEncoding(nn.Module):
-
-    def __init__(self, d_model, dropout=0.1, max_len=5000):
-        super(PositionalEncoding, self).__init__()
-        self.dropout = nn.Dropout(p=dropout)
-
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0).transpose(0, 1)
-        self.register_buffer('pe', pe)
-
-    def forward(self, x):
-        x = x + self.pe[:x.size(0), :]
-        return self.dropout(x)
 
 
 class TransformerModel(nn.Module):
@@ -28,9 +7,8 @@ class TransformerModel(nn.Module):
         self.device = device
 
         self.name = "transformer_vae"
-        # def __init__(self, ntoken, ninp, nhead, nhid, nlayers, dropout=0.5):
         super(TransformerModel, self).__init__()
-        from torch.nn import TransformerEncoder, TransformerEncoderLayer, TransformerDecoderLayer, TransformerDecoder
+        from torch.nn import TransformerEncoder, TransformerEncoderLayer
         self.model_type = 'Transformer'
         self.src_mask = None
         nheads = model_config["heads"]
@@ -45,8 +23,6 @@ class TransformerModel(nn.Module):
         self.encoder.weight.data.copy_(embeddings_static)
         self.encoder.weight.requires_grad = False
 
-        self.pos_encoder = PositionalEncoding(input_size)
-
         encoder_layers = TransformerEncoderLayer(d_model=self.moving_dimension, nhead=nheads,
                                                  dim_feedforward=feed_forward_dim)
         self.transformer_encoder = TransformerEncoder(encoder_layers, layers)
@@ -57,7 +33,12 @@ class TransformerModel(nn.Module):
         self.fc1: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc2: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc3: nn.Module = nn.Linear(z_dim, h_dim)
-        # self.init_weights()
+        self.init_weights()
+
+    def init_weights(self):
+        initrange = 0.1
+        self.embedder.weight.data.uniform_(-initrange, initrange)
+        self.deembed.weight.data.uniform_(-initrange, initrange)
 
     def bottleneck(self, h):
         mu = self.fc1(h)
@@ -72,10 +53,8 @@ class TransformerModel(nn.Module):
 
     def forward(self, x):
         input_len = x.shape[1]
-        # src_mask = x.le(20).unsqueeze(2)
         src = self.encoder(x).transpose(1, 2)
         src = self.embedder(src)
-        # src = self.pos_encoder(src)
         src = src.transpose(1, 2)
         output = self.transformer_encoder(src)
         output = output.view(x.shape[0], -1)

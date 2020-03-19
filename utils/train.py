@@ -1,5 +1,5 @@
 import torch
-
+from utils.logger import log
 
 def ramp_function(index, length, depth, max_height):
     width = length + depth
@@ -142,9 +142,9 @@ class Trainer:
             test_recon_loss /= self.test_dataset_len
             train_kl_loss /= self.train_dataset_len
             test_kl_loss /= self.test_dataset_len
-            print(f'Epoch {e}, Train KL Loss: {train_kl_loss:.8f}, Test KL Loss: {test_kl_loss:.8f}, ')
-            print(f'Epoch {e}, Train recon Loss: {train_recon_loss:.8f}, Test recon Loss: {test_recon_loss:.8f}, ')
-            print(
+            log.info(f'Epoch {e}, Train KL Loss: {train_kl_loss:.8f}, Test KL Loss: {test_kl_loss:.8f}, ')
+            log.info(f'Epoch {e}, Train recon Loss: {train_recon_loss:.8f}, Test recon Loss: {test_recon_loss:.8f}, ')
+            log.info(
                 f'Train accuracy: {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
 
             if train_recon_accuracy > 0.97 and test_recon_accuracy > 0.97:
@@ -157,7 +157,7 @@ class Trainer:
             else:
                 patience_counter += 1
 
-            print("Patience value at {}".format(patience_counter))
+            log.info("Patience value at {}".format(patience_counter))
             if patience_counter > 1000:
                 break
             if e % 100 == 99:

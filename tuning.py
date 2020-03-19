@@ -17,8 +17,8 @@ from utils.model_factory import create_model
 from utils.train import Trainer
 
 config_common_mammalian = {
-    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 200, 'epochs': 150,
-    'added_length': 0, 'hidden_size': 1500, 'embedding_size': 750, "tuning": True
+    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 50, 'epochs': 150,
+    'added_length': 0, 'hidden_size': 1500, 'embedding_size': 640, "tuning": True
 }
 
 config_common_bacteria = {
@@ -63,11 +63,12 @@ model_tuning_configs = {
     },
     "transformer": {
         "model_name": "transformer",
-        "heads": {"grid_search": [8, 16, 24, 32]},
-        "layers": [4, 8, 10],
-        "internal_dimension": {"grid_search": [64, 128, 256]},
-        "feed_forward": 128,
+        "heads": {"grid_search": [8]},
+        "layers": {"grid_search": [4, 5]},
+        "internal_dimension": {"grid_search": [64, 128]},
+        "feed_forward": 64,
         "embedding_gradient": "False",
+        "chem_features": "False",
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000000001, 0.001)),
         "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001))
     }
@@ -160,7 +161,7 @@ def tuner(smoke_test: bool, model, config_type):
         },
         resources_per_trial={
             "cpu": cpus,
-            "gpu": gpus
+            "gpu": 1
         },
         local_dir=local_dir,
         num_samples=1 if smoke_test else 3,
@@ -173,7 +174,6 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model",
                         help="Name of the model, options are : convolutionalBasic, gated_conv, convolutional_old",
                         type=str)
-    parser.add_argument("-d", "--debug", help="Debugging or full scale", type=str)
     parser.add_argument("-t", "--type", help="Bacteria or mammalian", type=str)
     args = parser.parse_args()
 
