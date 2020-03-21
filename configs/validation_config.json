@@ -1,16 +1,19 @@
 {
   "data_config": {
-    "batch_size": 16
+    "task": "quinary",
+    "onehot": true,
+    "batch_size": 16,
+    "test_ratio": 0.3
   },
   "model_config": {
-    "in_size:": 300,
-    "out_size:": 2,
-    "layer_sizes:": [128, 64, 32],
-    "dropout:": 0.25
+    "layer_sizes": [128, 64],
+    "dropout": 0.25
   },
-  "train_config": {
-    "epochs": 500,
+  "run_config": {
+    "epochs": 10,
+    "lr": 0.01,
+    "wd": 5e-5,
     "auroc_average": "macro",
     "auroc_multi_class": "ovr"
-  },
+  }
 }
