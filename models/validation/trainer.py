@@ -46,7 +46,6 @@ class TrainLinear:
         return loss
 
     def test(self, batch, labels) -> float:
-        # TODO: Need to imlement the calculations of other metrics
         self.model.eval()
         torch.set_grad_enabled(False)
         logits = self.model(batch)
