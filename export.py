@@ -7,7 +7,7 @@ import json
 import pandas as pd
 import torch
 
-import utils.model_factory as model_factory
+import models.model_factory as model_factory
 
 """
 Valid amino acids

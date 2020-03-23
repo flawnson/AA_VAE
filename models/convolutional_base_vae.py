@@ -1,4 +1,4 @@
-from utils.model_common import *
+from models.model_common import *
 
 
 def init_weights(m):

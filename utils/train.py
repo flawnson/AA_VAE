@@ -24,7 +24,7 @@ class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
                  train_dataset, test_dataset, n_epochs, loss_function_name="bce",
                  vocab_size=23,
-                 patience_count=1000, weights=None, model_name="default", freq = 1):
+                 patience_count=1000, weights=None, model_name="default", freq=1):
 
         loss_functions = {
             "bce": self.cross_entropy_wrapper,
@@ -145,10 +145,11 @@ class Trainer:
             test_recon_loss /= self.test_dataset_len
             train_kl_loss /= self.train_dataset_len
             test_kl_loss /= self.test_dataset_len
-            log.info(f'Epoch {e}, Train KL Loss: {train_kl_loss:.8f}, Test KL Loss: {test_kl_loss:.8f}, ')
-            log.info(f'Epoch {e}, Train recon Loss: {train_recon_loss:.8f}, Test recon Loss: {test_recon_loss:.8f}, ')
-            log.info(
-                f'Train accuracy: {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
+            info_str = f'Epoch {e}, Train Loss: KL: {train_kl_loss:.8f}, Recon: {train_recon_loss:.8f}' \
+                       f', Accuracy: {train_recon_accuracy * 100.0:.2f}% '
+            info_str += f'Test Loss: KL: {test_kl_loss:.8f}, Recon: {test_recon_loss:.8f}, ' \
+                        f' Accuracy {test_recon_accuracy * 100.0:.2f}%'
+            log.info(info_str)
 
             if train_recon_accuracy > 0.97 and test_recon_accuracy > 0.97:
                 break

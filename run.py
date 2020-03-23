@@ -6,7 +6,7 @@ import torch
 
 from utils.data import load_data
 from utils.logger import log
-from utils.model_factory import create_model
+from models.model_factory import create_model
 from utils.train import Trainer
 
 if __name__ == "__main__":
