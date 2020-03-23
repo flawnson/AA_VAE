@@ -1,12 +1,12 @@
-"""
-This code is a variation of simple VAE from https://graviraja.github.io/vanillavae/
-"""
 import argparse
 import json
-import torch
 import os
-from utils.model_factory import create_model
+
+import torch
+
 from utils.data import load_data
+from utils.logger import log
+from models.model_factory import create_model
 from utils.train import Trainer
 
 if __name__ == "__main__":
@@ -14,8 +14,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Config file parser")
     parser.add_argument("-c", "--config", help="common config file", type=str)
     parser.add_argument("-m", "--model", help="model config file", type=str)
-    parser.add_argument("-g", "--multigpu", help="multigpu mode",  action="store_true")
-    parser.add_argument("-b", "--benchmarking", help="benchmarking run config", type=str)
+    parser.add_argument("-g", "--multigpu", help="multigpu mode", action="store_true")
     parser.add_argument("-p", "--pretrained", help="pretrained", type=str)
     args = parser.parse_args()
     config: dict = json.load(open(args.config))
@@ -33,13 +32,14 @@ if __name__ == "__main__":
         test_dataset_name = "data/test_set_large_1500_mammalian.json"
     config["train_dataset_name"] = os.getcwd() + "/" + train_dataset_name
     config["test_dataset_name"] = os.getcwd() + "/" + test_dataset_name
+    log.info("Creating the model")
     model, optimizer, device, model_name = create_model(config, model_config, args.pretrained, args.multigpu)
+    log.info("Loading the data")
     train_dataset, test_dataset, train_iterator, test_iterator, c, score = load_data(config)
-
-    print(f"Creating the model")
-
-    print(f"Start the training")
+    log.info("Start the training")
+    iteration_freq = config["iteration_freq"]
     # optimizer
     Trainer(model, config["protein_length"], train_iterator, test_iterator, device, optimizer,
             len(train_dataset),
-            len(test_dataset), number_of_epochs, vocab_size=data_length, weights=score, model_name=model_name).trainer()
+            len(test_dataset), number_of_epochs, vocab_size=data_length, weights=score, model_name=model_name,
+            freq=iteration_freq).trainer()

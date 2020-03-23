@@ -1,5 +1,7 @@
 import torch
 
+from utils.logger import log
+
 
 def ramp_function(index, length, depth, max_height):
     width = length + depth
@@ -22,13 +24,14 @@ class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
                  train_dataset, test_dataset, n_epochs, loss_function_name="bce",
                  vocab_size=23,
-                 patience_count=1000, weights=None, model_name="default"):
+                 patience_count=1000, weights=None, model_name="default", freq=1):
 
         loss_functions = {
             "bce": self.cross_entropy_wrapper,
             "nll": torch.nn.functional.nll_loss
         }
         self.model_name = model_name
+        self.backprop_freq = freq
 
         self.model = model.to(device)
         self.data_length = data_length
@@ -46,15 +49,12 @@ class Trainer:
         self.weights = torch.FloatTensor(weights).to(device)
 
     def cross_entropy_wrapper(self, predicted, actual, count):
-        # count = mask.sum()
         return torch.nn.functional.cross_entropy(predicted, actual, reduction="none",
                                                  weight=self.weights).sum() / count
 
     def reconstruction_accuracy(self, predicted, actual, mask):
         """ Computes average sequence identity between input and output sequences
         """
-        # if input.shape != output.shape:
-        #     raise Exception("Input and output can't have different shapes")
         output_sequences = torch.masked_select(actual, mask)
         input_sequences = torch.masked_select(predicted.argmax(axis=1), mask)
 
@@ -64,8 +64,6 @@ class Trainer:
         x = x.long().to(self.device)
 
         # update the gradients to zero
-        if training:
-            self.optimizer.zero_grad()
 
         # forward pass
         predicted, mu, var = self.model(x)
@@ -84,13 +82,15 @@ class Trainer:
 
         # backward pass
         if training:
-            total_loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
-            self.optimizer.step()
+            if i % self.backprop_freq == 0:
+                total_loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
+                self.optimizer.step()
+                self.optimizer.zero_grad()
 
         return kl_loss.item(), recon_loss.item(), recon_accuracy
 
-    def train(self, iter):
+    def train(self):
         # set the train mode
         self.model.train()
 
@@ -102,14 +102,14 @@ class Trainer:
 
         for i, x in enumerate(self.train_iterator):
             # reshape the data into [batch_size, FIXED_PROTEIN_LENGTH*23]
-            kl_loss, recon_loss, accuracy = self.__inner_iteration(x, True, iter)
+            kl_loss, recon_loss, accuracy = self.__inner_iteration(x, True, i)
             train_kl_loss += kl_loss
             train_recon_loss += recon_loss
             recon_accuracy += accuracy
 
         return train_kl_loss, train_recon_loss, recon_accuracy / len(self.train_iterator)
 
-    def test(self, iter):
+    def test(self):
         # set the evaluation mode
         self.model.eval()
 
@@ -124,7 +124,7 @@ class Trainer:
             for i, x in enumerate(self.test_iterator):
                 # update the gradients to zero
 
-                kl_loss, recon_loss, accuracy = self.__inner_iteration(x, False, iter)
+                kl_loss, recon_loss, accuracy = self.__inner_iteration(x, False, i)
 
                 # backward pass
                 test_kl_loss += kl_loss
@@ -139,16 +139,17 @@ class Trainer:
         train_recon_accuracy = -1
         for e in range(self.n_epochs):
 
-            train_kl_loss, train_recon_loss, train_recon_accuracy = self.train(e)
-            test_kl_loss, test_recon_loss, test_recon_accuracy = self.test(e)
+            train_kl_loss, train_recon_loss, train_recon_accuracy = self.train()
+            test_kl_loss, test_recon_loss, test_recon_accuracy = self.test()
             train_recon_loss /= self.train_dataset_len
             test_recon_loss /= self.test_dataset_len
             train_kl_loss /= self.train_dataset_len
             test_kl_loss /= self.test_dataset_len
-            print(f'Epoch {e}, Train KL Loss: {train_kl_loss:.8f}, Test KL Loss: {test_kl_loss:.8f}, ')
-            print(f'Epoch {e}, Train recon Loss: {train_recon_loss:.8f}, Test recon Loss: {test_recon_loss:.8f}, ')
-            print(
-                f'Train accuracy: {train_recon_accuracy * 100.0:.2f}%, Test accuracy {test_recon_accuracy * 100.0:.2f}%')
+            info_str = f'Epoch {e}, Train Loss: KL: {train_kl_loss:.8f}, Recon: {train_recon_loss:.8f}' \
+                       f', Accuracy: {train_recon_accuracy * 100.0:.2f}% '
+            info_str += f'Test Loss: KL: {test_kl_loss:.8f}, Recon: {test_recon_loss:.8f}, ' \
+                        f' Accuracy {test_recon_accuracy * 100.0:.2f}%'
+            log.info(info_str)
 
             if train_recon_accuracy > 0.97 and test_recon_accuracy > 0.97:
                 break
@@ -160,7 +161,7 @@ class Trainer:
             else:
                 patience_counter += 1
 
-            print("Patience value at {}".format(patience_counter))
+            log.info("Patience value at {}".format(patience_counter))
             if patience_counter > 1000:
                 break
             if e % 100 == 99:

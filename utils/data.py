@@ -1,7 +1,7 @@
 import collections
 import json
 import os
-
+from utils.logger import log
 import torch
 from torch.utils.data import DataLoader
 
@@ -24,17 +24,17 @@ def load_data(_config, max_length=-1):
     train_dataset_name = _config["train_dataset_name"]
     test_dataset_name = _config["test_dataset_name"]
 
-    print(f"Loading the sequence for train data: {train_dataset_name} and test data: {test_dataset_name}")
+    log.info(f"Loading the sequence for train data: {train_dataset_name} and test data: {test_dataset_name}")
     train_dataset, c, score = read_sequences(train_dataset_name,
                                              fixed_protein_length=data_length, add_chemical_features=True,
                                              sequence_only=True, pad_sequence=True, fill_itself=False,
                                              max_length=max_length)
-    print(f"Loading the sequence for test data: {test_dataset_name}")
+    log.info(f"Loading the sequence for test data: {test_dataset_name}")
     test_dataset, ct, scoret = read_sequences(test_dataset_name,
                                               fixed_protein_length=data_length, add_chemical_features=True,
                                               sequence_only=True, pad_sequence=True, fill_itself=False,
                                               max_length=max_length)
-    print(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
+    log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     _train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, batch_size=batch_size)
     return train_dataset, test_dataset, _train_iterator, _test_iterator, c, score
@@ -152,7 +152,7 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
             if "protein_sequence" in data:
                 sequences = data["protein_sequence"].values()
     i = 0
-    print("Size of sequence is {}".format(len(sequences)))
+    log.info("Size of sequence is {}".format(len(sequences)))
     for protein_sequence in sequences:
         if max_length != -1:
             if i > max_length:
