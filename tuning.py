@@ -17,7 +17,7 @@ from utils.model_factory import create_model
 from utils.train import Trainer
 
 config_common_mammalian = {
-    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 50, 'epochs': 150,
+    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 30, 'epochs': 150,
     'added_length': 0, 'hidden_size': 1500, 'embedding_size': 640, "tuning": True
 }
 
@@ -64,13 +64,15 @@ model_tuning_configs = {
     "transformer": {
         "model_name": "transformer",
         "heads": {"grid_search": [8]},
-        "layers": {"grid_search": [4, 5]},
-        "internal_dimension": {"grid_search": [64, 128]},
-        "feed_forward": 64,
+        "layers": {"grid_search": [5]},
+        "internal_dimension": {"grid_search": [64]},
+        "feed_forward": {"grid_search": [64]},
         "embedding_gradient": "False",
         "chem_features": "False",
-        "lr": tune.sample_from(lambda spec: tune.loguniform(0.000000001, 0.001)),
-        "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001))
+        # "lr": 1.710853307705144e-05,
+        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00000001, 0.00001)),
+        "weight_decay": 1.4412730806529451e-06
+        # "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001))
     }
 }
 
@@ -99,14 +101,14 @@ def tuner_run(config):
     train_dataset_len = train_dataset.shape[0]
     epochs = config["epochs"]
     for e in range(epochs):
-        train_loss, recon_loss, train_recon_accuracy = train.train(e)
+        train_kl_loss, recon_loss, train_recon_accuracy = train.train()
 
-        train_loss /= train_dataset_len
+        train_kl_loss /= train_dataset_len
         recon_loss /= train_dataset_len
-        print(
-            f'Epoch {e}, Train Loss: {train_loss:.8f}, {recon_loss:.8f} Train accuracy {train_recon_accuracy * 100.0:.2f}%')
+        print_str = f'Epoch {e}, kl: {train_kl_loss:.8f}, recon: {recon_loss:.8f} accuracy {train_recon_accuracy:.2f}'
+        print(print_str)
         if not debug:
-            track.log(mean_loss=(train_loss + recon_loss), accuracy=train_recon_accuracy, kl_loss=train_loss,
+            track.log(mean_loss=(train_kl_loss + recon_loss), accuracy=train_recon_accuracy, kl_loss=train_kl_loss,
                       recon_loss=recon_loss)
 
 
@@ -128,7 +130,7 @@ def tuner(smoke_test: bool, model, config_type):
     else:
         train_dataset_name = "data/train_set_large_1500_mammalian.json"
 
-    max_dataset_length = 50000
+    max_dataset_length = 80000
 
     train_dataset, c, score = data.read_sequences(train_dataset_name,
                                                   fixed_protein_length=data_length, add_chemical_features=True,

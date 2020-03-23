@@ -33,7 +33,7 @@ class TransformerModel(nn.Module):
         self.fc1: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc2: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc3: nn.Module = nn.Linear(z_dim, h_dim)
-        self.init_weights()
+        # self.init_weights()
 
     def init_weights(self):
         initrange = 0.1
