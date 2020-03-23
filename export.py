@@ -96,7 +96,7 @@ if __name__ == "__main__":
     config: dict = json.load(open(args.config))
     model_config: dict = json.load(open(args.modelconfig))
     print(f"Creating the model")
-    model, _, device = model_factory.create_model(config, model_config, args.model, args.multigpu)
+    model, _, device, _ = model_factory.create_model(config, model_config, args.model, args.multigpu)
     FIXED_PROTEIN_LENGTH = config["protein_length"]
     protein_file = "data/human_proteins.json"
     proteins = pd.read_json(protein_file)
