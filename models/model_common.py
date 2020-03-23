@@ -7,7 +7,7 @@ class ConvolutionalBlock(nn.Module):
         super().__init__()
         padding = 0
         if padded:
-            padding = (kernel_size - 1) / 2
+            padding = int((kernel_size - 1) / 2)
         self.conv_block = nn.Sequential(
             nn.Conv1d(in_c, out_c, kernel_size=kernel_size, bias=False, padding=padding, groups=1),
             nn.ELU(),
@@ -23,7 +23,7 @@ class ConvolutionalTransposeBlock(nn.Module):
         super().__init__()
         padding = 0
         if padded:
-            padding = (kernel_size - 1) / 2
+            padding = int((kernel_size - 1) / 2)
         self.conv_block = nn.Sequential(
             nn.ELU(),
             nn.BatchNorm1d(in_c),
