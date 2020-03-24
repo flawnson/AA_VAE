@@ -1,26 +1,6 @@
-import numpy as np
 import torch
 
 from utils.logger import log
-
-
-def update_learning_rate(optimizer, n_current_steps, n_warmup_steps, d_model):
-    ''' Learning rate scheduling per step '''
-
-    n_current_steps += 1
-    new_lr = np.power(d_model, -0.5) * np.min([
-        np.power(n_current_steps, -0.5),
-        np.power(n_warmup_steps, -1.5) * n_current_steps])
-
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = new_lr
-    return n_current_steps
-
-
-def ramp_function(index, length, depth, max_height):
-    width = length + depth
-    current_epoch = int(max_height / width)
-    delta = float(max_height) / float(width)
 
 
 def kl_loss_function(mu, logvar, scale: float):
@@ -159,10 +139,11 @@ class Trainer:
             test_recon_loss /= self.test_dataset_len
             train_kl_loss /= self.train_dataset_len
             test_kl_loss /= self.test_dataset_len
-            info_str = f'Epoch {e}, Train Loss: KL: {train_kl_loss:.8f}, Recon: {train_recon_loss:.8f}' \
+            info_str = f'Epoch {e}, Train Loss: KL: {train_kl_loss:.5f}, Recon: {train_recon_loss:.5f}' \
                        f', Accuracy: {train_recon_accuracy * 100.0:.2f}% '
-            info_str += f'Test Loss: KL: {test_kl_loss:.8f}, Recon: {test_recon_loss:.8f}, ' \
-                        f' Accuracy {test_recon_accuracy * 100.0:.2f}%'
+            info_str += f'Test Loss: KL: {test_kl_loss:.5f}, Recon: {test_recon_loss:.5f}, ' \
+                        f' Accuracy {test_recon_accuracy * 100.0:.2f}% '
+            info_str += "Patience value: {}".format(patience_counter)
             log.info(info_str)
 
             if train_recon_accuracy > 0.97 and test_recon_accuracy > 0.97:
@@ -175,7 +156,6 @@ class Trainer:
             else:
                 patience_counter += 1
 
-            log.info("Patience value at {}".format(patience_counter))
             if patience_counter > 1000:
                 break
             if e % 100 == 99:
