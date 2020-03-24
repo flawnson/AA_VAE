@@ -114,7 +114,7 @@ class TransformerDecoderLayer(nn.Module):
 
     """
 
-    def __init__(self, d_model, nhead, channels, dropout=0.1, kernel_size=3):
+    def __init__(self, d_model, nhead, channels, dropout=0.1, kernel_size=1):
         super(TransformerDecoderLayer, self).__init__()
         self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
         self.dropout1 = nn.Dropout(dropout)
@@ -136,12 +136,13 @@ class TransformerDecoderLayer(nn.Module):
         Shape:
             see the docs in Transformer class.
         """
+        residual = src
         src = src.transpose(1, 2).transpose(0, 1)
         src2 = self.self_attn(src, src, src, attn_mask=src_mask,
                               key_padding_mask=src_key_padding_mask)[0]
         src = src + self.dropout1(src2)
         src = src.transpose(0, 1).transpose(1, 2)
-        src = self.mutate(src)
+        src = self.mutate(src) + residual
         # src = src + self.dropout1(src2)
         return src
 

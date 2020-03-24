@@ -10,7 +10,7 @@ class ConvolutionalBlock(nn.Module):
             padding = int((kernel_size - 1) / 2)
         self.conv_block = nn.Sequential(
             nn.Conv1d(in_c, out_c, kernel_size=kernel_size, bias=False, padding=padding, groups=1),
-            nn.ELU(),
+            nn.CELU(),
             nn.BatchNorm1d(out_c)
         )
 

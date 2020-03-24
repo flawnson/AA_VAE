@@ -1,6 +1,20 @@
+import numpy as np
 import torch
 
 from utils.logger import log
+
+
+def update_learning_rate(optimizer, n_current_steps, n_warmup_steps, d_model):
+    ''' Learning rate scheduling per step '''
+
+    n_current_steps += 1
+    new_lr = np.power(d_model, -0.5) * np.min([
+        np.power(n_current_steps, -0.5),
+        np.power(n_warmup_steps, -1.5) * n_current_steps])
+
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = new_lr
+    return n_current_steps
 
 
 def ramp_function(index, length, depth, max_height):

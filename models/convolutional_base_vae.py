@@ -19,7 +19,7 @@ class Encoder(nn.Module):
 
         for n in range(layers):
             base_kernel_size = kernel_size + 1
-            block = ConvolutionalBlock(input_channels, output_channels, base_kernel_size,padded=False)
+            block = ConvolutionalBlock(input_channels, output_channels, base_kernel_size,padded=True)
             conv_layers.append(block)
             kernel_size = kernel_size * kernel_expansion_factor
             input_channels = output_channels
@@ -59,7 +59,7 @@ class Decoder(nn.Module):
         base_kernel_size = kernel_size
 
         for n in range(layers - 1):
-            block = ConvolutionalTransposeBlock(input_channels, output_channels, base_kernel_size,padded=False)
+            block = ConvolutionalTransposeBlock(input_channels, output_channels, base_kernel_size,padded=True)
             conv_layers.append(block)
             kernel_size = int(kernel_size / kernel_expansion_factor)
             input_channels = output_channels
@@ -138,7 +138,7 @@ class ConvolutionalBaseVAE(nn.Module):
 
     def representation(self, x):
         x = self.encoder(self.embedding(x).transpose(1, 2))
-        return self.bottleneck((x))[1]
+        return self.bottleneck(x)[1]
 
     def forward(self, x):
         h = self.encoder(self.embedding(x).transpose(1, 2))
