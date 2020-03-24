@@ -105,7 +105,7 @@ if __name__ == "__main__":
     embedding_list = []
     for protein in proteins_onehot:
         protein_rep = torch.stack(protein)
-        if multigpu:
+        if args.multigpu:
             protein_embeddings = model.module.representation(protein_rep.to(device).long())
         else:
             protein_embeddings = model.representation(protein_rep.to(device).long())
