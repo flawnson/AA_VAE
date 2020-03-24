@@ -7,9 +7,9 @@ import os.path as osp
 from torch.nn import functional as f
 from torch.utils.data import DataLoader
 from sklearn.metrics import roc_auc_score
-from models.validation.data_processing import *
-from models.validation.model import LinearModel
-from models.validation.trainer import TrainLinear
+from data_processing import *
+from model import LinearModel
+from trainer import TrainLinear
 
 if __name__ == "__main__":
     path = osp.join('simple-vae', 'configs')  # Implicitly used to get config file?

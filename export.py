@@ -98,7 +98,7 @@ if __name__ == "__main__":
     print(f"Creating the model")
     model, _, device, _ = model_factory.create_model(config, model_config, args.model, args.multigpu)
     FIXED_PROTEIN_LENGTH = config["protein_length"]
-    protein_file = "data/human_proteins.json"
+    protein_file = "output/human_proteins.json"
     proteins = pd.read_json(protein_file)
     proteins_onehot = read_sequences(protein_file, FIXED_PROTEIN_LENGTH)
     model.eval()
