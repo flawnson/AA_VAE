@@ -13,7 +13,6 @@ class LinearVAE(VaeTemplate, nn.Module):
         encoder = torch.nn.Sequential(
             torch.nn.BatchNorm1d(embeddings_static.shape[1] * data_length),
             torch.nn.Linear(embeddings_static.shape[1] * data_length, encoder_sizes[0] * data_length),
-            # 2 for bidirection
             torch.nn.ELU(),
             torch.nn.BatchNorm1d(encoder_sizes[0] * data_length),
             torch.nn.Linear(encoder_sizes[0] * data_length, encoder_sizes[1] * data_length),
