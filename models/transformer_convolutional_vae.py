@@ -179,6 +179,7 @@ class TransformerConvVAEModel(nn.Module):
         self.fc1: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc2: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc3: nn.Module = nn.Linear(z_dim, h_dim)
+        self.activation = nn.Tanh()
         # self.init_weights()
 
     def init_weights(self):
@@ -202,5 +203,5 @@ class TransformerConvVAEModel(nn.Module):
         output = self.fc3(z)
         output = output.view(z.shape[0], -1, input_len)
         output = self.transformer_decoder(output)
-        output = self.deembed(output)
+        output = self.activation(self.deembed(output))
         return output, mu, log_var
