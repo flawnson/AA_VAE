@@ -68,20 +68,14 @@ def read_sequences(file, fixed_protein_length):
     print("Size of sequence is {}".format(len(sequences)))
     for protein_sequence in sequences:
         if valid_protein(protein_sequence):
-            chunks = len(protein_sequence)
-            final_piece = (int(chunks / fixed_protein_length)) * fixed_protein_length
-            protein_sequence = [torch.ByteTensor(one_to_number(protein_sequence[i:i + fixed_protein_length])) for i in
-                                range(0, final_piece, fixed_protein_length)]
-            final_block = protein_sequence[int(final_piece):]
+            protein_sequence = protein_sequence[:fixed_protein_length]
             # pad sequence
-            if len(final_block) < fixed_protein_length:
-                final_block += "0" * (fixed_protein_length - len(final_block))
-            protein_sequence.append(torch.ByteTensor(one_to_number(final_block)))
-            proteins.append(protein_sequence)
+            if len(protein_sequence) < fixed_protein_length:
+                protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
+            proteins.append(torch.ByteTensor(one_to_number(protein_sequence)))
         else:
             continue
-
-    return proteins
+    return torch.stack(proteins)
 
 
 if __name__ == "__main__":
@@ -104,12 +98,11 @@ if __name__ == "__main__":
     model.eval()
     embedding_list = []
     for protein in proteins_onehot:
-        protein_rep = torch.stack(protein)
+        protein_rep = protein.view(1, -1)
         if args.multigpu:
-            protein_embeddings = model.module.representation(protein_rep.to(device).long())
+            protein_embeddings = model.module.representation(protein_rep.to(device).long()).view(-1)
         else:
-            protein_embeddings = model.representation(protein_rep.to(device).long())
-
+            protein_embeddings = model.representation(protein_rep.to(device).long()).view(-1)
         val = protein_embeddings.to('cpu').detach().numpy()
         embedding_list.append(val)
     proteins['embeddings'] = embedding_list
