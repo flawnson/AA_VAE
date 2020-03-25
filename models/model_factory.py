@@ -2,6 +2,7 @@ import torch
 import torch.optim as optim
 from utils.optimiser import ScheduledOptim
 
+import utils.radam as radam
 from models.convolutional_base_vae import ConvolutionalBaseVAE
 from models.convolutional_linear import Convolutional_Linear_VAE
 from models.convolutional_vae import ConvolutionalVAE
