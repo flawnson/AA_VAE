@@ -2,7 +2,7 @@
   "model_name": "transformer_convolutional",
   "heads": 8,
   "layers": 3,
-  "channels": 128,
+  "channels": 320,
   "kernel_size": 17,
   "embedding_gradient": "False",
   "lr": 0.00005279379246234669,
