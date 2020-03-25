@@ -10,9 +10,7 @@ class Encoder(nn.Module):
     def __init__(self, layers, kernel_size, input_size, input_channels: int, channel_scale_factor, max_channels=256,
                  kernel_expansion_factor=1):
         super().__init__()
-
         conv_layers = []
-
         output_channels = 2 ** ((input_channels - 1).bit_length())
         out_size = input_size
         base_kernel_size = kernel_size + 1
@@ -31,19 +29,11 @@ class Encoder(nn.Module):
         self.out_size = int(out_size)
         self.out_channels = int(input_channels)
         self.final_kernel_size = base_kernel_size
-        self.conv_layers = nn.ModuleList(conv_layers)
+        self.conv_layers = nn.Sequential(*conv_layers)
         self.residue = 200
 
     def forward(self, x):
-        inv = x
-        i = 1
-        for convolution_layer in self.conv_layers:
-            x = convolution_layer(x)
-            if i % self.residue == 0:
-                out = x + inv
-                inv = out
-                x = out
-            i = i + 1
+        x = self.conv_layers(x)
         x = x.view(x.shape[0], -1)
         return x
 
@@ -74,24 +64,15 @@ class Decoder(nn.Module):
         out_size = out_size_transpose(out_size, 0, 1, base_kernel_size, 1)
         conv_layers.append(block)
 
-        self.conv_layers = nn.ModuleList(conv_layers)
+        self.conv_layers = nn.Sequential(*conv_layers)
 
         self.out_size = out_size
         assert out_size == output_expected
         self.residue = 200
 
     def forward(self, x):
-        inv = x
-        i = 1
-        for convolution_layer in self.conv_layers:
-            x = convolution_layer(x)
-            if i % self.residue == 0:
-                out = x + inv
-                inv = out
-                x = out
-            i = i + 1
+        x = self.conv_layers(x)
         return x
-        # return self.conv_layers(x)
 
 
 class ConvolutionalBaseVAE(nn.Module):

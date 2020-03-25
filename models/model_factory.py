@@ -1,6 +1,6 @@
 import torch
-import torch.optim as optim
 
+import utils.radam as radam
 from models.convolutional_base_vae import ConvolutionalBaseVAE
 from models.convolutional_linear import Convolutional_Linear_VAE
 from models.convolutional_vae import ConvolutionalVAE
@@ -14,7 +14,7 @@ from utils import data
 def get_optimizer(optimizer_config, model):
     lr = optimizer_config["lr"]
     weight_decay = optimizer_config["weight_decay"]
-    return optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    return radam.RAdam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
 
 def create_model(config, model_config, pretrained_model=None, multigpu=False):
