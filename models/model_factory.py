@@ -1,4 +1,6 @@
 import torch
+import torch.optim as optim
+from utils.optimiser import ScheduledOptim
 
 import utils.radam as radam
 from models.convolutional_base_vae import ConvolutionalBaseVAE
@@ -12,10 +14,15 @@ from models.transformer_vae import TransformerModel
 from utils import data
 
 
-def get_optimizer(optimizer_config, model):
+def get_optimizer(optimizer_config:dict, model):
     lr = optimizer_config["lr"]
     weight_decay = optimizer_config["weight_decay"]
-    return radam.RAdam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    wrapped = optimizer_config.get("wrap", "False")
+    if wrapped == "True":
+        return ScheduledOptim(optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay))
+    else:
+        return optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+
 
 
 def create_model(config, model_config, pretrained_model=None, multigpu=False):
