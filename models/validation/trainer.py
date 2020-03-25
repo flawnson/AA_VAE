@@ -25,11 +25,11 @@ class TrainLinear:
         if self.onehot:
             self.imb_wc = torch.bincount(torch.argmax(torch.tensor(self.dataset.y), dim=1)).clamp(min=1e-10, max=1e10) \
                           / float(torch.tensor(self.dataset.y).shape[0])
-            self.weights = (1 / self.imb_wc) / (sum(1 / self.imb_wc))
+            self.weights = (1 / self.imb_wc) / (sum(1 / self.imb_wc)).to(device)
         else:
             self.imb_wc = torch.bincount(torch.tensor(np.asarray(self.dataset.y))).clamp(min=1e-10, max=1e10) / float(
                 torch.tensor(np.asarray(self.dataset.y)).shape[0])
-            self.weights = (1 / self.imb_wc[1:]) / (sum(1 / self.imb_wc[1:]))
+            self.weights = (1 / self.imb_wc[1:]) / (sum(1 / self.imb_wc[1:])).to(device)
 
     def train(self, batch, labels):
         # TODO: Need to apply known mask to ignore unknowns (supervised task)
