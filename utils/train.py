@@ -3,12 +3,6 @@ import torch
 from utils.logger import log
 
 
-def ramp_function(index, length, depth, max_height):
-    width = length + depth
-    current_epoch = int(max_height / width)
-    delta = float(max_height) / float(width)
-
-
 def kl_loss_function(mu, logvar, scale: float):
     # see Appendix B from VAE paper:
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -145,10 +139,11 @@ class Trainer:
             test_recon_loss /= self.test_dataset_len
             train_kl_loss /= self.train_dataset_len
             test_kl_loss /= self.test_dataset_len
-            info_str = f'Epoch {e}, Train Loss: KL: {train_kl_loss:.8f}, Recon: {train_recon_loss:.8f}' \
+            info_str = f'Epoch {e}, Train Loss: KL: {train_kl_loss:.5f}, Recon: {train_recon_loss:.5f}' \
                        f', Accuracy: {train_recon_accuracy * 100.0:.2f}% '
-            info_str += f'Test Loss: KL: {test_kl_loss:.8f}, Recon: {test_recon_loss:.8f}, ' \
-                        f' Accuracy {test_recon_accuracy * 100.0:.2f}%'
+            info_str += f'Test Loss: KL: {test_kl_loss:.5f}, Recon: {test_recon_loss:.5f}, ' \
+                        f' Accuracy {test_recon_accuracy * 100.0:.2f}% '
+            info_str += "Patience value: {}".format(patience_counter)
             log.info(info_str)
 
             if train_recon_accuracy > 0.97 and test_recon_accuracy > 0.97:
@@ -161,7 +156,6 @@ class Trainer:
             else:
                 patience_counter += 1
 
-            log.info("Patience value at {}".format(patience_counter))
             if patience_counter > 1000:
                 break
             if e % 100 == 99:
