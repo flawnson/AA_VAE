@@ -3,15 +3,13 @@ import torch
 from utils.logger import log
 
 
-def kl_loss_function(mu, logvar, scale: float):
+def kl_loss_function(mu, logvar):
     # see Appendix B from VAE paper:
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
     # https://arxiv.org/abs/1312.6114
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-    if scale > 1:
-        scale = 1
-    KLD: torch.Tensor = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
-    return KLD * scale
+    KLD: torch.Tensor = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    return KLD
 
 
 class Trainer:
@@ -44,7 +42,7 @@ class Trainer:
 
     def cross_entropy_wrapper(self, predicted, actual, count):
         return torch.nn.functional.cross_entropy(predicted, actual, reduction="none",
-                                                 weight=self.weights).sum() / count
+                                                 weight=self.weights).sum()
 
     def reconstruction_accuracy(self, predicted, actual, mask):
         """ Computes average sequence identity between input and output sequences
@@ -66,7 +64,7 @@ class Trainer:
         scale = mask.sum()
         recon_loss = self.criterion(predicted, x, scale)
 
-        kl_loss = kl_loss_function(mu, var, 1)
+        kl_loss = kl_loss_function(mu, var)
         total_loss = kl_loss + recon_loss
         # recon_loss = total_loss_function(recon_loss, mu, var, float(scale) / mask.numel())
 
@@ -139,12 +137,6 @@ class Trainer:
             test_recon_loss /= self.test_dataset_len
             train_kl_loss /= self.train_dataset_len
             test_kl_loss /= self.test_dataset_len
-            info_str = f'Epoch {e}, Train Loss: KL: {train_kl_loss:.5f}, Recon: {train_recon_loss:.5f}' \
-                       f', Accuracy: {train_recon_accuracy * 100.0:.2f}% '
-            info_str += f'Test Loss: KL: {test_kl_loss:.5f}, Recon: {test_recon_loss:.5f}, ' \
-                        f' Accuracy {test_recon_accuracy * 100.0:.2f}% '
-            info_str += "Patience value: {}".format(patience_counter)
-            log.info(info_str)
 
             if train_recon_accuracy > 0.97 and test_recon_accuracy > 0.97:
                 break
@@ -155,6 +147,12 @@ class Trainer:
                 self.save_snapshot(train_recon_accuracy)
             else:
                 patience_counter += 1
+            info_str = f'Epoch {e}, Train Loss: KL,Recon: ({train_kl_loss:.5f}, {train_recon_loss:.5f})' \
+                       f', Accuracy: {train_recon_accuracy * 100.0:.2f}% '
+            info_str += f'Test Loss: KL,Recon: ({test_kl_loss:.5f}, {test_recon_loss:.5f}), ' \
+                        f' Accuracy {test_recon_accuracy * 100.0:.2f}% '
+            info_str += "Patience value: {}".format(patience_counter)
+            log.info(info_str)
 
             if patience_counter > 1000:
                 break
