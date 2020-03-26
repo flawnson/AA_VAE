@@ -5,6 +5,7 @@
   "internal_dimension": 128,
   "feed_forward": 128,
   "embedding_gradient": "False",
-  "lr": 0.0005279379246234669,
+  "lr": 0.0001279379246234669,
+  "wrap": "False",
   "weight_decay": 1.6459309598386149e-06
 }

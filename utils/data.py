@@ -191,7 +191,7 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
             rarity = 1
             scores.append(rarity)
         else:
-            scores.append(0.3)
+            scores.append(0)
 
     data = torch.stack(proteins), c, torch.FloatTensor(scores)
     save_tensor_to_file(pt_file, data)

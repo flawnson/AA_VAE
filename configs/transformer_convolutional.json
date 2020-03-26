@@ -3,7 +3,7 @@
   "heads": 8,
   "layers": 4,
   "channels": 320,
-  "kernel_size": 17,
+  "kernel_size": 1,
   "embedding_gradient": "False",
   "lr": 0.0005279379246234669,
   "weight_decay": 1.6459309598386149e-06,
