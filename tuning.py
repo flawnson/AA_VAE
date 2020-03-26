@@ -179,7 +179,7 @@ def tuner(smoke_test: bool, model, config_type):
         },
         resources_per_trial={
             "cpu": cpus,
-            "gpu": 1
+            "gpu": 2
         },
         local_dir=local_dir,
         num_samples=1 if smoke_test else 3,
