@@ -1,8 +1,8 @@
 {
   "model_name": "transformer_convolutional",
   "heads": 8,
-  "layers": 4,
-  "channels": 320,
+  "layers": 5,
+  "channels": 128,
   "kernel_size": 1,
   "embedding_gradient": "False",
   "lr": 0.0005279379246234669,

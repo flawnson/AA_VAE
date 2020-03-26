@@ -7,7 +7,7 @@ from utils.logger import log
 inf = math.inf
 
 
-def calculate_gradient_stats(parameters, norm_type=2):
+def calculate_gradient_stats(parameters):
     r"""Clips gradient norm of an iterable of parameters.
 
     The norm is computed over all gradients together, as if they were
@@ -26,16 +26,9 @@ def calculate_gradient_stats(parameters, norm_type=2):
     if isinstance(parameters, torch.Tensor):
         parameters = [parameters]
     parameters = list(filter(lambda p: p.grad is not None, parameters))
-    norm_type = float(norm_type)
-    if norm_type == inf:
-        total_norm = max(p.grad.data.abs().max() for p in parameters)
-    else:
-        total_norm = 0
-        for p in parameters:
-            param_norm = p.grad.data.norm(norm_type)
-            total_norm += param_norm.item() ** norm_type
-        total_norm = total_norm ** (1. / norm_type)
-    return total_norm
+    max_grad = max(p.grad.data.max() for p in parameters)
+    min_grad = min(p.grad.data.min() for p in parameters)
+    return max_grad, min_grad
 
 
 def kl_loss_function(mu, logvar):
@@ -61,6 +54,7 @@ class Trainer:
     Class that is used to run the model, runs training and testing.
     Embeddings are nto generated using this method.
     """
+
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
                  train_dataset_length, test_dataset_length, n_epochs, loss_function_name="bce",
                  vocab_size=23,
@@ -162,9 +156,11 @@ class Trainer:
         if training:
             if i % self.backprop_freq == 0:
                 total_loss.backward()
-                stats = calculate_gradient_stats(self.model.parameters(), inf)
+                max_grad, min_grad = calculate_gradient_stats(self.model.parameters())
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 100)
-                log.debug(math.log10(stats))
+                log.debug(
+                    "Log10 Max gradient: {}, Min gradient: {}".format(math.log10(max_grad),
+                                                                      math.log10(math.fabs(min_grad))))
                 self.optimizer.step()
                 self.optimizer.zero_grad()
 
@@ -181,15 +177,21 @@ class Trainer:
         train_kl_loss = 0
         train_recon_loss = 0
         recon_accuracy = 0
+        valid_loop = True
 
         for i, x in enumerate(self.train_iterator):
             kl_loss, recon_loss, accuracy = self.__inner_iteration(x, True, i)
+            total_loss = recon_loss + kl_loss
+            if total_loss == math.nan:
+                log.error("Loss was nan, loop is breaking, change parameters")
+                valid_loop = False
+                break
 
             train_kl_loss += kl_loss
             train_recon_loss += recon_loss
             recon_accuracy += accuracy
 
-        return train_kl_loss, train_recon_loss, recon_accuracy / len(self.train_iterator)
+        return train_kl_loss, train_recon_loss, recon_accuracy / len(self.train_iterator), valid_loop
 
     def test(self):
         """
@@ -227,7 +229,10 @@ class Trainer:
         train_recon_accuracy = -1
         for e in range(self.n_epochs):
 
-            train_kl_loss, train_recon_loss, train_recon_accuracy = self.train()
+            train_kl_loss, train_recon_loss, train_recon_accuracy, valid = self.train()
+            if not valid:
+                log.error("Loop breaking as the loss was nan")
+                break
             test_kl_loss, test_recon_loss, test_recon_accuracy = self.test()
             train_recon_loss /= self.train_dataset_len
             test_recon_loss /= self.test_dataset_len
@@ -245,11 +250,11 @@ class Trainer:
                 patience_counter += 1
 
             info_str = f'Epoch {e}, Train Loss: KL,Recon,total: {train_kl_loss:.3f}, {train_recon_loss:.3f}, ' \
-                       f'{train_loss:.3f}' \
-                       f', Accuracy: {train_recon_accuracy * 100.0:.2f}% '
-            info_str += f'Test Loss: KL,Recon: ({test_kl_loss:.3f}, {test_recon_loss:.3f}),' \
+                       f'{train_loss:.3f},' \
+                       f' Accuracy: {train_recon_accuracy * 100.0:.2f}%'
+            info_str += f' Test Loss: KL,Recon: ({test_kl_loss:.3f}, {test_recon_loss:.3f}),' \
                         f' Accuracy: {test_recon_accuracy * 100.0:.2f}%'
-            info_str += "Patience value: {}".format(patience_counter)
+            info_str += " Patience value: {}".format(patience_counter)
             log.info(info_str)
 
             if patience_counter > 1000:

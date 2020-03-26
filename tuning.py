@@ -2,7 +2,7 @@ import argparse
 import multiprocessing
 import os
 import os.path as osp
-
+import math
 import numpy as np
 import ray
 import torch
@@ -121,7 +121,11 @@ def tuner_run(config):
 
         train_kl_loss /= train_dataset_len
         recon_loss /= train_dataset_len
-        print_str = f'Epoch {e}, kl: {train_kl_loss:.8f}, recon: {recon_loss:.8f} accuracy {train_recon_accuracy:.2f}'
+
+        print_str = f'Epoch {e}, kl: {train_kl_loss:.3f}, recon: {recon_loss:.3f} accuracy {train_recon_accuracy:.2f}'
+        total_loss = train_recon_accuracy + train_kl_loss
+        if total_loss == math.nan:
+            break
         print(print_str)
         if not debug:
             track.log(mean_loss=(train_kl_loss + recon_loss), accuracy=train_recon_accuracy, kl_loss=train_kl_loss,
