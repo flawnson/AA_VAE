@@ -149,7 +149,7 @@ class Trainer:
                 patience_counter += 1
             info_str = f'Epoch {e}, Train Loss: KL,Recon: ({train_kl_loss:.5f}, {train_recon_loss:.5f})' \
                        f', Accuracy: {train_recon_accuracy * 100.0:.2f}% '
-            info_str += f'Test Loss: KL,Recon: ({test_kl_loss:.5f}, {test_recon_loss:.5f}), ' \
+            info_str += f'Test Loss: KL,Recon: ({test_kl_loss:.5f}, {test_recon_loss:.5f}),' \
                         f' Accuracy {test_recon_accuracy * 100.0:.2f}% '
             info_str += "Patience value: {}".format(patience_counter)
             log.info(info_str)

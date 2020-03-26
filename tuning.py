@@ -61,6 +61,19 @@ model_tuning_configs = {
         "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.0, 0.05)),
         "tuning": True
     },
+    "transformer_convolutional": {
+        "model_name": "transformer_convolutional",
+        "heads": 8,
+        "layers": {"grid_search": [4, 5, 6]},
+        "channels": {"grid_search": [128, 256, 320]},
+        "kernel_size": {"grid_search": [1, 3, 5, 9]},
+        "embedding_gradient": "False",
+        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00000001, 0.01)),
+        # "lr": 0.0005279379246234669,
+        "weight_decay": 1.6459309598386149e-06,
+        "wrap": "False",
+        "optimizer": "RAdam"
+    },
     "transformer": {
         "model_name": "transformer",
         "heads": {"grid_search": [8]},
