@@ -1,7 +1,7 @@
 {
   "model_name": "transformer",
   "heads": 8,
-  "layers": 5,
+  "layers": 4,
   "internal_dimension": 128,
   "feed_forward": 128,
   "embedding_gradient": "False",

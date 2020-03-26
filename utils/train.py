@@ -1,6 +1,41 @@
+import math
+
 import torch
 
 from utils.logger import log
+
+inf = math.inf
+
+
+def calculate_gradient_stats(parameters, norm_type=2):
+    r"""Clips gradient norm of an iterable of parameters.
+
+    The norm is computed over all gradients together, as if they were
+    concatenated into a single vector. Gradients are modified in-place.
+
+    Arguments:
+        parameters (Iterable[Tensor] or Tensor): an iterable of Tensors or a
+            single Tensor that will have gradients normalized
+        max_norm (float or int): max norm of the gradients
+        norm_type (float or int): type of the used p-norm. Can be ``'inf'`` for
+            infinity norm.
+
+    Returns:
+        Total norm of the parameters (viewed as a single vector).
+    """
+    if isinstance(parameters, torch.Tensor):
+        parameters = [parameters]
+    parameters = list(filter(lambda p: p.grad is not None, parameters))
+    norm_type = float(norm_type)
+    if norm_type == inf:
+        total_norm = max(p.grad.data.abs().max() for p in parameters)
+    else:
+        total_norm = 0
+        for p in parameters:
+            param_norm = p.grad.data.norm(norm_type)
+            total_norm += param_norm.item() ** norm_type
+        total_norm = total_norm ** (1. / norm_type)
+    return total_norm
 
 
 def kl_loss_function(mu, logvar):
@@ -76,7 +111,9 @@ class Trainer:
         if training:
             if i % self.backprop_freq == 0:
                 total_loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
+                stats = calculate_gradient_stats(self.model.parameters(), inf)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 100)
+                log.debug(math.log10(stats))
                 self.optimizer.step()
                 self.optimizer.zero_grad()
 
@@ -147,10 +184,12 @@ class Trainer:
                 self.save_snapshot(train_recon_accuracy)
             else:
                 patience_counter += 1
-            info_str = f'Epoch {e}, Train Loss: KL,Recon: ({train_kl_loss:.5f}, {train_recon_loss:.5f})' \
+
+            info_str = f'Epoch {e}, Train Loss: KL,Recon,total: {train_kl_loss:.3f}, {train_recon_loss:.3f}, ' \
+                       f'{train_loss:.3f}' \
                        f', Accuracy: {train_recon_accuracy * 100.0:.2f}% '
-            info_str += f'Test Loss: KL,Recon: ({test_kl_loss:.5f}, {test_recon_loss:.5f}),' \
-                        f' Accuracy {test_recon_accuracy * 100.0:.2f}% '
+            info_str += f'Test Loss: KL,Recon: ({test_kl_loss:.3f}, {test_recon_loss:.3f}),' \
+                        f' Accuracy: {test_recon_accuracy * 100.0:.2f}%'
             info_str += "Patience value: {}".format(patience_counter)
             log.info(info_str)
 

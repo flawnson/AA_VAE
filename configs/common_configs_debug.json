@@ -2,7 +2,7 @@
   "dataset": "small",
   "protein_length": 200,
   "class": "bacteria",
-  "batch_size": 90,
+  "batch_size": 500,
   "iteration_freq": 1,
   "chem_features": "False",
   "epochs": 500,

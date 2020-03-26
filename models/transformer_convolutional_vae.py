@@ -69,7 +69,7 @@ class TransformerEncoderLayer(nn.Module):
         super(TransformerEncoderLayer, self).__init__()
         self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
         self.dropout1 = nn.Dropout(dropout)
-        out_c = int(channels / 2)
+        out_c = int(channels/2)
         self.mutate = nn.Sequential(
             ConvolutionalBlock(in_c=channels, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
@@ -118,11 +118,11 @@ class TransformerDecoderLayer(nn.Module):
         super(TransformerDecoderLayer, self).__init__()
         self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
         self.dropout1 = nn.Dropout(dropout)
-        out_c = int(channels / 2)
+        out_c = int(channels/2)
         self.mutate = nn.Sequential(
             ConvolutionalTransposeBlock(in_c=channels, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
-            ConvolutionalTransposeBlock(in_c=out_c, out_c=channels, padded=True, kernel_size=kernel_size),
+            ConvolutionalTransposeBlock(in_c=out_c, out_c=channels, padded=True, kernel_size=kernel_size)
         )
 
     def forward(self, src, src_mask=None, src_key_padding_mask=None):
@@ -195,14 +195,11 @@ class TransformerConvVAEModel(nn.Module):
 
     def forward(self, x):
         input_len = x.shape[1]
-        src = self.encoder(x).transpose(1, 2)
-        src = self.embedder(src)
-        output = self.transformer_encoder(src)
-        output = output.view(x.shape[0], -1)
+        output = self.transformer_encoder(self.embedder(self.encoder(x).transpose(1, 2))).view(x.shape[0], -1)
+        # output = self.transformer_encoder(src)
+        # output = output.view(x.shape[0], -1)
         z, mu, log_var = self.bottleneck(output)
-        output = self.fc3(z)
-        output = output.view(z.shape[0], -1, input_len)
-        output = self.transformer_decoder(output)
-        output = self.deembed(output)
-        output = self.activation(output)
+        output = self.activation(self.deembed(self.transformer_decoder(self.fc3(z).view(z.shape[0], -1, input_len))))
+        # output = self.deembed(output)
+        # output = self.activation(output)
         return output, mu, log_var

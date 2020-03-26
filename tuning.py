@@ -17,12 +17,14 @@ from models.model_factory import create_model
 from utils.train import Trainer
 
 config_common_mammalian = {
-    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 30, 'epochs': 150,
-    'added_length': 0, 'hidden_size': 1500, 'embedding_size': 640, "tuning": True
+    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 3, 'epochs': 150,
+    "iteration_freq": 1000,
+    'added_length': 0, 'hidden_size': 1500, 'embedding_size': 320, "tuning": True
 }
 
 config_common_bacteria = {
     'dataset': 'medium', 'protein_length': 200, 'class': 'bacteria', 'batch_size': 200, 'epochs': 150,
+    "iteration_freq": 10,
     'added_length': 0, 'hidden_size': 200, 'embedding_size': 128, "tuning": True
 }
 
@@ -66,8 +68,9 @@ model_tuning_configs = {
         "heads": 8,
         "layers": {"grid_search": [4, 5, 6]},
         "channels": {"grid_search": [128, 256, 320]},
-        "kernel_size": {"grid_search": [1, 3, 5, 9]},
+        "kernel_size": {"grid_search": [1]},
         "embedding_gradient": "False",
+        "chem_features": "False",
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.00000001, 0.01)),
         # "lr": 0.0005279379246234669,
         "weight_decay": 1.6459309598386149e-06,
