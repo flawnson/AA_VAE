@@ -77,6 +77,10 @@ class Trainer:
         :param model_name: The generic name of the model
         :param freq: The frequency of running backward propagation
         """
+        log.debug(f"Name: {model_name} Length:{data_length} trainDatasetLength:{train_dataset_length} "
+                  f"testDataSetLength:{test_dataset_length} Epochs:{n_epochs}")
+        log.debug(f"LossFunction:{loss_function_name} VocabSize:{vocab_size} PatienceCount:{patience_count} "
+                  f"Frequency:{freq}")
 
         loss_functions = {
             "bce": self.cross_entropy_wrapper,
@@ -99,6 +103,7 @@ class Trainer:
         self.patience_count = patience_count
         self.criterion = loss_functions[loss_function_name]
         self.weights = torch.FloatTensor(weights).to(device)
+        self.total_loss_score: torch.DoubleTensor = torch.DoubleTensor([[0]]).to(device)
 
     def cross_entropy_wrapper(self, predicted, actual, count):
         """
@@ -126,6 +131,8 @@ class Trainer:
 
         return (((input_sequences == output_sequences).sum()) / float(len(input_sequences))).item()
 
+    # def __backprop(self):
+
     def __inner_iteration(self, x, training: bool, i):
         """
         This method runs a single inner iteration or passes a single batch through the model
@@ -134,6 +141,7 @@ class Trainer:
         :param i:
         :return:
         """
+
         x = x.long().to(self.device)
 
         # update the gradients to zero
@@ -147,7 +155,8 @@ class Trainer:
 
         kl_loss = kl_loss_function(mu, var)
         total_loss = kl_loss + recon_loss
-        # recon_loss = total_loss_function(recon_loss, mu, var, float(scale) / mask.numel())
+        if training:
+            self.total_loss_score += total_loss
 
         # reconstruction accuracy
         recon_accuracy = self.reconstruction_accuracy(predicted, x, mask)
@@ -155,14 +164,17 @@ class Trainer:
         # backward pass
         if training:
             if i % self.backprop_freq == 0:
-                total_loss.backward()
+                self.total_loss_score.backward()
                 max_grad, min_grad = calculate_gradient_stats(self.model.parameters())
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 100)
                 log.debug(
-                    "Log10 Max gradient: {}, Min gradient: {}".format(math.log10(max_grad),
-                                                                      math.log10(math.fabs(min_grad))))
+                    "Log10 Max gradient: {}, Min gradient: {} Total loss: {}".format(math.log10(max_grad),
+                                                                                     math.log10(math.fabs(min_grad)),
+                                                                                     total_loss.item()))
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 500)
+
                 self.optimizer.step()
                 self.optimizer.zero_grad()
+                self.total_loss_score = 0
 
         return kl_loss.item(), recon_loss.item(), recon_accuracy
 
