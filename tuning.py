@@ -71,11 +71,11 @@ model_tuning_configs = {
         "kernel_size": {"grid_search": [1]},
         "embedding_gradient": "False",
         "chem_features": "False",
-        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00000001, 0.01)),
+        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00001, 0.1)),
         # "lr": 0.0005279379246234669,
         "weight_decay": 1.6459309598386149e-06,
-        "wrap": "False",
-        "optimizer": "RAdam"
+        "wrap": "False"
+        # "optimizer": "RAdam"
     },
     "transformer": {
         "model_name": "transformer",
@@ -112,19 +112,19 @@ def tuner_run(config):
     train = Trainer(model, config["protein_length"], train_iterator, None, device,
                     optimizer,
                     len(train_dataset),
-                    0, 0, vocab_size=data_length, weights=weights)
+                    0, 0, vocab_size=data_length, weights=weights, freq=config["iteration_freq"])
 
     train_dataset_len = train_dataset.shape[0]
     epochs = config["epochs"]
     for e in range(epochs):
-        train_kl_loss, recon_loss, train_recon_accuracy = train.train()
+        train_kl_loss, recon_loss, train_recon_accuracy, valid_loop = train.train()
 
         train_kl_loss /= train_dataset_len
         recon_loss /= train_dataset_len
 
         print_str = f'Epoch {e}, kl: {train_kl_loss:.3f}, recon: {recon_loss:.3f} accuracy {train_recon_accuracy:.2f}'
         total_loss = train_recon_accuracy + train_kl_loss
-        if total_loss == math.nan:
+        if total_loss == math.nan or not valid_loop:
             break
         print(print_str)
         if not debug:
@@ -150,7 +150,7 @@ def tuner(smoke_test: bool, model, config_type):
     else:
         train_dataset_name = "data/train_set_large_1500_mammalian.json"
 
-    max_dataset_length = 80000
+    max_dataset_length = 8000
 
     train_dataset, c, score = data.read_sequences(train_dataset_name,
                                                   fixed_protein_length=data_length, add_chemical_features=True,
