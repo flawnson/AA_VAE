@@ -18,7 +18,8 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--pretrained", help="pretrained", type=str)
     args = parser.parse_args()
     config: dict = json.load(open(args.config))
-
+    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.enabled = True
     model_config: dict = json.load(open(args.model))
 
     data_length = config["protein_length"]
