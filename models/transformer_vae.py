@@ -1,12 +1,67 @@
 import copy
 
+import torch.nn.functional as F
 import torch.nn.modules.activation
 
 from models.model_common import *
-import torch.nn.functional as F
+
 
 def _get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
+
+
+def snconv2d(eps=1e-12, **kwargs):
+    return nn.utils.spectral_norm(nn.Conv2d(**kwargs), eps=eps)
+
+
+def snlinear(eps=1e-12, **kwargs):
+    return nn.utils.spectral_norm(nn.Linear(**kwargs), eps=eps)
+
+
+def sn_embedding(eps=1e-12, **kwargs):
+    return nn.utils.spectral_norm(nn.Embedding(**kwargs), eps=eps)
+
+
+class SelfAttnHuggingFace(nn.Module):
+
+    def __init__(self, in_channels, eps=1e-12):
+        super(SelfAttnHuggingFace, self).__init__()
+        self.in_channels = in_channels
+        self.snconv1x1_theta = snconv2d(in_channels=in_channels, out_channels=in_channels // 8,
+                                        kernel_size=1, bias=False, eps=eps)
+        self.snconv1x1_phi = snconv2d(in_channels=in_channels, out_channels=in_channels // 8,
+                                      kernel_size=1, bias=False, eps=eps)
+        self.snconv1x1_g = snconv2d(in_channels=in_channels, out_channels=in_channels // 2,
+                                    kernel_size=1, bias=False, eps=eps)
+        self.snconv1x1_o_conv = snconv2d(in_channels=in_channels // 2, out_channels=in_channels,
+                                         kernel_size=1, bias=False, eps=eps)
+        self.maxpool = nn.MaxPool2d(2, stride=2, padding=0)
+        self.softmax = nn.Softmax(dim=-1)
+        self.gamma = nn.Parameter(torch.zeros(1))
+
+    def forward(self, x):
+        _, ch, h, w = x.size()
+        # Theta path
+        theta = self.snconv1x1_theta(x)
+        theta = theta.view(-1, ch // 8, h * w)
+        # Phi path
+        phi = self.snconv1x1_phi(x)
+        phi = self.maxpool(phi)
+        phi = phi.view(-1, ch // 8, h * w // 4)
+        # Attn map
+        attn = torch.bmm(theta.permute(0, 2, 1), phi)
+        attn = self.softmax(attn)
+        # g path
+        g = self.snconv1x1_g(x)
+        g = self.maxpool(g)
+        g = g.view(-1, ch // 2, h * w // 4)
+        # Attn_g - o_conv
+        attn_g = torch.bmm(g, attn.permute(0, 2, 1))
+        attn_g = attn_g.view(-1, ch // 2, h, w)
+        attn_g = self.snconv1x1_o_conv(attn_g)
+        # Out
+        out = x + self.gamma * attn_g
+        return out
 
 
 class MultiheadAttention(nn.Module):
