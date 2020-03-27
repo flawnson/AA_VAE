@@ -155,16 +155,17 @@ class Trainer:
 
         kl_loss = kl_loss_function(mu, var)
         total_loss = kl_loss + recon_loss
-        if training:
-            self.total_loss_score += total_loss
+        # if training:
+        #     self.total_loss_score += total_loss
 
         # reconstruction accuracy
         recon_accuracy = self.reconstruction_accuracy(predicted, x, mask)
-
+        log.debug("{} {} {}".format(kl_loss.item(), recon_loss.item(), total_loss.item()))
         # backward pass
         if training:
-            if i % self.backprop_freq == 0:
-                self.total_loss_score.backward()
+            # if i % self.backprop_freq == 0:
+            #     total_loss = self.total_loss_score
+                total_loss.backward()
                 max_grad, min_grad = calculate_gradient_stats(self.model.parameters())
                 log.debug(
                     "Log10 Max gradient: {}, Min gradient: {} Total loss: {}".format(math.log10(max_grad),
@@ -174,7 +175,7 @@ class Trainer:
 
                 self.optimizer.step()
                 self.optimizer.zero_grad()
-                self.total_loss_score = 0
+                # self.total_loss_score = 0
 
         return kl_loss.item(), recon_loss.item(), recon_accuracy
 
