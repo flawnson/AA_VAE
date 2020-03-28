@@ -3,9 +3,9 @@
   "heads": 8,
   "layers": 5,
   "channels": 128,
-  "kernel_size": 1,
+  "kernel_size": 3,
   "embedding_gradient": "False",
-  "lr": 0.0005279379246234669,
+  "lr": 0.005279379246234669,
   "weight_decay": 1.6459309598386149e-06,
   "wrap": "False",
   "optimizer": "RAdam"

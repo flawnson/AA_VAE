@@ -9,6 +9,64 @@ def _get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
 
 
+
+def _get_clones(module, N):
+    return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
+
+
+def snconv2d(eps=1e-12, **kwargs):
+    return nn.utils.spectral_norm(nn.Conv1d(**kwargs), eps=eps)
+
+
+def snlinear(eps=1e-12, **kwargs):
+    return nn.utils.spectral_norm(nn.Linear(**kwargs), eps=eps)
+
+
+def sn_embedding(eps=1e-12, **kwargs):
+    return nn.utils.spectral_norm(nn.Embedding(**kwargs), eps=eps)
+
+
+class SelfAttnHuggingFace(nn.Module):
+
+    def __init__(self, in_channels, eps=1e-12):
+        super(SelfAttnHuggingFace, self).__init__()
+        self.in_channels = in_channels
+        self.snconv1x1_theta = snconv2d(in_channels=in_channels, out_channels=in_channels // 8,
+                                        kernel_size=1, bias=False, eps=eps)
+        self.snconv1x1_phi = snconv2d(in_channels=in_channels, out_channels=in_channels // 8,
+                                      kernel_size=1, bias=False, eps=eps)
+        self.snconv1x1_g = snconv2d(in_channels=in_channels, out_channels=in_channels // 2,
+                                    kernel_size=1, bias=False, eps=eps)
+        self.snconv1x1_o_conv = snconv2d(in_channels=in_channels // 2, out_channels=in_channels,
+                                         kernel_size=1, bias=False, eps=eps)
+        self.maxpool = nn.MaxPool2d(2, stride=2, padding=0)
+        self.softmax = nn.Softmax(dim=-1)
+        self.gamma = nn.Parameter(torch.zeros(1))
+
+    def forward(self, x):
+        b, ch,w = x.size()
+        # Theta path
+        theta = self.snconv1x1_theta(x)
+        theta = theta.view(b, ch//8, w)
+        # Phi path
+        phi = self.snconv1x1_phi(x)
+        phi = self.maxpool(phi)
+        phi = phi.view(b, ch//8,  w // 4)
+        # Attn map
+        attn = torch.bmm(theta.permute(0, 2, 1), phi)
+        attn = self.softmax(attn)
+        # g path
+        g = self.snconv1x1_g(x)
+        g = self.maxpool(g)
+        g = g.view(b, ch//2, w // 4)
+        # Attn_g - o_conv
+        attn_g = torch.bmm(g, attn.permute(0, 2, 1))
+        attn_g = attn_g.view(b, ch // 2, w)
+        attn_g = self.snconv1x1_o_conv(attn_g)
+        # Out
+        out = x + self.gamma * attn_g
+        return out
+
 class TransformerLayer(nn.Module):
     r"""TransformerEncoder is a stack of N encoder layers
 
@@ -67,7 +125,7 @@ class TransformerEncoderLayer(nn.Module):
 
     def __init__(self, d_model, nhead, channels, dropout=0.1, kernel_size=3):
         super(TransformerEncoderLayer, self).__init__()
-        self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
+        self.self_attn = SelfAttnHuggingFace(channels)
         self.dropout1 = nn.Dropout(dropout)
         out_c = int(channels/2)
         self.mutate = nn.Sequential(
@@ -87,11 +145,10 @@ class TransformerEncoderLayer(nn.Module):
         Shape:
             see the docs in Transformer class.
         """
-        src = src.transpose(1, 2).transpose(0, 1)
-        src2 = self.self_attn(src, src, src, attn_mask=src_mask,
-                              key_padding_mask=src_key_padding_mask)[0]
+        # src = src.transpose(1, 2).transpose(0, 1)
+        src2 = self.self_attn(src)
         src = src + self.dropout1(src2)
-        src = src.transpose(0, 1).transpose(1, 2)
+        # src = src.transpose(0, 1).transpose(1, 2)
         src = self.mutate(src)
         # src = src + self.dropout1(src2)
         return src
@@ -116,7 +173,7 @@ class TransformerDecoderLayer(nn.Module):
 
     def __init__(self, d_model, nhead, channels, dropout=0.1, kernel_size=1):
         super(TransformerDecoderLayer, self).__init__()
-        self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
+        self.self_attn = SelfAttnHuggingFace(channels)
         self.dropout1 = nn.Dropout(dropout)
         out_c = int(channels/2)
         self.mutate = nn.Sequential(
@@ -137,11 +194,10 @@ class TransformerDecoderLayer(nn.Module):
             see the docs in Transformer class.
         """
         residual = src
-        src = src.transpose(1, 2).transpose(0, 1)
-        src2 = self.self_attn(src, src, src, attn_mask=src_mask,
-                              key_padding_mask=src_key_padding_mask)[0]
+        # src = src.transpose(1, 2).transpose(0, 1)
+        src2 = self.self_attn(src)
         src = src + self.dropout1(src2)
-        src = src.transpose(0, 1).transpose(1, 2)
+        # src = src.transpose(0, 1).transpose(1, 2)
         src = self.mutate(src) + residual
         # src = src + self.dropout1(src2)
         return src
