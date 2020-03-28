@@ -17,10 +17,10 @@ from models.model_factory import create_model
 from utils.train import Trainer
 
 config_common_mammalian = {
-    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 2, 'epochs': 150,
+    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 150, 'epochs': 150,
     "iteration_freq": 1000,
     "chem_features": "False",
-    'added_length': 0, 'hidden_size': 1000, 'embedding_size': 320, "tuning": True
+    'added_length': 0, 'hidden_size': 1000, 'embedding_size': 640, "tuning": True
 }
 
 config_common_bacteria = {
@@ -67,16 +67,16 @@ model_tuning_configs = {
     "transformer_convolutional": {
         "model_name": "transformer_convolutional",
         "heads": 8,
-        "layers": {"grid_search": [4]},
+        "layers": {"grid_search": [6]},
         "channels": {"grid_search": [128]},
-        "kernel_size": {"grid_search": [1]},
+        "kernel_size": {"grid_search": [3]},
         "embedding_gradient": "False",
         "chem_features": "False",
-        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00001, 0.1)),
+        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00001, 0.001)),
         # "lr": 0.0005279379246234669,
         "weight_decay": 1.6459309598386149e-06,
-        "wrap": "False"
-        # "optimizer": "RAdam"
+        "wrap": "False",
+        "optimizer": "RAdam"
     },
     "transformer": {
         "model_name": "transformer",
@@ -98,7 +98,7 @@ def tuner_run(config):
     track.init()
     print(config)
 
-    model, optimizer, device, _ = create_model(config, config, multigpu=False)
+    model, optimizer, device, _ = create_model(config, config, multigpu=True)
 
     data_length = config["protein_length"]
     batch_size = config["batch_size"]  # number of data points in each batch
@@ -151,7 +151,7 @@ def tuner(smoke_test: bool, model, config_type):
     else:
         train_dataset_name = "data/train_set_large_1500_mammalian.json"
 
-    max_dataset_length = 8000
+    max_dataset_length = 80000
 
     train_dataset, c, score = data.read_sequences(train_dataset_name,
                                                   fixed_protein_length=data_length, add_chemical_features=True,
@@ -184,7 +184,7 @@ def tuner(smoke_test: bool, model, config_type):
         },
         resources_per_trial={
             "cpu": cpus,
-            "gpu": 1
+            "gpu": gpus
         },
         local_dir=local_dir,
         num_samples=1 if smoke_test else 3,

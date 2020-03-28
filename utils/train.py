@@ -195,7 +195,7 @@ class Trainer:
         for i, x in enumerate(self.train_iterator):
             kl_loss, recon_loss, accuracy = self.__inner_iteration(x, True, i)
             total_loss = recon_loss + kl_loss
-            if total_loss == math.nan:
+            if math.isnan(total_loss):
                 log.error("Loss was nan, loop is breaking, change parameters")
                 valid_loop = False
                 break
