@@ -159,7 +159,7 @@ class Trainer:
 
         # reconstruction accuracy
         recon_accuracy = self.reconstruction_accuracy(predicted, x, mask)
-        log.debug("{} {} {} {}".format(kl_loss.item(), recon_loss.item(), total_loss.item(), recon_accuracy))
+        log.debug("KL: {} Recon:{} Total:{} Accuracy{}".format(kl_loss.item(), recon_loss.item(), total_loss.item(), recon_accuracy))
         # backward pass
         if training:
                 total_loss.backward()
