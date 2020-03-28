@@ -17,9 +17,10 @@ from models.model_factory import create_model
 from utils.train import Trainer
 
 config_common_mammalian = {
-    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 3, 'epochs': 150,
+    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 2, 'epochs': 150,
     "iteration_freq": 1000,
-    'added_length': 0, 'hidden_size': 1500, 'embedding_size': 320, "tuning": True
+    "chem_features": "False",
+    'added_length': 0, 'hidden_size': 1000, 'embedding_size': 320, "tuning": True
 }
 
 config_common_bacteria = {
@@ -34,8 +35,8 @@ model_tuning_configs = {
         "kernel_size": {"grid_search": [2]},
         "kernel_expansion_factor": {"grid_search": [2]},
         "channel_scale_factor": {"grid_search": [2]},
-        "layers": {"grid_search": [4]},
-        "embedding_gradient": "True",
+        "layers": {"grid_search": [5]},
+        "embedding_gradient": "False",
         "chem_features": "False",
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.000000001, 0.001)),
         "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001))
@@ -66,8 +67,8 @@ model_tuning_configs = {
     "transformer_convolutional": {
         "model_name": "transformer_convolutional",
         "heads": 8,
-        "layers": {"grid_search": [4, 5, 6]},
-        "channels": {"grid_search": [128, 256, 320]},
+        "layers": {"grid_search": [4]},
+        "channels": {"grid_search": [128]},
         "kernel_size": {"grid_search": [1]},
         "embedding_gradient": "False",
         "chem_features": "False",
@@ -97,7 +98,7 @@ def tuner_run(config):
     track.init()
     print(config)
 
-    model, optimizer, device, _ = create_model(config, config, multigpu=True)
+    model, optimizer, device, _ = create_model(config, config, multigpu=False)
 
     data_length = config["protein_length"]
     batch_size = config["batch_size"]  # number of data points in each batch
@@ -183,7 +184,7 @@ def tuner(smoke_test: bool, model, config_type):
         },
         resources_per_trial={
             "cpu": cpus,
-            "gpu": 2
+            "gpu": 1
         },
         local_dir=local_dir,
         num_samples=1 if smoke_test else 3,

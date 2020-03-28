@@ -2,7 +2,7 @@
   "dataset": "small",
   "protein_length": 1500,
   "class": "mammalian",
-  "batch_size": 180,
+  "batch_size": 18,
   "iteration_freq": 10,
   "epochs": 50000,
   "chem_features": "False",
