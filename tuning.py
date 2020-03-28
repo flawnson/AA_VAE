@@ -1,8 +1,9 @@
 import argparse
+import math
 import multiprocessing
 import os
 import os.path as osp
-import math
+
 import numpy as np
 import ray
 import torch
@@ -76,6 +77,7 @@ model_tuning_configs = {
         # "lr": 0.0005279379246234669,
         "weight_decay": 1.6459309598386149e-06,
         "wrap": "True",
+        "sched_freq": 400,
         "optimizer": "RAdam"
     },
     "transformer": {
@@ -113,7 +115,7 @@ def tuner_run(config):
     train = Trainer(model, config["protein_length"], train_iterator, None, device,
                     optimizer,
                     len(train_dataset),
-                    0, 0, vocab_size=data_length, weights=weights, freq=config["iteration_freq"])
+                    0, 0, vocab_size=data_length, weights=weights, freq=config["iteration_freq"], save_best=False)
 
     train_dataset_len = train_dataset.shape[0]
     epochs = config["epochs"]

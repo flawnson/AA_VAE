@@ -58,7 +58,7 @@ class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
                  train_dataset_length, test_dataset_length, n_epochs, loss_function_name="bce",
                  vocab_size=23,
-                 patience_count=1000, weights=None, model_name="default", freq=1):
+                 patience_count=1000, weights=None, model_name="default", freq=1, save_best=True):
         """
 
         :param model: The pytorch model that needs to be executed
@@ -77,9 +77,9 @@ class Trainer:
         :param model_name: The generic name of the model
         :param freq: The frequency of running backward propagation
         """
-        log.debug(f"Name: {model_name} Length:{data_length} trainDatasetLength:{train_dataset_length} "
+        log.info(f"Name: {model_name} Length:{data_length} trainDatasetLength:{train_dataset_length} "
                   f"testDataSetLength:{test_dataset_length} Epochs:{n_epochs}")
-        log.debug(f"LossFunction:{loss_function_name} VocabSize:{vocab_size} PatienceCount:{patience_count} "
+        log.info(f"LossFunction:{loss_function_name} VocabSize:{vocab_size} PatienceCount:{patience_count} "
                   f"Frequency:{freq}")
 
         loss_functions = {
@@ -103,6 +103,7 @@ class Trainer:
         self.patience_count = patience_count
         self.criterion = loss_functions[loss_function_name]
         self.weights = torch.FloatTensor(weights).to(device)
+        self.save_model = save_best
 
     def cross_entropy_wrapper(self, predicted, actual, count):
         """
@@ -144,7 +145,8 @@ class Trainer:
         x = x.long().to(self.device)
 
         # update the gradients to zero
-
+        if training:
+            self.optimizer.zero_grad()
         # forward pass
         predicted, mu, var = self.model(x)
         mask = x.le(20)
@@ -179,6 +181,7 @@ class Trainer:
         """
         # set the train mode
         self.model.train()
+        self.optimizer.zero_grad()
 
         # Statistics of the epoch
         train_kl_loss = 0
@@ -252,7 +255,8 @@ class Trainer:
             if best_training_loss > train_loss:
                 best_training_loss = train_loss
                 patience_counter = 1
-                self.save_snapshot(train_recon_accuracy)
+                if self.save_model:
+                    self.save_snapshot(train_recon_accuracy)
             else:
                 patience_counter += 1
 
