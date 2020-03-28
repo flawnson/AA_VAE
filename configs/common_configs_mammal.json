@@ -9,5 +9,5 @@
   "feature_length": 1500,
   "added_length": 0,
   "hidden_size": 1000,
-  "embedding_size": 600
+  "embedding_size": 768
 }

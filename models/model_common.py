@@ -44,5 +44,5 @@ def out_size_conv(current_layer, padding, dilation, kernel_size, stride):
     return ((current_layer + 2 * padding - dilation * (kernel_size - 1) - 1) / stride) + 1
 
 
-def out_size_transpose(current_layer, padding, dilation, kernel_size, stride):
-    return (current_layer - 1) * stride - 2 * padding + dilation * (kernel_size - 1) + padding + 1
+def out_size_transpose(current_layer, padding, dilation, kernel_size, stride, output_padding=0):
+    return (current_layer - 1) * stride - 2 * padding + dilation * (kernel_size - 1) + output_padding + 1

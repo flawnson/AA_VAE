@@ -14,17 +14,24 @@ class Encoder(nn.Module):
         output_channels = 2 ** ((input_channels - 1).bit_length())
         out_size = input_size
         base_kernel_size = kernel_size + 1
+        padding = 0
+        padded = True
+        if padded:
+            padding = int((base_kernel_size - 1) / 2)
 
         for n in range(layers):
             base_kernel_size = kernel_size + 1
-            block = ConvolutionalBlock(input_channels, output_channels, base_kernel_size,padded=True)
+            block = ConvolutionalBlock(input_channels, output_channels, base_kernel_size, padded=padded)
             conv_layers.append(block)
             kernel_size = kernel_size * kernel_expansion_factor
             input_channels = output_channels
             output_channels = int(output_channels * channel_scale_factor)
             if output_channels > max_channels:
                 output_channels = max_channels
-            out_size = out_size_conv(out_size, 0, 1, base_kernel_size, 1)
+            if padded:
+                padding = int((base_kernel_size - 1) / 2)
+
+            out_size = int(out_size_conv(out_size, padding, 1, base_kernel_size, 1))
 
         self.out_size = int(out_size)
         self.out_channels = int(input_channels)
@@ -47,21 +54,27 @@ class Decoder(nn.Module):
         output_channels = input_channels
         out_size = input_size
         base_kernel_size = kernel_size
+        padded = True
+        padding = 0
 
         for n in range(layers - 1):
-            block = ConvolutionalTransposeBlock(input_channels, output_channels, base_kernel_size,padded=True)
+            block = ConvolutionalTransposeBlock(input_channels, output_channels, base_kernel_size, padded=padded)
             conv_layers.append(block)
             kernel_size = int(kernel_size / kernel_expansion_factor)
             input_channels = output_channels
             output_channels = int(output_channels / channel_scale_factor)
             if output_channels > max_channels:
                 output_channels = max_channels
-            out_size = out_size_transpose(out_size, 0, 1, base_kernel_size, 1)
+            if padded:
+                padding = int((base_kernel_size - 1) / 2)
+
+            out_size = out_size_transpose(out_size, padding, 1, base_kernel_size, 1)
             if kernel_expansion_factor > 1:
                 base_kernel_size = kernel_size + 1
-
-        block = ConvolutionalTransposeBlock(input_channels, output_channels_expected, base_kernel_size)
-        out_size = out_size_transpose(out_size, 0, 1, base_kernel_size, 1)
+        if padded:
+            padding = int((base_kernel_size - 1) / 2)
+        block = ConvolutionalTransposeBlock(input_channels, output_channels_expected, base_kernel_size, padded=padded)
+        out_size = out_size_transpose(out_size, padding, 1, base_kernel_size, 1)
         conv_layers.append(block)
 
         self.conv_layers = nn.Sequential(*conv_layers)
