@@ -75,7 +75,7 @@ model_tuning_configs = {
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.00001, 0.001)),
         # "lr": 0.0005279379246234669,
         "weight_decay": 1.6459309598386149e-06,
-        "wrap": "False",
+        "wrap": "True",
         "optimizer": "RAdam"
     },
     "transformer": {

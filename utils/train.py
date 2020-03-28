@@ -45,7 +45,7 @@ def kl_loss_function(mu, logvar):
      0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
 
     """
-    KLD: torch.Tensor = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    KLD: torch.Tensor = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
     return KLD
 
 
@@ -103,7 +103,6 @@ class Trainer:
         self.patience_count = patience_count
         self.criterion = loss_functions[loss_function_name]
         self.weights = torch.FloatTensor(weights).to(device)
-        self.total_loss_score: torch.DoubleTensor = torch.DoubleTensor([[0]]).to(device)
 
     def cross_entropy_wrapper(self, predicted, actual, count):
         """
@@ -114,7 +113,7 @@ class Trainer:
         :return: The reconstruction loss
         """
         return torch.nn.functional.cross_entropy(predicted, actual, reduction="none",
-                                                 weight=self.weights).sum()
+                                                 weight=self.weights).sum()/count
 
     def reconstruction_accuracy(self, predicted, actual, mask):
         """
@@ -155,16 +154,12 @@ class Trainer:
 
         kl_loss = kl_loss_function(mu, var)
         total_loss = kl_loss + recon_loss
-        # if training:
-        #     self.total_loss_score += total_loss
 
         # reconstruction accuracy
         recon_accuracy = self.reconstruction_accuracy(predicted, x, mask)
         log.debug("{} {} {}".format(kl_loss.item(), recon_loss.item(), total_loss.item()))
         # backward pass
         if training:
-            # if i % self.backprop_freq == 0:
-            #     total_loss = self.total_loss_score
                 total_loss.backward()
                 max_grad, min_grad = calculate_gradient_stats(self.model.parameters())
                 log.debug(
@@ -175,7 +170,6 @@ class Trainer:
 
                 self.optimizer.step()
                 self.optimizer.zero_grad()
-                # self.total_loss_score = 0
 
         return kl_loss.item(), recon_loss.item(), recon_accuracy
 
