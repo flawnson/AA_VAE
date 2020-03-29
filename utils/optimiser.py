@@ -1,5 +1,7 @@
 import numpy as np
 
+from utils.logger import log
+
 
 class ScheduledOptim(object):
     '''A simple wrapper class for learning rate scheduling'''
@@ -28,3 +30,5 @@ class ScheduledOptim(object):
             np.power(self.n_warmup_steps, -1.5) * self.n_current_steps])
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = new_lr
+        if self.n_current_steps % 1000 == 0:
+            log.debug("Current learning rate is {}".format(new_lr))

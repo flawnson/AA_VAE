@@ -113,8 +113,8 @@ class Trainer:
         :param count: The number of relevant datapoints in the batch.
         :return: The reconstruction loss
         """
-        return torch.nn.functional.cross_entropy(predicted, actual, reduction="none",
-                                                 weight=self.weights).sum() / count
+        return torch.nn.functional.cross_entropy(predicted, actual, reduction="mean",
+                                                 weight=self.weights)
 
     def reconstruction_accuracy(self, predicted, actual, mask):
         """
@@ -247,15 +247,24 @@ class Trainer:
             if not valid:
                 log.error("Loop breaking as the loss was nan")
                 break
-            test_kl_loss, test_recon_loss, test_recon_accuracy = self.test()
-            train_recon_loss /= self.train_dataset_len
-            test_recon_loss /= self.test_dataset_len
-            train_kl_loss /= self.train_dataset_len
-            test_kl_loss /= self.test_dataset_len
 
-            if train_recon_accuracy > 0.97 and test_recon_accuracy > 0.97:
-                break
+            train_recon_loss /= self.train_dataset_len
+            train_kl_loss /= self.train_dataset_len
             train_loss = train_kl_loss + train_recon_loss
+
+            info_str = f'Epoch {e}, Train Loss: KL,Recon,total: {train_kl_loss:.3f}, {train_recon_loss:.3f}, ' \
+                       f'{train_loss:.3f},' \
+                       f' Accuracy: {train_recon_accuracy * 100.0:.2f}%'
+
+            if e % 5 == 0:
+                test_kl_loss, test_recon_loss, test_recon_accuracy = self.test()
+                test_kl_loss /= self.test_dataset_len
+                test_recon_loss /= self.test_dataset_len
+                info_str += f' Test Loss: KL,Recon: ({test_kl_loss:.3f}, {test_recon_loss:.3f}),' \
+                            f' Accuracy: {test_recon_accuracy * 100.0:.2f}%'
+
+            if train_recon_accuracy > 0.99:  # and test_recon_accuracy > 0.97:
+                break
             if best_training_loss > train_loss:
                 best_training_loss = train_loss
                 patience_counter = 1
@@ -264,11 +273,6 @@ class Trainer:
             else:
                 patience_counter += 1
 
-            info_str = f'Epoch {e}, Train Loss: KL,Recon,total: {train_kl_loss:.3f}, {train_recon_loss:.3f}, ' \
-                       f'{train_loss:.3f},' \
-                       f' Accuracy: {train_recon_accuracy * 100.0:.2f}%'
-            info_str += f' Test Loss: KL,Recon: ({test_kl_loss:.3f}, {test_recon_loss:.3f}),' \
-                        f' Accuracy: {test_recon_accuracy * 100.0:.2f}%'
             info_str += " Patience value: {}".format(patience_counter)
             log.info(info_str)
 
