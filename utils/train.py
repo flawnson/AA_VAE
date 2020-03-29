@@ -78,9 +78,9 @@ class Trainer:
         :param freq: The frequency of running backward propagation
         """
         log.info(f"Name: {model_name} Length:{data_length} trainDatasetLength:{train_dataset_length} "
-                  f"testDataSetLength:{test_dataset_length} Epochs:{n_epochs}")
+                 f"testDataSetLength:{test_dataset_length} Epochs:{n_epochs}")
         log.info(f"LossFunction:{loss_function_name} VocabSize:{vocab_size} PatienceCount:{patience_count} "
-                  f"Frequency:{freq}")
+                 f"Frequency:{freq}")
 
         loss_functions = {
             "bce": self.cross_entropy_wrapper,
@@ -114,7 +114,7 @@ class Trainer:
         :return: The reconstruction loss
         """
         return torch.nn.functional.cross_entropy(predicted, actual, reduction="none",
-                                                 weight=self.weights).sum()/count
+                                                 weight=self.weights).sum() / count
 
     def reconstruction_accuracy(self, predicted, actual, mask):
         """
@@ -159,19 +159,23 @@ class Trainer:
 
         # reconstruction accuracy
         recon_accuracy = self.reconstruction_accuracy(predicted, x, mask)
-        log.debug("KL: {} Recon:{} Total:{} Accuracy{}".format(kl_loss.item(), recon_loss.item(), total_loss.item(), recon_accuracy))
+
         # backward pass
         if training:
-                total_loss.backward()
+            total_loss.backward()
+            if (i % 1000) == 0:
+                log.debug(
+                    "KL: {} Recon:{} Total:{} Accuracy{}".format(kl_loss.item(), recon_loss.item(), total_loss.item(),
+                                                                 recon_accuracy))
                 max_grad, min_grad = calculate_gradient_stats(self.model.parameters())
                 log.debug(
                     "Log10 Max gradient: {}, Min gradient: {} Total loss: {}".format(math.log10(max_grad),
                                                                                      math.log10(math.fabs(min_grad)),
                                                                                      total_loss.item()))
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 500)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 10)
 
-                self.optimizer.step()
-                self.optimizer.zero_grad()
+            self.optimizer.step()
+            self.optimizer.zero_grad()
 
         return kl_loss.item(), recon_loss.item(), recon_accuracy
 
