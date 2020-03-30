@@ -9,11 +9,6 @@ def _get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
 
 
-
-def _get_clones(module, N):
-    return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
-
-
 def snconv2d(eps=1e-12, **kwargs):
     return nn.utils.spectral_norm(nn.Conv1d(**kwargs), eps=eps)
 
@@ -44,21 +39,21 @@ class SelfAttnHuggingFace(nn.Module):
         self.gamma = nn.Parameter(torch.zeros(1))
 
     def forward(self, x):
-        b, ch,w = x.size()
+        b, ch, w = x.size()
         # Theta path
         theta = self.snconv1x1_theta(x)
-        theta = theta.view(b, ch//8, w)
+        theta = theta.view(b, ch // 8, w)
         # Phi path
         phi = self.snconv1x1_phi(x)
         phi = self.maxpool(phi)
-        phi = phi.view(b, ch//8,  w // 4)
+        phi = phi.view(b, ch // 8, w // 4)
         # Attn map
         attn = torch.bmm(theta.permute(0, 2, 1), phi)
         attn = self.softmax(attn)
         # g path
         g = self.snconv1x1_g(x)
         g = self.maxpool(g)
-        g = g.view(b, ch//2, w // 4)
+        g = g.view(b, ch // 2, w // 4)
         # Attn_g - o_conv
         attn_g = torch.bmm(g, attn.permute(0, 2, 1))
         attn_g = attn_g.view(b, ch // 2, w)
@@ -66,6 +61,7 @@ class SelfAttnHuggingFace(nn.Module):
         # Out
         out = x + self.gamma * attn_g
         return out
+
 
 class TransformerLayer(nn.Module):
     r"""TransformerEncoder is a stack of N encoder layers
@@ -127,7 +123,7 @@ class TransformerEncoderLayer(nn.Module):
         super(TransformerEncoderLayer, self).__init__()
         self.self_attn = SelfAttnHuggingFace(channels)
         self.dropout1 = nn.Dropout(dropout)
-        out_c = int(channels/2)
+        out_c = int(channels / 2)
         self.mutate = nn.Sequential(
             ConvolutionalBlock(in_c=channels, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
@@ -175,20 +171,18 @@ class TransformerDecoderLayer(nn.Module):
         super(TransformerDecoderLayer, self).__init__()
         self.self_attn = SelfAttnHuggingFace(channels)
         self.dropout1 = nn.Dropout(dropout)
-        out_c = int(channels/2)
+        out_c = int(channels / 2)
         self.mutate = nn.Sequential(
             ConvolutionalTransposeBlock(in_c=channels, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=channels, padded=True, kernel_size=kernel_size)
         )
 
-    def forward(self, src, src_mask=None, src_key_padding_mask=None):
+    def forward(self, src):
         r"""Pass the input through the encoder layer.
 
         Args:
             src: the sequence to the encoder layer (required).
-            src_mask: the mask for the src sequence (optional).
-            src_key_padding_mask: the mask for the src keys per batch (optional).
 
         Shape:
             see the docs in Transformer class.

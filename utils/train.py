@@ -7,6 +7,11 @@ from utils.logger import log
 inf = math.inf
 
 
+def label_smoothing(inputs, epsilon):
+    k = inputs.size()[-1]
+    return ((1 - epsilon) * inputs) + (epsilon / k)
+
+
 def calculate_gradient_stats(parameters):
     r"""Clips gradient norm of an iterable of parameters.
 
@@ -16,9 +21,6 @@ def calculate_gradient_stats(parameters):
     Arguments:
         parameters (Iterable[Tensor] or Tensor): an iterable of Tensors or a
             single Tensor that will have gradients normalized
-        max_norm (float or int): max norm of the gradients
-        norm_type (float or int): type of the used p-norm. Can be ``'inf'`` for
-            infinity norm.
 
     Returns:
         Total norm of the parameters (viewed as a single vector).
@@ -45,8 +47,8 @@ def kl_loss_function(mu, logvar):
      0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
 
     """
-    KLD: torch.Tensor = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    return KLD
+    kld: torch.Tensor = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    return kld
 
 
 class Trainer:
@@ -165,17 +167,17 @@ class Trainer:
         if training:
             # if i % self.backprop_freq == 0:
             #     total_loss = self.total_loss_score
-                total_loss.backward()
-                max_grad, min_grad = calculate_gradient_stats(self.model.parameters())
-                log.debug(
-                    "Log10 Max gradient: {}, Min gradient: {} Total loss: {}".format(math.log10(max_grad),
-                                                                                     math.log10(math.fabs(min_grad)),
-                                                                                     total_loss.item()))
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 500)
+            total_loss.backward()
+            max_grad, min_grad = calculate_gradient_stats(self.model.parameters())
+            log.debug(
+                "Log10 Max gradient: {}, Min gradient: {} Total loss: {}".format(math.log10(max_grad),
+                                                                                 math.log10(math.fabs(min_grad)),
+                                                                                 total_loss.item()))
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 500)
 
-                self.optimizer.step()
-                self.optimizer.zero_grad()
-                # self.total_loss_score = 0
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+            # self.total_loss_score = 0
 
         return kl_loss.item(), recon_loss.item(), recon_accuracy
 
