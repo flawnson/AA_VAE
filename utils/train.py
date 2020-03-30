@@ -187,7 +187,6 @@ class Trainer:
         """
         # set the train mode
         self.model.train()
-        self.optimizer.zero_grad()
 
         # Statistics of the epoch
         train_kl_loss = 0

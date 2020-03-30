@@ -79,13 +79,11 @@ class TransformerLayer(nn.Module):
         self.num_layers = num_layers
         self.norm = norm
 
-    def forward(self, src, mask=None, src_key_padding_mask=None):
+    def forward(self, src):
         r"""Pass the input through the encoder layers in turn.
 
         Args:
             src: the sequnce to the encoder (required).
-            mask: the mask for the src sequence (optional).
-            src_key_padding_mask: the mask for the src keys per batch (optional).
 
         Shape:
             see the docs in Transformer class.
@@ -93,8 +91,7 @@ class TransformerLayer(nn.Module):
         output = src
 
         for i in range(self.num_layers):
-            output = self.layers[i](output, src_mask=mask,
-                                    src_key_padding_mask=src_key_padding_mask)
+            output = self.layers[i](output)
 
         if self.norm:
             output = self.norm(output)
@@ -127,10 +124,11 @@ class TransformerEncoderLayer(nn.Module):
         self.mutate = nn.Sequential(
             ConvolutionalBlock(in_c=channels, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
+            # ConvolutionalBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalBlock(in_c=out_c, out_c=channels, padded=True, kernel_size=kernel_size),
         )
 
-    def forward(self, src, src_mask=None, src_key_padding_mask=None):
+    def forward(self, src):
         r"""Pass the input through the encoder layer.
 
         Args:
@@ -141,12 +139,9 @@ class TransformerEncoderLayer(nn.Module):
         Shape:
             see the docs in Transformer class.
         """
-        # src = src.transpose(1, 2).transpose(0, 1)
         src2 = self.self_attn(src)
         src = src + self.dropout1(src2)
-        # src = src.transpose(0, 1).transpose(1, 2)
         src = self.mutate(src)
-        # src = src + self.dropout1(src2)
         return src
 
 
@@ -175,6 +170,7 @@ class TransformerDecoderLayer(nn.Module):
         self.mutate = nn.Sequential(
             ConvolutionalTransposeBlock(in_c=channels, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
+            # ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=channels, padded=True, kernel_size=kernel_size)
         )
 
@@ -188,12 +184,9 @@ class TransformerDecoderLayer(nn.Module):
             see the docs in Transformer class.
         """
         residual = src
-        # src = src.transpose(1, 2).transpose(0, 1)
         src2 = self.self_attn(src)
         src = src + self.dropout1(src2)
-        # src = src.transpose(0, 1).transpose(1, 2)
         src = self.mutate(src) + residual
-        # src = src + self.dropout1(src2)
         return src
 
 
@@ -246,10 +239,6 @@ class TransformerConvVAEModel(nn.Module):
     def forward(self, x):
         input_len = x.shape[1]
         output = self.transformer_encoder(self.embedder(self.encoder(x).transpose(1, 2))).view(x.shape[0], -1)
-        # output = self.transformer_encoder(src)
-        # output = output.view(x.shape[0], -1)
         z, mu, log_var = self.bottleneck(output)
         output = self.activation(self.deembed(self.transformer_decoder(self.fc3(z).view(z.shape[0], -1, input_len))))
-        # output = self.deembed(output)
-        # output = self.activation(output)
         return output, mu, log_var

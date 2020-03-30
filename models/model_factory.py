@@ -11,13 +11,17 @@ from models.lstm_vae import LSTMVae
 from models.transformer_convolutional_vae import TransformerConvVAEModel
 from models.transformer_vae import TransformerModel
 from utils import data
-from utils.optimiser import ScheduledOptim
+from utils.optimiser import ScheduledOptim, StepOptim
 
 
 def get_optimizer(optimizer_config: dict, model):
     optimisers = {
         "Adam": optim.Adam,
         "RAdam": radam.RAdam
+    }
+    learning_rate_schedulers = {
+        "Transformer": ScheduledOptim,
+        "Ramp": StepOptim
     }
     lr = optimizer_config["lr"]
     weight_decay = optimizer_config["weight_decay"]
