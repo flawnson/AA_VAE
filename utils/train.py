@@ -47,7 +47,7 @@ def kl_loss_function(mu, logvar):
      0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
 
     """
-    kld: torch.Tensor = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    kld: torch.Tensor = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
     return kld
 
 
@@ -60,7 +60,7 @@ class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
                  train_dataset_length, test_dataset_length, n_epochs, loss_function_name="bce",
                  vocab_size=23,
-                 patience_count=1000, weights=None, model_name="default", freq=1):
+                 patience_count=1000, weights=None, model_name="default", freq=1, save_best=True):
         """
 
         :param model: The pytorch model that needs to be executed
@@ -79,10 +79,10 @@ class Trainer:
         :param model_name: The generic name of the model
         :param freq: The frequency of running backward propagation
         """
-        log.debug(f"Name: {model_name} Length:{data_length} trainDatasetLength:{train_dataset_length} "
-                  f"testDataSetLength:{test_dataset_length} Epochs:{n_epochs}")
-        log.debug(f"LossFunction:{loss_function_name} VocabSize:{vocab_size} PatienceCount:{patience_count} "
-                  f"Frequency:{freq}")
+        log.info(f"Name: {model_name} Length:{data_length} trainDatasetLength:{train_dataset_length} "
+                 f"testDataSetLength:{test_dataset_length} Epochs:{n_epochs}")
+        log.info(f"LossFunction:{loss_function_name} VocabSize:{vocab_size} PatienceCount:{patience_count} "
+                 f"Frequency:{freq}")
 
         loss_functions = {
             "bce": self.cross_entropy_wrapper,
@@ -105,7 +105,7 @@ class Trainer:
         self.patience_count = patience_count
         self.criterion = loss_functions[loss_function_name]
         self.weights = torch.FloatTensor(weights).to(device)
-        self.total_loss_score: torch.DoubleTensor = torch.DoubleTensor([[0]]).to(device)
+        self.save_model = save_best
 
     def cross_entropy_wrapper(self, predicted, actual, count):
         """
@@ -115,8 +115,8 @@ class Trainer:
         :param count: The number of relevant datapoints in the batch.
         :return: The reconstruction loss
         """
-        return torch.nn.functional.cross_entropy(predicted, actual, reduction="none",
-                                                 weight=self.weights).sum()
+        return torch.nn.functional.cross_entropy(predicted, actual, reduction="mean",
+                                                 weight=self.weights)
 
     def reconstruction_accuracy(self, predicted, actual, mask):
         """
@@ -147,7 +147,8 @@ class Trainer:
         x = x.long().to(self.device)
 
         # update the gradients to zero
-
+        if training:
+            self.optimizer.zero_grad()
         # forward pass
         predicted, mu, var = self.model(x)
         mask = x.le(20)
@@ -157,27 +158,26 @@ class Trainer:
 
         kl_loss = kl_loss_function(mu, var)
         total_loss = kl_loss + recon_loss
-        # if training:
-        #     self.total_loss_score += total_loss
 
         # reconstruction accuracy
         recon_accuracy = self.reconstruction_accuracy(predicted, x, mask)
-        log.debug("{} {} {}".format(kl_loss.item(), recon_loss.item(), total_loss.item()))
+
         # backward pass
         if training:
-            # if i % self.backprop_freq == 0:
-            #     total_loss = self.total_loss_score
             total_loss.backward()
-            max_grad, min_grad = calculate_gradient_stats(self.model.parameters())
-            log.debug(
-                "Log10 Max gradient: {}, Min gradient: {} Total loss: {}".format(math.log10(max_grad),
-                                                                                 math.log10(math.fabs(min_grad)),
-                                                                                 total_loss.item()))
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 500)
+            if (i % 1000) == 0:
+                log.debug(
+                    "KL: {} Recon:{} Total:{} Accuracy{}".format(kl_loss.item(), recon_loss.item(), total_loss.item(),
+                                                                 recon_accuracy))
+                max_grad, min_grad = calculate_gradient_stats(self.model.parameters())
+                log.debug(
+                    "Log10 Max gradient: {}, Min gradient: {} Total loss: {}".format(math.log10(max_grad),
+                                                                                     math.log10(math.fabs(min_grad)),
+                                                                                     total_loss.item()))
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 10)
 
             self.optimizer.step()
             self.optimizer.zero_grad()
-            # self.total_loss_score = 0
 
         return kl_loss.item(), recon_loss.item(), recon_accuracy
 
@@ -187,6 +187,7 @@ class Trainer:
         """
         # set the train mode
         self.model.train()
+        self.optimizer.zero_grad()
 
         # Statistics of the epoch
         train_kl_loss = 0
@@ -248,27 +249,32 @@ class Trainer:
             if not valid:
                 log.error("Loop breaking as the loss was nan")
                 break
-            test_kl_loss, test_recon_loss, test_recon_accuracy = self.test()
-            train_recon_loss /= self.train_dataset_len
-            test_recon_loss /= self.test_dataset_len
-            train_kl_loss /= self.train_dataset_len
-            test_kl_loss /= self.test_dataset_len
 
-            if train_recon_accuracy > 0.97 and test_recon_accuracy > 0.97:
-                break
+            train_recon_loss /= self.train_dataset_len
+            train_kl_loss /= self.train_dataset_len
             train_loss = train_kl_loss + train_recon_loss
-            if best_training_loss > train_loss:
-                best_training_loss = train_loss
-                patience_counter = 1
-                self.save_snapshot(train_recon_accuracy)
-            else:
-                patience_counter += 1
 
             info_str = f'Epoch {e}, Train Loss: KL,Recon,total: {train_kl_loss:.3f}, {train_recon_loss:.3f}, ' \
                        f'{train_loss:.3f},' \
                        f' Accuracy: {train_recon_accuracy * 100.0:.2f}%'
-            info_str += f' Test Loss: KL,Recon: ({test_kl_loss:.3f}, {test_recon_loss:.3f}),' \
-                        f' Accuracy: {test_recon_accuracy * 100.0:.2f}%'
+
+            if e % 5 == 0:
+                test_kl_loss, test_recon_loss, test_recon_accuracy = self.test()
+                test_kl_loss /= self.test_dataset_len
+                test_recon_loss /= self.test_dataset_len
+                info_str += f' Test Loss: KL,Recon: ({test_kl_loss:.3f}, {test_recon_loss:.3f}),' \
+                            f' Accuracy: {test_recon_accuracy * 100.0:.2f}%'
+
+            if train_recon_accuracy > 0.99:  # and test_recon_accuracy > 0.97:
+                break
+            if best_training_loss > train_loss:
+                best_training_loss = train_loss
+                patience_counter = 1
+                if self.save_model:
+                    self.save_snapshot(train_recon_accuracy)
+            else:
+                patience_counter += 1
+
             info_str += " Patience value: {}".format(patience_counter)
             log.info(info_str)
 

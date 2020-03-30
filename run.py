@@ -16,6 +16,7 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model", help="model config file", type=str)
     parser.add_argument("-g", "--multigpu", help="multigpu mode", action="store_true")
     parser.add_argument("-p", "--pretrained", help="pretrained", type=str)
+    parser.add_argument("-s", "--save", help="Save the model", action="store_true")
     args = parser.parse_args()
     config: dict = json.load(open(args.config))
     torch.backends.cudnn.benchmark = True
@@ -43,4 +44,4 @@ if __name__ == "__main__":
     Trainer(model, config["protein_length"], train_iterator, test_iterator, device, optimizer,
             len(train_dataset),
             len(test_dataset), number_of_epochs, vocab_size=data_length, weights=score, model_name=model_name,
-            freq=iteration_freq).trainer()
+            freq=iteration_freq, save_best=args.save).trainer()
