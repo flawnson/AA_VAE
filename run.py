@@ -19,7 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--save", help="Save the model", action="store_true")
     args = parser.parse_args()
     config: dict = json.load(open(args.config))
-    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.enabled = True
     model_config: dict = json.load(open(args.model))
 

@@ -1,6 +1,7 @@
 import math
 
 import torch
+import torch.nn.functional as F
 
 from utils.logger import log
 
@@ -58,7 +59,7 @@ class Trainer:
     """
 
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
-                 train_dataset_length, test_dataset_length, n_epochs, loss_function_name="bce",
+                 train_dataset_length, test_dataset_length, n_epochs, loss_function_name="smoothened",
                  vocab_size=23,
                  patience_count=1000, weights=None, model_name="default", freq=1, save_best=True):
         """
@@ -86,7 +87,8 @@ class Trainer:
 
         loss_functions = {
             "bce": self.cross_entropy_wrapper,
-            "nll": torch.nn.functional.nll_loss
+            "nll": torch.nn.functional.nll_loss,
+            "smoothened": self.smoothened_loss
         }
         self.model_name = model_name
         self.backprop_freq = freq
@@ -107,12 +109,26 @@ class Trainer:
         self.weights = torch.FloatTensor(weights).to(device)
         self.save_model = save_best
 
-    def cross_entropy_wrapper(self, predicted, actual, count):
+    def smoothened_loss(self, pred, actual, epsilon=0.1):
+        pred_probs = F.log_softmax(pred, dim=-1)
+        istarget = actual.le(20)  # (1. - actual.eq(Constants.PAD).float()).contiguous().view(-1)
+        actual_one_hot = torch.zeros(*pred.size()).to(self.device)
+        actual_one_hot = actual_one_hot.scatter_(1, actual.unsqueeze(1).data, 1)
+        actual_smoothed = label_smoothing(actual_one_hot, epsilon)
+        loss = -torch.sum(actual_smoothed * pred_probs, dim=1)
+        mean_loss = torch.sum(loss * istarget)
+
+        return mean_loss
+
+    def binary_cross_entropy_wrapper(self, predicted, actual):
+        torch.nn.functional.binary_cross_entropy_with_logits(predicted, actual, reduction="mean",
+                                                             weight=self.weights)
+
+    def cross_entropy_wrapper(self, predicted, actual):
         """
 
         :param predicted: The result returned by the model.
         :param actual: The comparison data
-        :param count: The number of relevant datapoints in the batch.
         :return: The reconstruction loss
         """
         return torch.nn.functional.cross_entropy(predicted, actual, reduction="mean",
@@ -154,7 +170,7 @@ class Trainer:
         mask = x.le(20)
 
         scale = mask.sum()
-        recon_loss = self.criterion(predicted, x, scale)
+        recon_loss = self.criterion(predicted, x)
 
         kl_loss = kl_loss_function(mu, var)
         total_loss = kl_loss + recon_loss
