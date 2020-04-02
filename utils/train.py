@@ -116,7 +116,7 @@ class Trainer:
         actual_one_hot = actual_one_hot.scatter_(1, actual.unsqueeze(1).data, 1)
         actual_smoothed = label_smoothing(actual_one_hot, epsilon)
         loss = -torch.sum(actual_smoothed * pred_probs, dim=1)
-        mean_loss = torch.sum(loss * istarget)
+        mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / torch.sum(istarget, dim=1))
 
         return mean_loss
 
