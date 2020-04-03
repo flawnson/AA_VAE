@@ -61,7 +61,7 @@ class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
                  train_dataset_length, test_dataset_length, n_epochs, loss_function_name="smoothened",
                  vocab_size=23,
-                 patience_count=1000, weights=None, model_name="default", freq=1, save_best=True):
+                 patience_count=1000, weights=None, model_name="default",  save_best=True):
         """
 
         :param model: The pytorch model that needs to be executed
@@ -78,12 +78,10 @@ class Trainer:
         :param patience_count: The number of maximum number of iterations that can run without decreasing the loss.
         :param weights: The weight of each class.
         :param model_name: The generic name of the model
-        :param freq: The frequency of running backward propagation
         """
         log.info(f"Name: {model_name} Length:{data_length} trainDatasetLength:{train_dataset_length} "
                  f"testDataSetLength:{test_dataset_length} Epochs:{n_epochs}")
-        log.info(f"LossFunction:{loss_function_name} VocabSize:{vocab_size} PatienceCount:{patience_count} "
-                 f"Frequency:{freq}")
+        log.info(f"LossFunction:{loss_function_name} VocabSize:{vocab_size} PatienceCount:{patience_count} ")
 
         loss_functions = {
             "bce": self.cross_entropy_wrapper,
@@ -91,7 +89,6 @@ class Trainer:
             "smoothened": self.smoothened_loss
         }
         self.model_name = model_name
-        self.backprop_freq = freq
 
         self.model = model.to(device)
         self.data_length = data_length
@@ -117,6 +114,7 @@ class Trainer:
         actual_smoothed = label_smoothing(actual_one_hot, epsilon)
         loss = -torch.sum(actual_smoothed * pred_probs, dim=1)
         mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / torch.sum(istarget, dim=1))
+        # mean_loss = torch.mean(loss * istarget)
 
         return mean_loss
 
@@ -183,7 +181,7 @@ class Trainer:
             total_loss.backward()
             if (i % 1000) == 0:
                 log.debug(
-                    "KL: {} Recon:{} Total:{} Accuracy{}".format(kl_loss.item(), recon_loss.item(), total_loss.item(),
+                    "KL: {} Recon:{} Total:{} Accuracy:{}".format(kl_loss.item(), recon_loss.item(), total_loss.item(),
                                                                  recon_accuracy))
                 max_grad, min_grad = calculate_gradient_stats(self.model.parameters())
                 log.debug(
@@ -221,7 +219,10 @@ class Trainer:
             train_kl_loss += kl_loss
             train_recon_loss += recon_loss
             recon_accuracy += accuracy
-
+            if (i % 1000) == 0:
+                log.debug(
+                    "KL: {} Recon:{} Accuracy:{}".format(train_kl_loss, train_recon_loss,
+                                                                 recon_accuracy/((i+0.001)*1000)))
         return train_kl_loss, train_recon_loss, recon_accuracy / len(self.train_iterator), valid_loop
 
     def test(self):
@@ -311,4 +312,5 @@ class Trainer:
 
         date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
 
+        log.info(f"Writing logs to saved_models/{self.model_name}_{accuracy}_{date_time}")
         torch.save(self.model.state_dict(), f"saved_models/{self.model_name}_{accuracy}_{date_time}")

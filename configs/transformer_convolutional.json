@@ -5,9 +5,7 @@
   "channels": 128,
   "kernel_size": 3,
   "embedding_gradient": "False",
-  "lr": 0.0005279379246234669,
+  "lr": 0.0000079246234669,
   "weight_decay": 1.6459309598386149e-06,
-  "wrap": "False",
-  "sched_freq": 4000,
-  "optimizer": "RAdam"
+  "optimizer": "Adam"
 }

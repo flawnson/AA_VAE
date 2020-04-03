@@ -142,8 +142,8 @@ def read_sequences(file, fixed_protein_length, add_chemical_features=False, sequ
     lengths = []
     sequences = []
     pt_file = f"{file}_{fixed_protein_length}_{add_chemical_features}_{sequence_only}_{max_length}.pt"
-    # if os.path.exists(pt_file):
-    #     return load_from_saved_tensor(pt_file)
+    if os.path.exists(pt_file):
+        return load_from_saved_tensor(pt_file)
     with open(file) as json_file:
         data = json.load(json_file)
         if "sequence" in data:

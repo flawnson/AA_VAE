@@ -116,7 +116,7 @@ class TransformerEncoderLayer(nn.Module):
 
     """
 
-    def __init__(self, d_model, nhead, channels, dropout=0.1, kernel_size=3):
+    def __init__(self, channels, dropout=0.1, kernel_size=3):
         super(TransformerEncoderLayer, self).__init__()
         self.self_attn = SelfAttnHuggingFace(channels)
         self.dropout1 = nn.Dropout(dropout)
@@ -124,7 +124,7 @@ class TransformerEncoderLayer(nn.Module):
         self.mutate = nn.Sequential(
             ConvolutionalBlock(in_c=channels, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
-            # ConvolutionalBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
+            ConvolutionalBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalBlock(in_c=out_c, out_c=channels, padded=True, kernel_size=kernel_size),
         )
 
@@ -139,9 +139,10 @@ class TransformerEncoderLayer(nn.Module):
         Shape:
             see the docs in Transformer class.
         """
+        residual = src
         src2 = self.self_attn(src)
         src = src + self.dropout1(src2)
-        src = self.mutate(src)
+        src = self.mutate(src) + residual
         return src
 
 
@@ -154,21 +155,27 @@ class TransformerDecoderLayer(nn.Module):
     in a different way during application.
 
     Args:
-        d_model: the number of expected features in the input (required).
-        nhead: the number of heads in the multiheadattention models (required).
-        dim_feedforward: the dimension of the feedforward network model (default=2048).
+        channels: the number of channels in the convolution.
         dropout: the dropout value (default=0.1).
-        activation: the activation function of intermediate layer, relu or gelu (default=relu).
+        kernel_size: The size of the kernel of the convolutions.
 
     """
 
-    def __init__(self, d_model, nhead, channels, dropout=0.1, kernel_size=1):
+    def __init__(self, channels, dropout=0.1, kernel_size=1):
+        """
+
+        :param channels:
+        :param dropout:
+        :param kernel_size:
+        """
         super(TransformerDecoderLayer, self).__init__()
         self.self_attn = SelfAttnHuggingFace(channels)
         self.dropout1 = nn.Dropout(dropout)
+        # out_c = channels
         out_c = int(channels / 2)
         self.mutate = nn.Sequential(
             ConvolutionalTransposeBlock(in_c=channels, out_c=out_c, padded=True, kernel_size=kernel_size),
+            ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             # ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=channels, padded=True, kernel_size=kernel_size)
@@ -184,9 +191,9 @@ class TransformerDecoderLayer(nn.Module):
             see the docs in Transformer class.
         """
         residual = src
+        src = self.mutate(src) + residual
         src2 = self.self_attn(src)
         src = src + self.dropout1(src2)
-        src = self.mutate(src) + residual
         return src
 
 
@@ -211,14 +218,12 @@ class TransformerConvVAEModel(nn.Module):
         self.encoder.weight.data.copy_(embeddings_static)
         self.encoder.weight.requires_grad = False
 
-        encoder_layers = TransformerEncoderLayer(d_model=self.channels, nhead=nheads, channels=self.channels,
-                                                 kernel_size=kernel_dimension)
+        encoder_layers = TransformerEncoderLayer(channels=self.channels, kernel_size=kernel_dimension)
         self.transformer_encoder = TransformerLayer(encoder_layers, layers)
         self.resize_channels = ConvolutionalTransposeBlock(in_c=self.channels + 1, out_c=self.channels, padded=True,
                                                            kernel_size=1)
 
-        decoder_layer = TransformerDecoderLayer(self.channels, nhead=nheads, channels=self.channels,
-                                                kernel_size=kernel_dimension)
+        decoder_layer = TransformerDecoderLayer(channels=self.channels, kernel_size=kernel_dimension)
         self.transformer_decoder = TransformerLayer(decoder_layer, layers)
         h_dim = input_size * self.channels
         self.fc1: nn.Module = nn.Linear(h_dim, z_dim)

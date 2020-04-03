@@ -27,11 +27,10 @@ def get_optimizer(optimizer_config: dict, model):
     weight_decay = optimizer_config["weight_decay"]
     optimizer = optimisers.get(optimizer_config.get("optimizer", "Adam"))(model.parameters(), lr=lr,
                                                                           weight_decay=weight_decay)
-    wrapped = optimizer_config.get("wrap", "False")
-
-    if wrapped == "True":
-        print("That is a wrap")
-        return ScheduledOptim(optimizer, lr=lr, n_warmup_steps=optimizer_config.get("sched_freq", 4000))
+    wrapped = optimizer_config.get("LearningRateScheduler", "False")
+    if wrapped != "False":
+        return learning_rate_schedulers[wrapped](optimizer, lr=lr,
+                                                 n_warmup_steps=optimizer_config.get("sched_freq", 4000))
     else:
         return optimizer
 
