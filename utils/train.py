@@ -310,7 +310,7 @@ class Trainer:
 
         now = datetime.now()
 
-        date_time = now.strftime("%m_%d-%Y_%H_%M_%S")
+        date_time = now.strftime("%d_%m-%Y_%H_%M_%S")
 
-        log.info(f"Writing logs to saved_models/{self.model_name}_{accuracy}_{date_time}")
+        log.info(f"Writing model to saved_models/{self.model_name}_{accuracy}_{date_time}")
         torch.save(self.model.state_dict(), f"saved_models/{self.model_name}_{accuracy}_{date_time}")
