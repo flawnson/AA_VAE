@@ -155,10 +155,10 @@ def tuner(smoke_test: bool, model, config_type):
 
     max_dataset_length = 80000
 
-    train_dataset, c, score = data.read_sequences(train_dataset_name,
-                                                  fixed_protein_length=data_length, add_chemical_features=True,
-                                                  sequence_only=True, pad_sequence=True, fill_itself=False,
-                                                  max_length=-1)
+    train_dataset, c, score = data.read_sequences_from_json(train_dataset_name,
+                                                            fixed_protein_length=data_length, add_chemical_features=True,
+                                                            sequence_only=True, pad_sequence=True, fill_itself=False,
+                                                            max_length=-1)
 
     train_dataset = data.get_shuffled_sample(train_dataset, max_dataset_length)
 

@@ -9,8 +9,11 @@ datefmt = '%Y-%m-%d %I:%M:%S %p'
 
 
 # Callable function to set logger for any module in the repo
-def get_file_logger(name, filename, level=logging.DEBUG):
+def get_file_logger(name, filename, level=logging.INFO):
     logger = logging.getLogger(name)
+    logging.basicConfig(format=log_format,
+                        datefmt=datefmt,
+                        level=level)
     time = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
     try:
         os.makedirs(osp.join(osp.dirname(__file__), f"../run_logs"))
