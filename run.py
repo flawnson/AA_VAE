@@ -8,6 +8,7 @@ import torch
 from models.model_factory import create_model
 from utils.data import load_data
 from utils.logger import log
+import utils.logger as logger
 from utils.train import Trainer
 
 if __name__ == "__main__":
@@ -21,7 +22,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config: dict = json.load(open(args.config))
     model_config: dict = json.load(open(args.model))
-
+    logger.set_file_logger()
     data_length = config["protein_length"]
     number_of_epochs = config["epochs"]  # times to run the model on complete data
     dataset_type = config["dataset"]  # (small|medium|large)
