@@ -35,7 +35,7 @@ def load_data(_config, max_length=-1):
                                               sequence_only=True, pad_sequence=True, fill_itself=False,
                                               max_length=max_length)
     log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
-    _train_iterator = DataLoader(train_dataset, shuffle=False, batch_size=batch_size)
+    _train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, batch_size=batch_size)
     return train_dataset, test_dataset, _train_iterator, _test_iterator, c, score
 

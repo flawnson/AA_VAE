@@ -61,7 +61,7 @@ class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
                  train_dataset_length, test_dataset_length, n_epochs, loss_function_name="smoothened",
                  vocab_size=23,
-                 patience_count=1000, weights=None, model_name="default",  save_best=True):
+                 patience_count=1000, weights=None, model_name="default", save_best=True):
         """
 
         :param model: The pytorch model that needs to be executed
@@ -109,7 +109,7 @@ class Trainer:
     def smoothened_loss(self, pred, actual, epsilon=0.1):
         pred_probs = F.log_softmax(pred, dim=-1)
         istarget = actual.le(20)  # (1. - actual.eq(Constants.PAD).float()).contiguous().view(-1)
-        actual_one_hot = torch.zeros(*pred.size()).to(self.device)
+        actual_one_hot = torch.zeros(*pred.size(), requires_grad=True).to(self.device)
         actual_one_hot = actual_one_hot.scatter_(1, actual.unsqueeze(1).data, 1)
         actual_smoothed = label_smoothing(actual_one_hot, epsilon)
         loss = -torch.sum(actual_smoothed * pred_probs, dim=1)
@@ -170,7 +170,8 @@ class Trainer:
         scale = mask.sum()
         recon_loss = self.criterion(predicted, x)
 
-        kl_loss = kl_loss_function(mu, var)
+        kl_loss = -0.5 * torch.mean(1 + var - mu.pow(2) - var.exp())
+
         total_loss = kl_loss + recon_loss
 
         # reconstruction accuracy
@@ -180,14 +181,13 @@ class Trainer:
         if training:
             total_loss.backward()
             if (i % 1000) == 0:
-                log.debug(
-                    "KL: {} Recon:{} Total:{} Accuracy:{}".format(kl_loss.item(), recon_loss.item(), total_loss.item(),
-                                                                 recon_accuracy))
+                # log.debug(
+                #    "KL: {} Recon:{} Total:{} Accuracy:{}".format(kl_loss.item(), recon_loss.item(), total_loss.item(),
+                #                                                   recon_accuracy))
                 max_grad, min_grad = calculate_gradient_stats(self.model.parameters())
                 log.debug(
-                    "Log10 Max gradient: {}, Min gradient: {} Total loss: {}".format(math.log10(max_grad),
-                                                                                     math.log10(math.fabs(min_grad)),
-                                                                                     total_loss.item()))
+                    "Log10 Max gradient: {}, Min gradient: {}".format(math.log10(max_grad),
+                                                                      math.log10(math.fabs(min_grad))))
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 10)
 
             self.optimizer.step()
@@ -220,9 +220,11 @@ class Trainer:
             train_recon_loss += recon_loss
             recon_accuracy += accuracy
             if (i % 1000) == 0:
-                log.debug(
-                    "KL: {} Recon:{} Accuracy:{}".format(train_kl_loss, train_recon_loss,
-                                                                 recon_accuracy/((i+0.001)*1000)))
+                acc = recon_accuracy
+                if i != 0:
+                    acc = acc / i
+
+                log.debug("KL: {} Recon:{} Accuracy:{}".format(train_kl_loss, train_recon_loss, acc * 100))
         return train_kl_loss, train_recon_loss, recon_accuracy / len(self.train_iterator), valid_loop
 
     def test(self):
@@ -257,6 +259,7 @@ class Trainer:
         The core method in this class, it runs the full training and testing cycle for a given dataset.
         """
         best_training_loss = inf
+        best_recon_accuracy = 0
         patience_counter = 0
         train_recon_accuracy = -1
         for e in range(self.n_epochs):
@@ -283,6 +286,10 @@ class Trainer:
 
             if train_recon_accuracy > 0.99:  # and test_recon_accuracy > 0.97:
                 break
+            if best_recon_accuracy < train_recon_accuracy:
+                if self.save_model:
+                    self.save_snapshot(train_recon_accuracy)
+
             if best_training_loss > train_loss:
                 best_training_loss = train_loss
                 patience_counter = 1
