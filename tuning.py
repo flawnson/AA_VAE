@@ -13,7 +13,7 @@ from ray.tune.schedulers import AsyncHyperBandScheduler
 from ray.tune.utils import pin_in_object_store, get_pinned_object
 from torch.utils.data import DataLoader
 
-import utils.data as data
+import utils.data.common
 from models.model_factory import create_model
 from utils.train import Trainer
 
@@ -110,7 +110,7 @@ def tuner_run(config):
     print(f"Loading the sequence for train data: {train_dataset_name}")
 
     train_dataset = get_pinned_object(pinned_dataset)
-    weights = data.load_from_saved_tensor(weights_name)
+    weights = utils.data.common.load_from_saved_tensor(weights_name)
     train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     train = Trainer(model, config["protein_length"], train_iterator, None, device,
                     optimizer,
@@ -155,17 +155,14 @@ def tuner(smoke_test: bool, model, config_type):
 
     max_dataset_length = 80000
 
-    train_dataset, c, score = data.read_sequences_from_json(train_dataset_name,
-                                                            fixed_protein_length=data_length, add_chemical_features=True,
-                                                            sequence_only=True, pad_sequence=True, fill_itself=False,
-                                                            max_length=-1)
+    train_dataset, c, score = utils.data.common.load_data_from_file(train_dataset_name)
 
-    train_dataset = data.get_shuffled_sample(train_dataset, max_dataset_length)
+    train_dataset = utils.data.common.get_shuffled_sample(train_dataset, max_dataset_length)
 
     tensor_filename = "{}_{}_{}_tuning.pt".format(config_common["class"], data_length, max_dataset_length)
     weights_filename = "{}.{}.{}.wt".format(config_common["class"], data_length, max_dataset_length)
-    data.save_tensor_to_file(tensor_filename, train_dataset)
-    data.save_tensor_to_file(weights_filename, score)
+    utils.data.common.save_tensor_to_file(tensor_filename, train_dataset)
+    utils.data.common.save_tensor_to_file(weights_filename, score)
     config_common["tuning_dataset_name"] = os.getcwd() + "/" + tensor_filename
     config_common["tuning_weights"] = os.getcwd() + "/" + weights_filename
 

@@ -6,7 +6,7 @@ import subprocess
 import torch
 
 from models.model_factory import create_model
-from utils.data import load_data
+from utils.data_load import load_data
 from utils.logger import log
 import utils.logger as logger
 from utils.train import Trainer

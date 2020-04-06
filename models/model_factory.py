@@ -10,7 +10,7 @@ from models.linear_vae import LinearVAE
 from models.lstm_vae import LSTMVae
 from models.transformer_convolutional_vae import TransformerConvVAEModel
 from models.transformer_vae import TransformerModel
-from utils import data
+from utils import data_load
 from utils.optimiser import ScheduledOptim, StepOptim
 
 
@@ -50,7 +50,7 @@ def create_model(config, model_config, pretrained_model=None, multigpu=False):
     model = models.get(model_config["model_name"])(
         model_config, config["hidden_size"],
         config["embedding_size"], config["protein_length"], device,
-        data.get_embedding_matrix(config["chem_features"] == "True"), model_config["embedding_gradient"] == "True") \
+        data_load.get_embedding_matrix(config["chem_features"] == "True"), model_config["embedding_gradient"] == "True") \
         .to(device)
     model_name = model.name
 

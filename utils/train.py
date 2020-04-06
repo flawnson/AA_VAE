@@ -119,7 +119,22 @@ class Trainer:
 
         loss = -torch.sum(actual_smoothed * pred_probs, dim=1)
         mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / torch.sum(istarget, dim=1))
-        # mean_loss = torch.mean(loss * istarget)
+
+        return mean_loss
+
+    def length_stats_based_averaging(self, predicted, actual, length_weights, epsilon=0.1):
+
+        istarget = actual.le(20)  # (1. - actual.eq(Constants.PAD).float()).contiguous().view(-1)
+
+        actual_one_hot = torch.zeros(*predicted.size(), requires_grad=True).to(self.device)
+        actual_one_hot = actual_one_hot.scatter_(1, actual.unsqueeze(1).data, 1)
+
+        actual_smoothed = label_smoothing(actual_one_hot, epsilon)
+
+        pred_probs = F.log_softmax(predicted, dim=-1)
+
+        loss = -torch.sum(actual_smoothed * pred_probs, dim=1)
+        mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / length_weights[torch.sum(istarget, dim=1)])
 
         return mean_loss
 

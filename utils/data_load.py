@@ -1,10 +1,9 @@
 import collections
-import json
-import os
 
 import torch
 from torch.utils.data import DataLoader
 
+from utils.data.common import save_tensor_to_file, load_data_from_file, load_from_saved_tensor
 from utils.logger import log
 
 """
@@ -19,6 +18,17 @@ VOCABULARY_SIZE = len(amino_acids)
 amino_acids_to_byte_map = {r: amino_acids.index(r) for r in amino_acids}
 amino_acids_set = {r for r in amino_acids}
 
+import os
+
+
+def to_categorical(num_classes):
+    """ Converts a class vector to binary class matrix. """
+    categorical = torch.eye(num_classes)
+    unused = [amino_acids_to_byte_map['X'], amino_acids_to_byte_map['0']]
+    for x in unused:
+        categorical[[x, x]] = 0
+    return categorical
+
 
 def load_data(_config, max_length=-1):
     data_length = _config["protein_length"]
@@ -27,34 +37,27 @@ def load_data(_config, max_length=-1):
     test_dataset_name = _config["test_dataset_name"]
 
     log.info(f"Loading the sequence for train data: {train_dataset_name} and test data: {test_dataset_name}")
-    train_dataset, c, score = read_sequences_from_json(train_dataset_name,
-                                                       fixed_protein_length=data_length, add_chemical_features=True,
-                                                       sequence_only=True, pad_sequence=True, fill_itself=False,
-                                                       max_length=max_length)
+    pt_file = f"{train_dataset_name}_{data_length}_{True}_{True}_{max_length}.pt"
+    if os.path.exists(pt_file):
+        train_dataset, c, score = load_from_saved_tensor(pt_file)
+    else:
+        train_dataset, c, score = __process_sequences(load_data_from_file(train_dataset_name),
+                                                      max_length, data_length, pad_sequence=True, fill_itself=False,
+                                                      sequence_only=True,
+                                                      add_chemical_features=False, pt_file=pt_file)
     log.info(f"Loading the sequence for test data: {test_dataset_name}")
-    test_dataset, ct, scoret = read_sequences_from_json(test_dataset_name,
-                                                        fixed_protein_length=data_length, add_chemical_features=True,
-                                                        sequence_only=True, pad_sequence=True, fill_itself=False,
-                                                        max_length=max_length)
+    pt_file = f"{test_dataset_name}_{data_length}_{True}_{True}_{max_length}.pt"
+    if os.path.exists(pt_file):
+        test_dataset, ct, scoret = load_from_saved_tensor(pt_file)
+    else:
+        test_dataset, ct, scoret = __process_sequences(load_data_from_file(test_dataset_name),
+                                                       max_length, data_length, pad_sequence=True, fill_itself=False,
+                                                       sequence_only=True,
+                                                       add_chemical_features=False, pt_file=pt_file)
     log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     _train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, batch_size=batch_size)
     return train_dataset, test_dataset, _train_iterator, _test_iterator, c, score
-
-
-def get_shuffled_sample(data: torch.Tensor, n_samples):
-    if n_samples > data.shape[0]:
-        n_samples = data.shape[0]
-    ids = torch.randperm(data.shape[0])[:n_samples]
-    return data[ids]
-
-
-def load_from_saved_tensor(filename):
-    return torch.load(filename)
-
-
-def save_tensor_to_file(filename, tensor):
-    return torch.save(tensor, filename)
 
 
 def aa_features():
@@ -100,15 +103,6 @@ def get_embedding_matrix(features: bool = True):
     return seq_to_one_hot(amino_acids, features)
 
 
-def to_categorical(num_classes):
-    """ Converts a class vector to binary class matrix. """
-    categorical = torch.eye(num_classes)
-    unused = [amino_acids_to_byte_map['X'], amino_acids_to_byte_map['0']]
-    for x in unused:
-        categorical[[x, x]] = 0
-    return categorical
-
-
 def seq_to_one_hot(res_seq_one, add_chemical_features=False):
     """ Create simple embeddings
     """
@@ -140,6 +134,7 @@ def __process_sequences(sequences, max_length, fixed_protein_length, pad_sequenc
     proteins = []
     c = collections.Counter()
     lengths = []
+    i = 0
     for protein_sequence in sequences:
         if max_length != -1:
             if i > max_length:
@@ -168,6 +163,8 @@ def __process_sequences(sequences, max_length, fixed_protein_length, pad_sequenc
         else:
             continue
         i = i + 1
+    length_counter = collections.Counter(lengths)
+
     scores = []
     length = sum(c.values())
     for k in amino_acids:
@@ -183,62 +180,3 @@ def __process_sequences(sequences, max_length, fixed_protein_length, pad_sequenc
     data = torch.stack(proteins), c, torch.FloatTensor(scores)
     save_tensor_to_file(pt_file, data)
     return data
-
-
-" for python3"
-from itertools import groupby
-
-
-def fasta_reader(fasta_name):
-    """
-    modified from Brent Pedersen
-    Correct Way To Parse A Fasta File In Python
-    given a fasta file.
-    """
-    sequences = []
-    with open(fasta_name) as fh:
-        # ditch the boolean (x[0]) and just keep the header or sequence since
-        # we know they alternate.
-        faiter = (x[1] for x in groupby(fh, lambda line: line[0] == ">"))
-        for header in faiter:
-            # drop the ">"
-            headerStr = header.__next__()[1:].strip()
-            # join all sequence lines to one.
-            seq = "".join(s.strip() for s in faiter.__next__())
-            sequences.append(seq)
-    return sequences
-
-
-def load_fasta(file, fixed_protein_length, add_chemical_features=False, sequence_only=False, pad_sequence=True,
-               fill_itself=False, max_length=-1):
-    pt_file = f"{file}_{fixed_protein_length}_{add_chemical_features}_{sequence_only}_{max_length}.pt"
-    if os.path.exists(pt_file):
-        return load_from_saved_tensor(pt_file)
-    sequences = fasta_reader(file)
-
-    log.info("Size of sequence is {}".format(len(sequences)))
-    return __process_sequences(sequences, max_length, fixed_protein_length, pad_sequence, fill_itself, sequence_only,
-                               add_chemical_features, pt_file)
-
-
-def read_sequences_from_json(file, fixed_protein_length, add_chemical_features=False, sequence_only=False,
-                             pad_sequence=True,
-                             fill_itself=False, max_length=-1):
-    """ Reads and converts valid protein sequences"
-    """
-
-    sequences = []
-    pt_file = f"{file}_{fixed_protein_length}_{add_chemical_features}_{sequence_only}_{max_length}.pt"
-    if os.path.exists(pt_file):
-        return load_from_saved_tensor(pt_file)
-    with open(file) as json_file:
-        data = json.load(json_file)
-        if "sequence" in data:
-            sequences = data["sequence"].values()
-        else:
-            if "protein_sequence" in data:
-                sequences = data["protein_sequence"].values()
-    i = 0
-    log.info("Size of sequence is {}".format(len(sequences)))
-    return __process_sequences(sequences, max_length, fixed_protein_length, pad_sequence, fill_itself, sequence_only,
-                               add_chemical_features, pt_file)
