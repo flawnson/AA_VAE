@@ -253,3 +253,7 @@ class TransformerConvVAEModel(nn.Module):
         data = self.resize_channels(data)
         output = self.activation(self.deembed(self.transformer_decoder(data)))
         return output, mu, log_var
+
+    def representation(self, x):
+        x = self.transformer_encoder(self.embedder(self.encoder(x).transpose(1, 2))).view(x.shape[0], -1)
+        return self.bottleneck(x)[1]
