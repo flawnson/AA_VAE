@@ -43,7 +43,7 @@ if __name__ == "__main__":
     model, optimizer, device, model_name = create_model(config, model_config, args.pretrained, args.multigpu)
 
     log.info("Loading the data")
-    train_dataset, test_dataset, train_iterator, test_iterator, c, score = load_data(config)
+    train_dataset, test_dataset, train_iterator, test_iterator, c, score, length_scores = load_data(config)
 
     log.info(f"Model config:{model_config}")
     log.info(f"General config:{config}")
@@ -57,4 +57,4 @@ if __name__ == "__main__":
     Trainer(model, config["protein_length"], train_iterator, test_iterator, device, optimizer,
             len(train_dataset),
             len(test_dataset), number_of_epochs, vocab_size=data_length, weights=score, model_name=model_name,
-            save_best=args.save).trainer()
+            save_best=args.save,length_stats=length_scores).trainer()

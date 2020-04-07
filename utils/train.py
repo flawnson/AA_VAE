@@ -314,6 +314,8 @@ class Trainer:
                 test_recon_loss /= self.test_dataset_len
                 info_str += f' Test Loss: KL,Recon: ({test_kl_loss:.3f}, {test_recon_loss:.3f}),' \
                             f' Accuracy: {test_recon_accuracy * 100.0:.2f}%'
+                confusion_matrix = self.conf_matrix.detach().cpu().numpy()
+                info_str += confusion_matrix
 
             if train_recon_accuracy > 0.99:  # and test_recon_accuracy > 0.97:
                 break
