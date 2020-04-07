@@ -9,7 +9,7 @@ datefmt = '%Y-%m-%d %I:%M:%S %p'
 
 
 # Callable function to set logger for any module in the repo
-def set_file_logger(name='', filename="run.log", level=logging.INFO):
+def set_file_logger(name='', filename="run.log", level=logging.DEBUG):
     logger = logging.getLogger(name)
     logging.basicConfig(format=log_format,
                         datefmt=datefmt,
