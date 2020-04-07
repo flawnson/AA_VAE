@@ -2,7 +2,7 @@ import math
 
 import torch
 import torch.nn.functional as F
-import numpy as np
+
 from utils.logger import log
 
 inf = math.inf
@@ -61,7 +61,7 @@ class Trainer:
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
                  train_dataset_length, test_dataset_length, n_epochs, loss_function_name="smoothened",
                  vocab_size=23,
-                 patience_count=1000, weights=None, model_name="default", save_best=True):
+                 patience_count=1000, weights=None, model_name="default", save_best=True, length_stats=None):
         """
 
         :param model: The pytorch model that needs to be executed
@@ -105,8 +105,8 @@ class Trainer:
         self.criterion = loss_functions[loss_function_name]
         self.weights = torch.FloatTensor(weights).to(device)
         self.save_model = save_best
-
-        self.conf_matrix = np.zeros([self.vocab_size, self.vocab_size])
+        self.length_stats = length_stats
+        self.conf_matrix = torch.zeros([self.vocab_size, self.vocab_size]).to(self.device)
 
     def smoothened_loss(self, pred, actual, epsilon=0.1):
 
@@ -124,7 +124,7 @@ class Trainer:
 
         return mean_loss
 
-    def length_stats_based_averaging(self, predicted, actual, length_weights, epsilon=0.1):
+    def length_stats_based_averaging(self, predicted, actual, epsilon=0.1):
 
         istarget = actual.le(20)  # (1. - actual.eq(Constants.PAD).float()).contiguous().view(-1)
 
@@ -136,7 +136,7 @@ class Trainer:
         pred_probs = F.log_softmax(predicted, dim=-1)
 
         loss = -torch.sum(actual_smoothed * pred_probs, dim=1)
-        mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / length_weights[torch.sum(istarget, dim=1)])
+        mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / self.length_stats[torch.sum(istarget, dim=1)])
 
         return mean_loss
 
@@ -145,10 +145,9 @@ class Trainer:
                                                              weight=self.weights)
 
     def confusion_matrix(self, predicted, actual, mask):
-        
         actual_sequence = torch.masked_select(actual, mask)
         predicted_sequence = torch.masked_select(predicted.argmax(axis=1), mask)
-        return (((predicted_sequence == actual_sequence).sum()) / float(len(predicted_sequence))).item()
+        self.conf_matrix[actual_sequence, predicted_sequence] += 1
 
     def cross_entropy_wrapper(self, predicted, actual):
         """
@@ -220,6 +219,8 @@ class Trainer:
 
             self.optimizer.step()
             self.optimizer.zero_grad()
+        else:
+            self.confusion_matrix(predicted, x, mask)
 
         return kl_loss.item(), recon_loss.item(), recon_accuracy
 
@@ -296,6 +297,8 @@ class Trainer:
             if not valid:
                 log.error("Loop breaking as the loss was nan")
                 break
+            if e % 5 == 0:
+                self.conf_matrix = torch.zeros([self.vocab_size, self.vocab_size]).to(self.device)
 
             train_recon_loss /= self.train_dataset_len
             train_kl_loss /= self.train_dataset_len

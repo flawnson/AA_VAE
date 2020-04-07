@@ -39,7 +39,7 @@ def load_data(_config, max_length=-1):
     log.info(f"Loading the sequence for train data: {train_dataset_name} and test data: {test_dataset_name}")
     pt_file = f"{train_dataset_name}_{data_length}_{True}_{True}_{max_length}.pt"
     if os.path.exists(pt_file):
-        train_dataset, c, score = load_from_saved_tensor(pt_file)
+        train_dataset, c, score, length_scores = load_from_saved_tensor(pt_file)
     else:
         train_dataset, c, score, length_scores = __process_sequences(load_data_from_file(train_dataset_name),
                                                       max_length, data_length, pad_sequence=True, fill_itself=False,
@@ -57,7 +57,7 @@ def load_data(_config, max_length=-1):
     log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     _train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, batch_size=batch_size)
-    return train_dataset, test_dataset, _train_iterator, _test_iterator, c, score
+    return train_dataset, test_dataset, _train_iterator, _test_iterator, c, score, length_scores
 
 
 def aa_features():

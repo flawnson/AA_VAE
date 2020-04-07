@@ -12,12 +12,14 @@ from models.transformer_convolutional_vae import TransformerConvVAEModel
 from models.transformer_vae import TransformerModel
 from utils import data_load
 from utils.optimisers.learning_rate_optimiser import ScheduledOptim, StepOptim
+from utils.optimisers.rangerlars import RangerLars
 
 
 def get_optimizer(optimizer_config: dict, model):
     optimisers = {
         "Adam": optim.Adam,
-        "RAdam": radam.RAdam
+        "RAdam": radam.RAdam,
+        "Ranger": RangerLars
     }
     learning_rate_schedulers = {
         "Transformer": ScheduledOptim,
