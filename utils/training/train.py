@@ -205,7 +205,6 @@ class Trainer(LossFunctions):
                 test_recon_loss /= self.test_dataset_len
                 info_str += f' Test Loss: KL,Recon: ({test_kl_loss:.3f}, {test_recon_loss:.3f}),' \
                             f' Accuracy: {test_recon_accuracy * 100.0:.2f}%'
-                info_str += f"{confusion_matrix}"
 
             if train_recon_accuracy > 0.99:  # and test_recon_accuracy > 0.97:
                 break
