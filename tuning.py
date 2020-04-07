@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 
 import utils.data.common
 from utils.model_factory import create_model
-from utils.train import Trainer
+from utils.training.train import Trainer
 
 config_common_mammalian = {
     'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 150, 'epochs': 150,

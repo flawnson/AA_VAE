@@ -9,7 +9,7 @@ from utils.model_factory import create_model
 from utils.data_load import load_data
 from utils.logger import log
 import utils.logger as logger
-from utils.train import Trainer
+from utils.training.train import Trainer
 
 if __name__ == "__main__":
     torch.manual_seed(0)

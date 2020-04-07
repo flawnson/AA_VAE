@@ -1,4 +1,5 @@
 import collections
+import os
 
 import torch
 from torch.utils.data import DataLoader
@@ -17,8 +18,6 @@ VOCABULARY_SIZE = len(amino_acids)
 
 amino_acids_to_byte_map = {r: amino_acids.index(r) for r in amino_acids}
 amino_acids_set = {r for r in amino_acids}
-
-import os
 
 
 def to_categorical(num_classes):
@@ -39,8 +38,9 @@ def load_data(_config, max_length=-1):
     log.info(f"Loading the sequence for train data: {train_dataset_name} and test data: {test_dataset_name}")
     pt_file = f"{train_dataset_name}_{data_length}_{True}_{True}_{max_length}.pt"
     if os.path.exists(pt_file):
-        train_dataset, c, score, length_scores = load_from_saved_tensor(pt_file)
-    else:
+        pass
+        # train_dataset, c, score, length_scores = load_from_saved_tensor(pt_file)
+    if True:
         train_dataset, c, score, length_scores = __process_sequences(load_data_from_file(train_dataset_name),
                                                                      max_length, data_length, pad_sequence=True,
                                                                      fill_itself=False,
@@ -49,8 +49,9 @@ def load_data(_config, max_length=-1):
     log.info(f"Loading the sequence for test data: {test_dataset_name}")
     pt_file = f"{test_dataset_name}_{data_length}_{True}_{True}_{max_length}.pt"
     if os.path.exists(pt_file):
-        test_dataset, ct, scoret, _ = load_from_saved_tensor(pt_file)
-    else:
+        pass
+        # test_dataset, ct, scoret, _ = load_from_saved_tensor(pt_file)
+    if True:
         test_dataset, ct, scoret, _ = __process_sequences(load_data_from_file(test_dataset_name),
                                                           max_length, data_length, pad_sequence=True, fill_itself=False,
                                                           sequence_only=True,

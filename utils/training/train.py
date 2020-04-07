@@ -1,67 +1,23 @@
 import math
 
 import torch
-import torch.nn.functional as F
 
 from utils.logger import log
+from utils.training.common import calculate_gradient_stats, reconstruction_accuracy
+from utils.training.loss_functions import LossFunctions
 
 inf = math.inf
 
 
-def label_smoothing(inputs, epsilon):
-    k = inputs.size()[-1]
-    return ((1 - epsilon) * inputs) + (epsilon / k)
-
-
-def calculate_gradient_stats(parameters):
-    r"""Clips gradient norm of an iterable of parameters.
-
-    The norm is computed over all gradients together, as if they were
-    concatenated into a single vector. Gradients are modified in-place.
-
-    Arguments:
-        parameters (Iterable[Tensor] or Tensor): an iterable of Tensors or a
-            single Tensor that will have gradients normalized
-
-    Returns:
-        Total norm of the parameters (viewed as a single vector).
-    """
-    if isinstance(parameters, torch.Tensor):
-        parameters = [parameters]
-    parameters = list(filter(lambda p: p.grad is not None, parameters))
-    max_grad = max(p.grad.data.max() for p in parameters)
-    min_grad = min(p.grad.data.min() for p in parameters)
-    return max_grad, min_grad
-
-
-def kl_loss_function(mu, logvar):
-    """
-
-    :param mu: Mean of the embedding.
-    :param logvar: variance of the embedding.
-    :return: KL Loss of the embeddings
-
-     Calculates the representation loss of the embedding.
-     see Appendix B from VAE paper:
-     Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
-     https://arxiv.org/abs/1312.6114
-     0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-
-    """
-    kld: torch.Tensor = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
-    return kld
-
-
-class Trainer:
+class Trainer(LossFunctions):
     """
     Class that is used to run the model, runs training and testing.
     Embeddings are nto generated using this method.
     """
 
-    def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
-                 train_dataset_length, test_dataset_length, n_epochs, loss_function_name="smoothened",
-                 vocab_size=23,
-                 patience_count=1000, weights=None, model_name="default", save_best=True, length_stats=None):
+    def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer, train_dataset_length,
+                 test_dataset_length, n_epochs, loss_function_name="smoothened", vocab_size=23, patience_count=1000,
+                 weights=None, model_name="default", save_best=True, length_stats=None):
         """
 
         :param model: The pytorch model that needs to be executed
@@ -79,6 +35,7 @@ class Trainer:
         :param weights: The weight of each class.
         :param model_name: The generic name of the model
         """
+        super().__init__(device, weights, length_stats)
         log.info(f"Name: {model_name} Length:{data_length} trainDatasetLength:{train_dataset_length} "
                  f"testDataSetLength:{test_dataset_length} Epochs:{n_epochs}")
         log.info(f"LossFunction:{loss_function_name} VocabSize:{vocab_size} PatienceCount:{patience_count} ")
@@ -103,78 +60,13 @@ class Trainer:
         self.vocab_size = vocab_size
         self.patience_count = patience_count
         self.criterion = loss_functions[loss_function_name]
-        self.weights = torch.FloatTensor(weights).to(device)
         self.save_model = save_best
-        self.length_stats = length_stats
         self.conf_matrix = torch.zeros([self.vocab_size, self.vocab_size]).to(self.device)
-
-    def smoothened_loss(self, pred, actual, epsilon=0.1):
-
-        istarget = actual.le(20)  # (1. - actual.eq(Constants.PAD).float()).contiguous().view(-1)
-
-        actual_one_hot = torch.zeros(*pred.size(), requires_grad=True).to(self.device)
-        actual_one_hot = actual_one_hot.scatter_(1, actual.unsqueeze(1).data, 1)
-
-        actual_smoothed = label_smoothing(actual_one_hot, epsilon)
-
-        pred_probs = F.log_softmax(pred, dim=-1)
-
-        loss = -torch.sum(actual_smoothed * pred_probs, dim=1)
-        mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / torch.sum(istarget, dim=1))
-
-        return mean_loss
-
-    def length_stats_based_averaging(self, predicted, actual, epsilon=0.1):
-
-        istarget = actual.le(20)  # (1. - actual.eq(Constants.PAD).float()).contiguous().view(-1)
-
-        actual_one_hot = torch.zeros(*predicted.size(), requires_grad=True).to(self.device)
-        actual_one_hot = actual_one_hot.scatter_(1, actual.unsqueeze(1).data, 1)
-
-        actual_smoothed = label_smoothing(actual_one_hot, epsilon)
-
-        pred_probs = F.log_softmax(predicted, dim=-1)
-
-        loss = -torch.sum(actual_smoothed * pred_probs, dim=1)
-        mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / self.length_stats[torch.sum(istarget, dim=1)])
-
-        return mean_loss
-
-    def binary_cross_entropy_wrapper(self, predicted, actual):
-        torch.nn.functional.binary_cross_entropy_with_logits(predicted, actual, reduction="mean",
-                                                             weight=self.weights)
 
     def confusion_matrix(self, predicted, actual, mask):
         actual_sequence = torch.masked_select(actual, mask)
         predicted_sequence = torch.masked_select(predicted.argmax(axis=1), mask)
         self.conf_matrix[actual_sequence, predicted_sequence] += 1
-
-    def cross_entropy_wrapper(self, predicted, actual):
-        """
-
-        :param predicted: The result returned by the model.
-        :param actual: The comparison data
-        :return: The reconstruction loss
-        """
-        return torch.nn.functional.cross_entropy(predicted, actual, reduction="mean",
-                                                 weight=self.weights)
-
-    def reconstruction_accuracy(self, predicted, actual, mask):
-        """
-
-        :param predicted: The result returned by the model
-        :param actual: The comparison data
-        :param mask: The mask that differentiates the actual data points from padding.
-        :return: The accuracy of reconstruction
-
-        Computes average sequence identity between input and output sequences
-        """
-        output_sequences = torch.masked_select(actual, mask)
-        input_sequences = torch.masked_select(predicted.argmax(axis=1), mask)
-
-        return (((input_sequences == output_sequences).sum()) / float(len(input_sequences))).item()
-
-    # def __backprop(self):
 
     def __inner_iteration(self, x, training: bool, i):
         """
@@ -194,7 +86,6 @@ class Trainer:
         predicted, mu, var = self.model(x)
         mask = x.le(20)
 
-        scale = mask.sum()
         recon_loss = self.criterion(predicted, x)
 
         kl_loss = -0.5 * torch.mean(1 + var - mu.pow(2) - var.exp())
@@ -202,7 +93,7 @@ class Trainer:
         total_loss = kl_loss + recon_loss
 
         # reconstruction accuracy
-        recon_accuracy = self.reconstruction_accuracy(predicted, x, mask)
+        recon_accuracy = reconstruction_accuracy(predicted, x, mask)
 
         # backward pass
         if training:
@@ -314,8 +205,7 @@ class Trainer:
                 test_recon_loss /= self.test_dataset_len
                 info_str += f' Test Loss: KL,Recon: ({test_kl_loss:.3f}, {test_recon_loss:.3f}),' \
                             f' Accuracy: {test_recon_accuracy * 100.0:.2f}%'
-                confusion_matrix = self.conf_matrix.detach().cpu().numpy()
-                info_str += confusion_matrix
+                info_str += f"{confusion_matrix}"
 
             if train_recon_accuracy > 0.99:  # and test_recon_accuracy > 0.97:
                 break
@@ -354,3 +244,7 @@ class Trainer:
 
         log.info(f"Writing model to saved_models/{self.model_name}_{accuracy}_{date_time}")
         torch.save(self.model.state_dict(), f"saved_models/{self.model_name}_{accuracy}_{date_time}")
+        confusion_matrix = self.conf_matrix.detach().cpu().numpy()
+        from numpy import savetxt
+        savetxt(f"saved_models/conf_matrix_{self.model_name}_{accuracy}_{date_time}", confusion_matrix, delimiter=',')
+
