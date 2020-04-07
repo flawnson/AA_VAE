@@ -1,7 +1,9 @@
+import errno
 import math
 
 import torch
-
+import os
+import os.path as osp
 from utils.logger import log
 from utils.training.common import calculate_gradient_stats, reconstruction_accuracy
 from utils.training.loss_functions import LossFunctions
@@ -240,7 +242,13 @@ class Trainer(LossFunctions):
         now = datetime.now()
 
         date_time = now.strftime("%d_%m-%Y_%H_%M_%S")
-
+        try:
+            dir = osp.join(osp.dirname(__file__), "../../saved_models")
+            print(dir)
+            os.makedirs(dir)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise e
         log.info(f"Writing model to saved_models/{self.model_name}_{accuracy}_{date_time}")
         torch.save(self.model.state_dict(), f"saved_models/{self.model_name}_{accuracy}_{date_time}")
         confusion_matrix = self.conf_matrix.detach().cpu().numpy()
