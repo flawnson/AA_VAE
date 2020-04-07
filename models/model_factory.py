@@ -1,7 +1,7 @@
 import torch
 import torch.optim as optim
 
-import utils.radam as radam
+import utils.optimisers.radam as radam
 from models.convolutional_base_vae import ConvolutionalBaseVAE
 from models.convolutional_linear import Convolutional_Linear_VAE
 from models.convolutional_vae import ConvolutionalVAE
@@ -11,7 +11,7 @@ from models.lstm_vae import LSTMVae
 from models.transformer_convolutional_vae import TransformerConvVAEModel
 from models.transformer_vae import TransformerModel
 from utils import data_load
-from utils.optimiser import ScheduledOptim, StepOptim
+from utils.optimisers.learning_rate_optimiser import ScheduledOptim, StepOptim
 
 
 def get_optimizer(optimizer_config: dict, model):

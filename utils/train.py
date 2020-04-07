@@ -2,7 +2,7 @@ import math
 
 import torch
 import torch.nn.functional as F
-
+import numpy as np
 from utils.logger import log
 
 inf = math.inf
@@ -106,6 +106,8 @@ class Trainer:
         self.weights = torch.FloatTensor(weights).to(device)
         self.save_model = save_best
 
+        self.conf_matrix = np.zeros([self.vocab_size, self.vocab_size])
+
     def smoothened_loss(self, pred, actual, epsilon=0.1):
 
         istarget = actual.le(20)  # (1. - actual.eq(Constants.PAD).float()).contiguous().view(-1)
@@ -141,6 +143,12 @@ class Trainer:
     def binary_cross_entropy_wrapper(self, predicted, actual):
         torch.nn.functional.binary_cross_entropy_with_logits(predicted, actual, reduction="mean",
                                                              weight=self.weights)
+
+    def confusion_matrix(self, predicted, actual, mask):
+        
+        actual_sequence = torch.masked_select(actual, mask)
+        predicted_sequence = torch.masked_select(predicted.argmax(axis=1), mask)
+        return (((predicted_sequence == actual_sequence).sum()) / float(len(predicted_sequence))).item()
 
     def cross_entropy_wrapper(self, predicted, actual):
         """
