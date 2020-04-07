@@ -209,6 +209,7 @@ class Trainer(LossFunctions):
             if train_recon_accuracy > 0.99:  # and test_recon_accuracy > 0.97:
                 break
             if best_recon_accuracy < train_recon_accuracy:
+                best_recon_accuracy = train_recon_accuracy
                 if self.save_model:
                     self.save_snapshot(train_recon_accuracy)
 
@@ -225,10 +226,9 @@ class Trainer(LossFunctions):
 
             if patience_counter > 1000:
                 break
-            if e % 100 == 99:
-                self.save_snapshot(train_recon_accuracy)
 
-        self.save_snapshot(train_recon_accuracy)
+        if self.save_model:
+            self.save_snapshot(train_recon_accuracy)
 
     def save_snapshot(self, accuracy):
         """
