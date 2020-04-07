@@ -14,7 +14,7 @@ from ray.tune.utils import pin_in_object_store, get_pinned_object
 from torch.utils.data import DataLoader
 
 import utils.data.common
-from models.model_factory import create_model
+from utils.model_factory import create_model
 from utils.train import Trainer
 
 config_common_mammalian = {
