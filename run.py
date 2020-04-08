@@ -56,5 +56,5 @@ if __name__ == "__main__":
     log.info("Start the training")
     Trainer(model, config["protein_length"], train_iterator, test_iterator, device, optimizer,
             len(train_dataset),
-            len(test_dataset), number_of_epochs, vocab_size=data_length, weights=score, model_name=model_name,
+            len(test_dataset), number_of_epochs, weights=score, model_name=model_name,
             save_best=args.save, length_stats=length_scores).trainer()

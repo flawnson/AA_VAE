@@ -177,7 +177,6 @@ class TransformerDecoderLayer(nn.Module):
             ConvolutionalTransposeBlock(in_c=channels, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
-            # ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=channels, padded=True, kernel_size=kernel_size)
         )
 
@@ -246,13 +245,12 @@ class TransformerConvVAEModel(nn.Module):
     def forward(self, x):
         input_len = x.shape[1]
         mask = x.le(20).unsqueeze(1).float()
-        output = self.transformer_encoder(self.embedder(self.encoder(x).transpose(1, 2))).view(x.shape[0], -1)
-        z, mu, log_var = self.bottleneck(output)
+        z, mu, log_var = self.bottleneck(
+            self.transformer_encoder(self.embedder(self.encoder(x).transpose(1, 2))).view(x.shape[0], -1))
+        # z, mu, log_var = self.bottleneck(output)
         data = self.fc3(z).view(z.shape[0], -1, input_len)
-        data = torch.cat((data, mask), 1)
-        data = self.resize_channels(data)
-        output = self.activation(self.deembed(self.transformer_decoder(data)))
-        return output, mu, log_var
+        data = self.resize_channels(torch.cat((data, mask), 1))
+        return self.activation(self.deembed(self.transformer_decoder(data))), mu, log_var
 
     def representation(self, x):
         x = self.transformer_encoder(self.embedder(self.encoder(x).transpose(1, 2))).view(x.shape[0], -1)
