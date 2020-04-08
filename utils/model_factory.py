@@ -58,7 +58,10 @@ def create_model(config, model_config, pretrained_model=None, multigpu=False):
 
     if multigpu:
         model = torch.nn.DataParallel(model)
+    optimiser = get_optimizer(model_config, model)
     if pretrained_model is not None:
-        model.load_state_dict(torch.load(pretrained_model))
+        checkpoint = torch.load(pretrained_model)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
     # optimizer
-    return model, get_optimizer(model_config, model), device, model_name
+    return model, optimiser, device, model_name
