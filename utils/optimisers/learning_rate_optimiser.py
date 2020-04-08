@@ -1,4 +1,5 @@
 import numpy as np
+
 from utils.logger import log
 
 
@@ -31,6 +32,21 @@ class StepOptim(object):
             for param_group in self.optimizer.param_groups:
                 param_group['lr'] = new_lr
             log.debug("Current learning rate is {}".format(new_lr))
+
+
+class LearningRateOptim:
+    def __init__(self, optimiser, scheduler):
+        self.optimiser = optimiser
+        self.scheduler = scheduler
+
+    def step(self):
+        "Step by the inner optimizer"
+        self.optimiser.step()
+        self.scheduler.step()
+
+    def zero_grad(self):
+        "Zero out the gradients by the inner optimizer"
+        self.optimiser.zero_grad()
 
 
 class ScheduledOptim(object):

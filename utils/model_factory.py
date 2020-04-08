@@ -11,7 +11,7 @@ from models.lstm_vae import LSTMVae
 from models.transformer_convolutional_vae import TransformerConvVAEModel
 from models.transformer_vae import TransformerModel
 from utils import data_load
-from utils.optimisers.learning_rate_optimiser import ScheduledOptim, StepOptim
+from utils.optimisers.learning_rate_optimiser import ScheduledOptim, StepOptim, LearningRateOptim
 from utils.optimisers.rangerlars import RangerLars
 
 
@@ -23,7 +23,8 @@ def get_optimizer(optimizer_config: dict, model):
     }
     learning_rate_schedulers = {
         "Transformer": ScheduledOptim,
-        "Ramp": StepOptim
+        "Ramp": StepOptim,
+        "Cosine": optim.lr_scheduler.CosineAnnealingLR
     }
     lr = optimizer_config["lr"]
     weight_decay = optimizer_config["weight_decay"]
@@ -31,8 +32,14 @@ def get_optimizer(optimizer_config: dict, model):
                                                                           weight_decay=weight_decay)
     wrapped = optimizer_config.get("LearningRateScheduler", "False")
     if wrapped != "False":
-        return learning_rate_schedulers[wrapped](optimizer, lr=lr,
-                                                 n_warmup_steps=optimizer_config.get("sched_freq", 4000))
+        if wrapped == "Cosine":
+            epoch_max = optimizer_config.get("sched_freq", 4000)
+            min_lr = lr * 0.01
+            return LearningRateOptim(optimizer, optim.lr_scheduler.CosineAnnealingLR(optimizer,
+                                                                                     T_max=epoch_max, eta_min=min_lr))
+        else:
+            return learning_rate_schedulers[wrapped](optimizer, lr=lr,
+                                                     n_warmup_steps=optimizer_config.get("sched_freq", 4000))
     else:
         return optimizer
 

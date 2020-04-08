@@ -5,10 +5,10 @@ import subprocess
 
 import torch
 
-from utils.model_factory import create_model
+import utils.logger as logger
 from utils.data_load import load_data
 from utils.logger import log
-import utils.logger as logger
+from utils.model_factory import create_model
 from utils.training.train import Trainer
 
 if __name__ == "__main__":
@@ -57,4 +57,4 @@ if __name__ == "__main__":
     Trainer(model, config["protein_length"], train_iterator, test_iterator, device, optimizer,
             len(train_dataset),
             len(test_dataset), number_of_epochs, vocab_size=data_length, weights=score, model_name=model_name,
-            save_best=args.save,length_stats=length_scores).trainer()
+            save_best=args.save, length_stats=length_scores).trainer()

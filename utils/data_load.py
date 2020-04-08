@@ -1,6 +1,6 @@
 import collections
 import os
-
+import math
 import torch
 from torch.utils.data import DataLoader
 
@@ -171,10 +171,10 @@ def __process_sequences(sequences, max_length, fixed_protein_length, pad_sequenc
     buckets[0] = length_counter.get(0, 0)
     for i in range(averaging_window - 1):
         buckets[i + 1] = buckets[i] + length_counter.get(i + 1, 0)
-    for i in range(averaging_window + 1, fixed_protein_length):
+    for i in range(averaging_window, fixed_protein_length):
         buckets[i] = buckets[i - 1] + length_counter.get(i, 1) - length_counter.get(i - averaging_window, 1)
     for i in range(len(buckets)):
-        buckets[i] = buckets[i] / averaging_window
+        buckets[i] = math.sqrt(buckets[i] / averaging_window)
     scores = []
     length = sum(c.values())
     for k in amino_acids:
