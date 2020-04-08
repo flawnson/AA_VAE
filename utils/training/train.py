@@ -1,9 +1,10 @@
 import errno
 import math
-
-import torch
 import os
 import os.path as osp
+
+import torch
+
 from utils.logger import log
 from utils.training.common import calculate_gradient_stats, reconstruction_accuracy
 from utils.training.loss_functions import LossFunctions
@@ -18,7 +19,7 @@ class Trainer(LossFunctions):
     """
 
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer, train_dataset_length,
-                 test_dataset_length, n_epochs, loss_function_name="smoothened", vocab_size=23, patience_count=1000,
+                 test_dataset_length, n_epochs, loss_function_name="length_factored", vocab_size=23, patience_count=1000,
                  weights=None, model_name="default", save_best=True, length_stats=None):
         """
 
@@ -45,7 +46,8 @@ class Trainer(LossFunctions):
         loss_functions = {
             "bce": self.cross_entropy_wrapper,
             "nll": torch.nn.functional.nll_loss,
-            "smoothened": self.smoothened_loss
+            "smoothened": self.smoothened_loss,
+            "length_factored": self.length_stats_based_averaging
         }
         self.model_name = model_name
 
@@ -258,4 +260,3 @@ class Trainer(LossFunctions):
         confusion_matrix = self.conf_matrix.detach().cpu().numpy()
         from numpy import savetxt
         savetxt(f"saved_models/conf_matrix_{self.model_name}_{accuracy}_{date_time}", confusion_matrix, delimiter=',')
-

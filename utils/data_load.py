@@ -166,13 +166,13 @@ def __process_sequences(sequences, max_length, fixed_protein_length, pad_sequenc
             continue
         i = i + 1
     length_counter = collections.Counter(lengths)
-    buckets = [0.0] * fixed_protein_length
+    buckets = [0.0] * (fixed_protein_length+1)
     averaging_window = 10
     buckets[0] = length_counter.get(0, 0)
     for i in range(averaging_window - 1):
         buckets[i + 1] = buckets[i] + length_counter.get(i + 1, 0)
     for i in range(averaging_window + 1, fixed_protein_length):
-        buckets[i] = buckets[i - 1] + length_counter.get(i, 0) - length_counter.get(i - averaging_window, 0)
+        buckets[i] = buckets[i - 1] + length_counter.get(i, 1) - length_counter.get(i - averaging_window, 1)
     for i in range(len(buckets)):
         buckets[i] = buckets[i] / averaging_window
     scores = []
