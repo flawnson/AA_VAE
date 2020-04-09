@@ -205,7 +205,6 @@ class TransformerConvVAEModel(nn.Module):
         super(TransformerConvVAEModel, self).__init__()
         self.model_type = 'Transformer_Convolutional'
         self.src_mask = None
-        nheads = model_config["heads"]
         layers = model_config["layers"]
         self.channels = model_config["channels"]
         kernel_dimension = model_config["kernel_size"]

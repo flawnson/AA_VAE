@@ -67,9 +67,8 @@ model_tuning_configs = {
     },
     "transformer_convolutional": {
         "model_name": "transformer_convolutional",
-        "heads": 8,
         "layers": {"grid_search": [6]},
-        "channels": {"grid_search": [128]},
+        "channels": {"grid_search": [16]},
         "kernel_size": {"grid_search": [3]},
         "embedding_gradient": "False",
         "chem_features": "False",
