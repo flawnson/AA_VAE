@@ -17,6 +17,9 @@ class ConvolutionalBlock(nn.Module):
     def forward(self, x):
         return self.conv_block(x)
 
+class GCNetBlock(nn.Module):
+    def __init__(self):
+        pass
 
 class ConvolutionalTransposeBlock(nn.Module):
     def __init__(self, in_c, out_c, kernel_size, padded=False):
