@@ -68,7 +68,7 @@ def create_model(config, model_config, pretrained_model=None, multigpu=False):
     optimiser = get_optimizer(model_config, model)
     if pretrained_model is not None:
         checkpoint = torch.load(pretrained_model)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
+        model.load_state_dict(checkpoint)
+    #    optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
     # optimizer
     return model, optimiser, device, model_name
