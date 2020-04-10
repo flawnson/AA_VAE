@@ -167,7 +167,7 @@ def tuner(smoke_test: bool, model, config_type):
     if config_common["class"] != "mammalian":
         train_dataset_name = f"data/train_set_{dataset_type}_{data_length}.json"
     else:
-        train_dataset_name = "data/train_set_large_1500_mammalian.json"
+        train_dataset_name = "data/validation_set_large_no_ofr_no_trim_1500_mammalian.json"
 
     max_dataset_length = 80000
 
