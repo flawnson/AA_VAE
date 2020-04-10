@@ -35,12 +35,12 @@ def get_optimizer(optimizer_config: dict, model):
     if wrapped != "False":
         if wrapped == "Cosine":
             epoch_max = optimizer_config.get("sched_freq", 4000)
-            min_lr = lr * 0.01
+            min_lr = lr * 0.1
             return LearningRateOptim(optimizer, optim.lr_scheduler.CosineAnnealingLR(optimizer,
                                                                                      T_max=epoch_max, eta_min=min_lr))
         if wrapped == "CosineWarmRestarts":
             epoch_max = optimizer_config.get("sched_freq", 4000)
-            min_lr = lr * 0.01
+            min_lr = lr * 0.1
             return LearningRateOptim(optimizer, optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer,
                                                                                                T_0=epoch_max,
                                                                                                eta_min=min_lr))

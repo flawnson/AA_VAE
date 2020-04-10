@@ -246,7 +246,6 @@ class Trainer(LossFunctions):
         date_time = now.strftime("%d_%m-%Y_%H_%M_%S")
         try:
             dir = osp.join(osp.dirname(__file__), "../../saved_models")
-            print(dir)
             os.makedirs(dir)
         except OSError as e:
             if e.errno != errno.EEXIST:
