@@ -9,60 +9,6 @@ def _get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
 
 
-def snconv2d(eps=1e-12, **kwargs):
-    return nn.utils.spectral_norm(nn.Conv1d(**kwargs), eps=eps)
-
-
-def snlinear(eps=1e-12, **kwargs):
-    return nn.utils.spectral_norm(nn.Linear(**kwargs), eps=eps)
-
-
-def sn_embedding(eps=1e-12, **kwargs):
-    return nn.utils.spectral_norm(nn.Embedding(**kwargs), eps=eps)
-
-
-class NonLocalSelfAttention(nn.Module):
-
-    def __init__(self, in_channels, eps=1e-12):
-        super(NonLocalSelfAttention, self).__init__()
-        self.in_channels = in_channels
-        self.snconv1x1_theta = snconv2d(in_channels=in_channels, out_channels=in_channels // 8,
-                                        kernel_size=1, bias=False, eps=eps)
-        self.snconv1x1_phi = snconv2d(in_channels=in_channels, out_channels=in_channels // 8,
-                                      kernel_size=1, bias=False, eps=eps)
-        self.snconv1x1_g = snconv2d(in_channels=in_channels, out_channels=in_channels // 2,
-                                    kernel_size=1, bias=False, eps=eps)
-        self.snconv1x1_o_conv = snconv2d(in_channels=in_channels // 2, out_channels=in_channels,
-                                         kernel_size=1, bias=False, eps=eps)
-        self.maxpool = nn.MaxPool2d(2, stride=2, padding=0)
-        self.softmax = nn.Softmax(dim=-1)
-        self.gamma = nn.Parameter(torch.zeros(1))
-
-    def forward(self, x):
-        b, ch, w = x.size()
-        # Theta path
-        theta = self.snconv1x1_theta(x)
-        theta = theta.view(b, ch // 8, w)
-        # Phi path
-        phi = self.snconv1x1_phi(x)
-        phi = self.maxpool(phi)
-        phi = phi.view(b, ch // 8, w // 4)
-        # Attn map
-        attn = torch.bmm(theta.permute(0, 2, 1), phi)
-        attn = self.softmax(attn)
-        # g path
-        g = self.snconv1x1_g(x)
-        g = self.maxpool(g)
-        g = g.view(b, ch // 2, w // 4)
-        # Attn_g - o_conv
-        attn_g = torch.bmm(g, attn.permute(0, 2, 1))
-        attn_g = attn_g.view(b, ch // 2, w)
-        attn_g = self.snconv1x1_o_conv(attn_g)
-        # Out
-        out = x + self.gamma * attn_g
-        return out
-
-
 class TransformerLayer(nn.Module):
     r"""TransformerEncoder is a stack of N encoder layers
 
@@ -105,20 +51,17 @@ class TransformerEncoderLayer(nn.Module):
     This encoder is based on the GCNet paper.
 
     Args:
-        d_model: the number of expected features in the input (required).
-        nhead: the number of heads in the multiheadattention models (required).
-        dim_feedforward: the dimension of the feedforward network model (default=2048).
         dropout: the dropout value (default=0.1).
-        activation: the activation function of intermediate layer, relu or gelu (default=relu).
+        kernel_size: size of the kernel
 
     """
 
     def __init__(self, channels, dropout=0.1, kernel_size=3):
         super(TransformerEncoderLayer, self).__init__()
-        self.self_attn = NonLocalSelfAttention(channels)
+        self.spatial_attention = GCNContextBlock(inplanes=channels, ratio=8)
         self.dropout1 = nn.Dropout(dropout)
         out_c = int(channels / 2)
-        self.mutate = nn.Sequential(
+        self.channel_attention = nn.Sequential(
             ConvolutionalBlock(in_c=channels, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
@@ -130,16 +73,13 @@ class TransformerEncoderLayer(nn.Module):
 
         Args:
             src: the sequence to the encoder layer (required).
-            src_mask: the mask for the src sequence (optional).
-            src_key_padding_mask: the mask for the src keys per batch (optional).
-
         Shape:
             see the docs in Transformer class.
         """
         residual = src
-        src2 = self.self_attn(src)
+        src2 = self.spatial_attention(src)
         src = src + self.dropout1(src2)
-        src = self.mutate(src) + residual
+        src = self.channel_attention(src) + residual
         return src
 
 
@@ -166,11 +106,11 @@ class TransformerDecoderLayer(nn.Module):
         :param kernel_size:
         """
         super(TransformerDecoderLayer, self).__init__()
-        self.self_attn = NonLocalSelfAttention(channels)
+        self.spatial_attention = GCNContextBlock(channels, 8)
         self.dropout1 = nn.Dropout(dropout)
         # out_c = channels
         out_c = int(channels / 2)
-        self.mutate = nn.Sequential(
+        self.channel_attention = nn.Sequential(
             ConvolutionalTransposeBlock(in_c=channels, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
@@ -187,31 +127,31 @@ class TransformerDecoderLayer(nn.Module):
             see the docs in Transformer class.
         """
         residual = src
-        src = self.mutate(src) + residual
-        src2 = self.self_attn(src)
+        src = self.channel_attention(src) + residual
+        src2 = self.spatial_attention(src)
         src = src + self.dropout1(src2)
         return src
 
 
-class TransformerConvVAEModel(nn.Module):
+class GlobalContextVAEModel(nn.Module):
     def __init__(self, model_config, h_dim, z_dim, input_size, device, embeddings_static, requires_grad=True):
         torch.manual_seed(0)
         self.device = device
 
-        self.name = "transformer_conv_vae"
-        super(TransformerConvVAEModel, self).__init__()
-        self.model_type = 'Transformer_Convolutional'
+        self.name = "global_context_vae"
+        super(GlobalContextVAEModel, self).__init__()
+        self.model_type = 'GCA_vae'
         self.src_mask = None
         layers = model_config["layers"]
         self.channels = model_config["channels"]
         kernel_dimension = model_config["kernel_size"]
-        self.embedder = nn.Conv1d(kernel_size=3, in_channels=embeddings_static.shape[1],
-                                  out_channels=self.channels, stride=1, padding=1, bias=False)
+        self.triple_encoder = nn.Conv1d(kernel_size=3, in_channels=embeddings_static.shape[1],
+                                        out_channels=self.channels, stride=1, padding=1, bias=False)
         self.deembed = nn.ConvTranspose1d(kernel_size=3, in_channels=self.channels,
                                           out_channels=embeddings_static.shape[0], padding=1, bias=False)
-        self.encoder = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
-        self.encoder.weight.data.copy_(embeddings_static)
-        self.encoder.weight.requires_grad = False
+        self.protein_embedding = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
+        self.protein_embedding.weight.data.copy_(embeddings_static)
+        self.protein_embedding.weight.requires_grad = False
 
         encoder_layers = TransformerEncoderLayer(channels=self.channels, kernel_size=kernel_dimension)
         self.transformer_encoder = TransformerLayer(encoder_layers, layers)
@@ -229,7 +169,7 @@ class TransformerConvVAEModel(nn.Module):
 
     def init_weights(self):
         initrange = 0.1
-        self.embedder.weight.data.uniform_(-initrange, initrange)
+        self.triple_encoder.weight.data.uniform_(-initrange, initrange)
         self.deembed.weight.data.uniform_(-initrange, initrange)
 
     def bottleneck(self, h):
@@ -242,12 +182,11 @@ class TransformerConvVAEModel(nn.Module):
         input_len = x.shape[1]
         mask = x.le(20).unsqueeze(1).float()
         z, mu, log_var = self.bottleneck(
-            self.transformer_encoder(self.embedder(self.encoder(x).transpose(1, 2))).view(x.shape[0], -1))
-        # z, mu, log_var = self.bottleneck(output)
+            self.transformer_encoder(self.triple_encoder(self.protein_embedding(x).transpose(1, 2))).view(x.shape[0], -1))
         data = self.fc3(z).view(z.shape[0], -1, input_len)
         data = self.resize_channels(torch.cat((data, mask), 1))
         return self.activation(self.deembed(self.transformer_decoder(data))), mu, log_var
 
     def representation(self, x):
-        x = self.transformer_encoder(self.embedder(self.encoder(x).transpose(1, 2))).view(x.shape[0], -1)
+        x = self.transformer_encoder(self.triple_encoder(self.protein_embedding(x).transpose(1, 2))).view(x.shape[0], -1)
         return self.bottleneck(x)[1]
