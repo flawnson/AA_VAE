@@ -6,7 +6,7 @@ from utils.training.common import label_smoothing
 
 class LossFunctions:
     def __init__(self, device, weights, length_stats):
-        self.length_stats = torch.tensor(length_stats).to(device)
+        self.length_stats = None if length_stats is None else torch.tensor(length_stats).to(device)
         self.device = device
         self.weights = torch.tensor(weights, dtype=torch.double).to(device)
 
