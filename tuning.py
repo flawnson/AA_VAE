@@ -83,14 +83,31 @@ model_tuning_configs = {
         "model_name": "transformer",
         "heads": {"grid_search": [8]},
         "layers": {"grid_search": [5]},
-        "internal_dimension": {"grid_search": [64]},
-        "feed_forward": {"grid_search": [64]},
+        "internal_dimension": {"grid_search": [32]},
+        "feed_forward": {"grid_search": [32]},
         "embedding_gradient": "False",
         "chem_features": "False",
         # "lr": 1.710853307705144e-05,
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.00000001, 0.00001)),
-        "weight_decay": 1.4412730806529451e-06
+        "weight_decay": 1.4412730806529451e-06,
+        "LearningRateScheduler": "CosineWarmRestarts",
+        "wrap": "False",
+        "sched_freq": 20000,
+        "optimizer": "RAdam"
         # "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001))
+    },
+    "gcn": {
+        "model_name": "global_context_vae",
+        "layers": 4,
+        "channels": 16,
+        "kernel_size": {"grid_search": [3,5,9,17,33]},
+        "embedding_gradient": "False",
+        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00000001, 0.01)),
+        "sched_freq": 400,
+        "weight_decay": 1.6459309598386149e-06,
+        "LearningRateScheduler": "CosineWarmRestarts",
+        "wrap": "False",
+        "optimizer": "RAdam"
     }
 }
 

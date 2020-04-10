@@ -31,8 +31,8 @@ if __name__ == "__main__":
         train_dataset_name = f"data/train_set_{dataset_type}_{data_length}.json"
         test_dataset_name = f"data/test_set_{dataset_type}_{data_length}.json"
     else:
-        train_dataset_name = "data/train_set_large_1500_mammalian.json"
-        test_dataset_name = "data/test_set_large_1500_mammalian.json"
+        train_dataset_name = "data/train_set_large_no_ofr_no_trim_1500_mammalian.json"
+        test_dataset_name = "data/test_set_large_no_ofr_no_trim_1500_mammalian.json"
     config["train_dataset_name"] = os.getcwd() + "/" + train_dataset_name
     config["test_dataset_name"] = os.getcwd() + "/" + test_dataset_name
 
