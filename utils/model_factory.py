@@ -6,10 +6,10 @@ from models.convolutional_base_vae import ConvolutionalBaseVAE
 from models.convolutional_linear import Convolutional_Linear_VAE
 from models.convolutional_vae import ConvolutionalVAE
 from models.gated_cnn import GatedCNN
+from models.global_context_vae import GlobalContextVAEModel
 from models.linear_vae import LinearVAE
 from models.lstm_vae import LSTMVae
 from models.transformer_convolutional_vae import TransformerConvVAEModel
-from models.global_context_vae import GlobalContextVAEModel
 from models.transformer_vae import TransformerModel
 from utils import data_load
 from utils.optimisers.learning_rate_optimiser import ScheduledOptim, StepOptim, LearningRateOptim
@@ -61,7 +61,7 @@ def create_model(config, model_config, pretrained_model=None, multigpu=False):
               "gated_cnn": GatedCNN,
               "transformer": TransformerModel,
               "transformer_convolutional": TransformerConvVAEModel,
-              "global_context_vae":GlobalContextVAEModel
+              "global_context_vae": GlobalContextVAEModel
               }
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

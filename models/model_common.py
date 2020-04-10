@@ -78,7 +78,7 @@ class GCNContextBlock(nn.Module):
             # [N, 1, C, 1]
             context = torch.matmul(input_x, context_mask)
             # [N, C, 1, 1]
-            context = context.view(batch, channel, 1, 1)
+            context = context.view(batch, channel, 1)
         else:
             # [N, C, 1, 1]
             context = self.avg_pool(x)
