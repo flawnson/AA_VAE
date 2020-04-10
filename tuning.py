@@ -14,6 +14,7 @@ from ray.tune.utils import pin_in_object_store, get_pinned_object
 from torch.utils.data import DataLoader
 
 import utils.data.common
+from utils.data_load import __process_sequences
 from utils.model_factory import create_model
 from utils.training.train import Trainer
 
@@ -83,14 +84,31 @@ model_tuning_configs = {
         "model_name": "transformer",
         "heads": {"grid_search": [8]},
         "layers": {"grid_search": [5]},
-        "internal_dimension": {"grid_search": [64]},
-        "feed_forward": {"grid_search": [64]},
+        "internal_dimension": {"grid_search": [32]},
+        "feed_forward": {"grid_search": [32]},
         "embedding_gradient": "False",
         "chem_features": "False",
         # "lr": 1.710853307705144e-05,
-        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00000001, 0.00001)),
-        "weight_decay": 1.4412730806529451e-06
+        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00000001, 0.001)),
+        "weight_decay": 1.4412730806529451e-06,
+        "LearningRateScheduler": "CosineWarmRestarts",
+        "wrap": "False",
+        "sched_freq": 20000,
+        "optimizer": "RAdam"
         # "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001))
+    },
+    "gcn": {
+        "model_name": "global_context_vae",
+        "layers": 4,
+        "channels": 16,
+        "kernel_size": {"grid_search": [3, 5, 9, 17, 33]},
+        "embedding_gradient": "False",
+        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00000001, 0.01)),
+        "sched_freq": 400,
+        "weight_decay": 1.6459309598386149e-06,
+        "LearningRateScheduler": "CosineWarmRestarts",
+        "wrap": "False",
+        "optimizer": "RAdam"
     }
 }
 
@@ -114,7 +132,7 @@ def tuner_run(config):
     train = Trainer(model, config["protein_length"], train_iterator, None, device,
                     optimizer,
                     len(train_dataset),
-                    0, 0, vocab_size=data_length, weights=weights, freq=config["iteration_freq"], save_best=False)
+                    0, 0, weights=weights, save_best=False)
 
     train_dataset_len = train_dataset.shape[0]
     epochs = config["epochs"]
@@ -150,11 +168,14 @@ def tuner(smoke_test: bool, model, config_type):
     if config_common["class"] != "mammalian":
         train_dataset_name = f"data/train_set_{dataset_type}_{data_length}.json"
     else:
-        train_dataset_name = "data/train_set_large_1500_mammalian.json"
+        train_dataset_name = "data/validation_set_large_no_ofr_no_trim_1500_mammalian.json"
 
     max_dataset_length = 80000
 
-    train_dataset, c, score = utils.data.common.load_data_from_file(train_dataset_name)
+    train_dataset, c, score, _ = __process_sequences(utils.data.common.load_data_from_file(train_dataset_name),
+                                                     max_dataset_length, data_length, pad_sequence=True,
+                                                     fill_itself=False, sequence_only=True,
+                                                     add_chemical_features=False, pt_file="validation_set_tuning.pt")
 
     train_dataset = utils.data.common.get_shuffled_sample(train_dataset, max_dataset_length)
 

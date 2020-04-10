@@ -58,7 +58,6 @@ class GCNContextBlock(nn.Module):
                 nn.Conv1d(self.planes, self.inplanes, kernel_size=1))
         else:
             self.channel_mul_conv = None
-        self.reset_parameters()
 
     def spatial_pool(self, x):
         batch, channel, height = x.size()
