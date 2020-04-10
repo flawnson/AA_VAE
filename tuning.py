@@ -131,7 +131,7 @@ def tuner_run(config):
     train = Trainer(model, config["protein_length"], train_iterator, None, device,
                     optimizer,
                     len(train_dataset),
-                    0, 0, vocab_size=data_length, weights=weights, freq=config["iteration_freq"], save_best=False)
+                    0, 0, weights=weights, save_best=False)
 
     train_dataset_len = train_dataset.shape[0]
     epochs = config["epochs"]
