@@ -4,13 +4,9 @@ from torch.nn import functional as F
 
 
 class NonLocalBlockND(nn.Module):
-    def __init__(self, in_channels, inter_channels=None, dimension=1, sub_sample=True, bn_layer=True):
+    def __init__(self, in_channels, inter_channels=None, sub_sample=True, bn_layer=True):
         super(NonLocalBlockND, self).__init__()
 
-        assert dimension in [1, 2, 3]
-        dimension = 1
-
-        self.dimension = dimension
         self.sub_sample = sub_sample
 
         self.in_channels = in_channels
@@ -49,7 +45,6 @@ class NonLocalBlockND(nn.Module):
     def forward(self, x):
         """
         :param x: (b, c, t, h, w)
-        :param return_nl_map: if True return z, nl_map, else only return z.
         :return:
         """
 
