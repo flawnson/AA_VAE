@@ -89,7 +89,7 @@ model_tuning_configs = {
         "embedding_gradient": "False",
         "chem_features": "False",
         # "lr": 1.710853307705144e-05,
-        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00000001, 0.00001)),
+        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00000001, 0.001)),
         "weight_decay": 1.4412730806529451e-06,
         "LearningRateScheduler": "CosineWarmRestarts",
         "wrap": "False",
