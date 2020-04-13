@@ -5,7 +5,7 @@
   "batch_size": 500,
   "iteration_freq": 1,
   "chem_features": "False",
-  "epochs": 400,
+  "epochs": 1000,
   "hidden_size": 200,
   "embedding_size": 120
 }

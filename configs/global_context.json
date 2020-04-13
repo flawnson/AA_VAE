@@ -1,11 +1,11 @@
 {
   "model_name": "global_context_vae",
-  "layers": 4,
+  "layers": 1,
   "channels": 16,
-  "kernel_size": 3,
+  "kernel_size": 9,
   "embedding_gradient": "False",
-  "lr": 3e-4,
+  "lr": 1e-2,
   "weight_decay": 1.6459309598386149e-06,
-  "optimizer": "RAdam",
+  "optimizer": "Adam",
   "sched_freq": 400
 }
