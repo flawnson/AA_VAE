@@ -147,7 +147,7 @@ class GlobalContextVAEModel(nn.Module):
         kernel_dimension = model_config["kernel_size"]
         self.triple_encoder = nn.Conv1d(kernel_size=3, in_channels=embeddings_static.shape[1],
                                         out_channels=self.channels, stride=1, padding=1, bias=False)
-        self.triple_decoder = nn.ConvTranspose1d(kernel_size=3, in_channels=self.channels,
+        self.deembed = nn.ConvTranspose1d(kernel_size=3, in_channels=self.channels,
                                                  out_channels=embeddings_static.shape[0], padding=1, bias=False)
         self.protein_embedding = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
         self.protein_embedding.weight.data.copy_(embeddings_static)
@@ -170,7 +170,7 @@ class GlobalContextVAEModel(nn.Module):
     def init_weights(self):
         initrange = 0.1
         self.triple_encoder.weight.data.uniform_(-initrange, initrange)
-        self.triple_decoder.weight.data.uniform_(-initrange, initrange)
+        self.deembed.weight.data.uniform_(-initrange, initrange)
 
     def bottleneck(self, h):
         mu = self.fc1(h)
@@ -186,7 +186,7 @@ class GlobalContextVAEModel(nn.Module):
                 .view(x.shape[0], -1))
         data = self.fc3(z).view(z.shape[0], -1, input_len)
         data = self.resize_channels(torch.cat((data, mask), 1))
-        return self.activation(self.triple_decoder(self.transformer_decoder(data))), mu, log_var
+        return self.activation(self.deembed(self.transformer_decoder(data))), mu, log_var
 
     def representation(self, x):
         x = self.transformer_encoder(self.triple_encoder(self.protein_embedding(x).transpose(1, 2))).view(x.shape[0],
