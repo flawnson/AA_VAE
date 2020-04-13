@@ -41,6 +41,12 @@ def fasta_reader(fasta_name):
     return sequences
 
 
+def read_sequence_from_flat_file(file):
+    with open(file) as f:
+        for line in f:
+            yield line
+
+
 def read_sequences_from_json(file):
     """ Reads and converts valid protein sequences"
     """
@@ -62,10 +68,12 @@ def read_sequences_from_json(file):
 def load_data_from_file(file, filetype="text/json"):
     sequences = []
     if filetype == "text/json":
-        sequences = read_sequences_from_json(file)
+        return read_sequences_from_json(file)
 
     if filetype == "text/fasta":
-        sequences = load_fasta(file)
+        return fasta_reader(file)
+    if filetype == "text/plain":
+        return read_sequence_from_flat_file(file)
     return sequences
 
 
