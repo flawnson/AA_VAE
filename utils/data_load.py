@@ -1,6 +1,7 @@
 import collections
-import os
 import math
+import os
+
 import torch
 from torch.utils.data import DataLoader
 
@@ -41,21 +42,21 @@ def load_data(_config, max_length=-1):
         # pass
         train_dataset, c, score, length_scores = load_from_saved_tensor(pt_file)
     else:
-        train_dataset, c, score, length_scores = __process_sequences(load_data_from_file(train_dataset_name),
-                                                                     max_length, data_length, pad_sequence=True,
-                                                                     fill_itself=False,
-                                                                     sequence_only=True,
-                                                                     add_chemical_features=False, pt_file=pt_file)
+        train_dataset, c, score, length_scores = process_sequences(load_data_from_file(train_dataset_name),
+                                                                   max_length, data_length, pad_sequence=True,
+                                                                   fill_itself=False,
+                                                                   sequence_only=True,
+                                                                   add_chemical_features=False, pt_file=pt_file)
     log.info(f"Loading the sequence for test data: {test_dataset_name}")
     pt_file = f"{test_dataset_name}_{data_length}_{True}_{True}_{max_length}.pt"
     if os.path.exists(pt_file):
         # pass
         test_dataset, ct, scoret, _ = load_from_saved_tensor(pt_file)
     if True:
-        test_dataset, ct, scoret, _ = __process_sequences(load_data_from_file(test_dataset_name),
-                                                          max_length, data_length, pad_sequence=True, fill_itself=False,
-                                                          sequence_only=True,
-                                                          add_chemical_features=False, pt_file=pt_file)
+        test_dataset, ct, scoret, _ = process_sequences(load_data_from_file(test_dataset_name),
+                                                        max_length, data_length, pad_sequence=True, fill_itself=False,
+                                                        sequence_only=True,
+                                                        add_chemical_features=False, pt_file=pt_file)
     log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     _train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, batch_size=batch_size)
@@ -131,8 +132,8 @@ def valid_protein(protein_sequence):
     return True
 
 
-def __process_sequences(sequences, max_length, fixed_protein_length, pad_sequence, fill_itself, sequence_only,
-                        add_chemical_features, pt_file):
+def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence, fill_itself, sequence_only,
+                      add_chemical_features, pt_file=None):
     proteins = []
     c = collections.Counter()
     lengths = []
@@ -141,7 +142,7 @@ def __process_sequences(sequences, max_length, fixed_protein_length, pad_sequenc
         if max_length != -1:
             if i > max_length:
                 break
-
+        protein_sequence = protein_sequence.rstrip("\n")
         if valid_protein(protein_sequence):
             lengths.append(len(protein_sequence))
             protein_sequence = protein_sequence[:fixed_protein_length]
@@ -166,7 +167,7 @@ def __process_sequences(sequences, max_length, fixed_protein_length, pad_sequenc
             continue
         i = i + 1
     length_counter = collections.Counter(lengths)
-    buckets = [0.0] * (fixed_protein_length+1)
+    buckets = [0.0] * (fixed_protein_length + 1)
     averaging_window = 10
     buckets[0] = length_counter.get(0, 0)
     for i in range(averaging_window - 1):
@@ -188,5 +189,6 @@ def __process_sequences(sequences, max_length, fixed_protein_length, pad_sequenc
             scores.append(0)
 
     data = torch.stack(proteins), c, torch.FloatTensor(scores), buckets
-    save_tensor_to_file(pt_file, data)
+    if pt_file is not None:
+        save_tensor_to_file(pt_file, data)
     return data

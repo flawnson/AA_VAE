@@ -199,7 +199,7 @@ class Trainer(LossFunctions):
             train_kl_loss /= self.train_dataset_len
             train_loss = train_kl_loss + train_recon_loss
 
-            info_str = f'Epoch {e}, Train Loss: KL,Recon,total: {train_kl_loss:.3f}, {train_recon_loss:.3f}, ' \
+            info_str = f'Epoch {e}, Train Loss: KL,Recon,total: {train_kl_loss:.5f}, {train_recon_loss:.5f}, ' \
                        f'{train_loss:.3f},' \
                        f' Accuracy: {train_recon_accuracy * 100.0:.2f}%'
 
@@ -207,7 +207,7 @@ class Trainer(LossFunctions):
                 test_kl_loss, test_recon_loss, test_recon_accuracy = self.test()
                 test_kl_loss /= self.test_dataset_len
                 test_recon_loss /= self.test_dataset_len
-                info_str += f' Test Loss: KL,Recon: ({test_kl_loss:.3f}, {test_recon_loss:.3f}),' \
+                info_str += f' Test Loss: KL,Recon: ({test_kl_loss:.5f}, {test_recon_loss:.5f}),' \
                             f' Accuracy: {test_recon_accuracy * 100.0:.2f}%'
 
             if train_recon_accuracy > 0.99:  # and test_recon_accuracy > 0.97:
