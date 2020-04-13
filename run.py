@@ -11,6 +11,17 @@ from utils.logger import log
 from utils.model_factory import create_model
 from utils.training.train import Trainer
 
+
+def get_data_set_default(class_name):
+    if class_name != "mammalian":
+        train_dataset_name = f"data/train_set_{dataset_type}_{data_length}.json"
+        test_dataset_name = f"data/test_set_{dataset_type}_{data_length}.json"
+    else:
+        train_dataset_name = "data/train_set_large_no_ofr_no_trim_1500_mammalian.json"
+        test_dataset_name = "data/test_set_large_no_ofr_no_trim_1500_mammalian.json"
+    return train_dataset_name, test_dataset_name
+
+
 if __name__ == "__main__":
     torch.manual_seed(0)
     parser = argparse.ArgumentParser(description="Config file parser")
@@ -26,15 +37,10 @@ if __name__ == "__main__":
     data_length = config["protein_length"]
     number_of_epochs = config["epochs"]  # times to run the model on complete data
     dataset_type = config["dataset"]  # (small|medium|large)
-
-    if config["class"] != "mammalian":
-        train_dataset_name = f"data/train_set_{dataset_type}_{data_length}.json"
-        test_dataset_name = f"data/test_set_{dataset_type}_{data_length}.json"
-    else:
-        train_dataset_name = "data/train_set_large_no_ofr_no_trim_1500_mammalian.json"
-        test_dataset_name = "data/test_set_large_no_ofr_no_trim_1500_mammalian.json"
-    config["train_dataset_name"] = os.getcwd() + "/" + train_dataset_name
-    config["test_dataset_name"] = os.getcwd() + "/" + test_dataset_name
+    if config.get("train_dataset_name", "") == "":
+        train_dataset_name, test_dataset_name = get_data_set_default(config["class"] != "mammalian")
+        config["train_dataset_name"] = os.getcwd() + "/" + train_dataset_name
+        config["test_dataset_name"] = os.getcwd() + "/" + test_dataset_name
 
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.enabled = True

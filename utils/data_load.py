@@ -30,7 +30,7 @@ def to_categorical(num_classes):
     return categorical
 
 
-def load_data(_config, max_length=-1):
+def load_data(_config: dict, max_length=-1):
     data_length = _config["protein_length"]
     batch_size = _config["batch_size"]  # number of data points in each batch
     train_dataset_name = _config["train_dataset_name"]
@@ -42,21 +42,22 @@ def load_data(_config, max_length=-1):
         # pass
         train_dataset, c, score, length_scores = load_from_saved_tensor(pt_file)
     else:
-        train_dataset, c, score, length_scores = process_sequences(load_data_from_file(train_dataset_name),
-                                                                   max_length, data_length, pad_sequence=True,
-                                                                   fill_itself=False,
-                                                                   sequence_only=True,
-                                                                   add_chemical_features=False, pt_file=pt_file)
+        filetype = _config.get("train_datatype", "text/json")
+
+        train_dataset, c, score, length_scores = process_sequences(
+            load_data_from_file(train_dataset_name, filetype=filetype), max_length,
+            data_length, pad_sequence=True, fill_itself=False,
+            pt_file=pt_file)
     log.info(f"Loading the sequence for test data: {test_dataset_name}")
     pt_file = f"{test_dataset_name}_{data_length}_{True}_{True}_{max_length}.pt"
     if os.path.exists(pt_file):
         # pass
         test_dataset, ct, scoret, _ = load_from_saved_tensor(pt_file)
-    if True:
-        test_dataset, ct, scoret, _ = process_sequences(load_data_from_file(test_dataset_name),
-                                                        max_length, data_length, pad_sequence=True, fill_itself=False,
-                                                        sequence_only=True,
-                                                        add_chemical_features=False, pt_file=pt_file)
+    else:
+        filetype = _config.get("test_datatype", "text/json")
+        test_dataset, ct, scoret, _ = process_sequences(load_data_from_file(test_dataset_name, filetype=filetype),
+                                                        max_length, data_length,
+                                                        pad_sequence=True, fill_itself=False, pt_file=pt_file)
     log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     _train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, batch_size=batch_size)
@@ -132,8 +133,7 @@ def valid_protein(protein_sequence):
     return True
 
 
-def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence, fill_itself, sequence_only,
-                      add_chemical_features, pt_file=None):
+def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence, fill_itself, pt_file=None):
     proteins = []
     c = collections.Counter()
     lengths = []
@@ -151,21 +151,12 @@ def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence,
             if pad_sequence:
                 if len(protein_sequence) < fixed_protein_length:
                     protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
-            else:
-                if fill_itself:
-                    length = len(protein_sequence)
-                    protein_sequence = (protein_sequence * (int(fixed_protein_length / length) + 1))[
-                                       :fixed_protein_length]
-                else:
-                    ValueError("One of fill_itself or pad_sequence should be provided")
-
-            if sequence_only:
-                proteins.append(torch.ByteTensor(one_to_number(protein_sequence)))
-            else:
-                proteins.append(seq_to_one_hot(protein_sequence, add_chemical_features=add_chemical_features))
+            proteins.append(torch.ByteTensor(one_to_number(protein_sequence)))
         else:
             continue
         i = i + 1
+
+    log.info("Size of sequence is {}".format(i))
     length_counter = collections.Counter(lengths)
     buckets = [0.0] * (fixed_protein_length + 1)
     averaging_window = 10
@@ -183,7 +174,7 @@ def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence,
             rarity = length / (20 * c[k])
             if rarity > 5:
                 rarity = 0.25
-            rarity = 1
+            # rarity = 1
             scores.append(rarity)
         else:
             scores.append(0)

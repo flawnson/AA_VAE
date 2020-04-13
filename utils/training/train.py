@@ -250,12 +250,12 @@ class Trainer(LossFunctions):
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise e
-        log.info(f"Writing model to saved_models/{self.model_name}_{accuracy}_{date_time}")
-        torch.save(self.model.state_dict(), f"saved_models/{self.model_name}_{accuracy}_{date_time}")
+        log.info(f"Writing model to saved_models/{self.model_name}_{accuracy}_{date_time}.json")
+        torch.save(self.model.state_dict(), f"saved_models/{self.model_name}_{accuracy}_{date_time}.json")
         #torch.save({
         #    'model_state_dict': self.model.state_dict(),
         #    'optimizer_state_dict': self.optimizer.state_dict()},
         #    f"saved_models/{self.model_name}_{accuracy}_{date_time}")
         confusion_matrix = self.conf_matrix.detach().cpu().numpy()
         from numpy import savetxt
-        savetxt(f"saved_models/conf_matrix_{self.model_name}_{accuracy}_{date_time}", confusion_matrix, delimiter=',')
+        savetxt(f"saved_models/conf_matrix_{self.model_name}_{accuracy}_{date_time}.csv", confusion_matrix, delimiter=',')
