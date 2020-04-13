@@ -110,7 +110,7 @@ class Trainer(LossFunctions):
                 log.debug(
                     "Log10 Max gradient: {}, Min gradient: {}".format(math.log10(max_grad),
                                                                       math.log10(math.fabs(min_grad))))
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 10)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
 
             self.optimizer.step()
             self.optimizer.zero_grad()

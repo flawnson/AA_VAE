@@ -44,7 +44,8 @@ def get_optimizer(optimizer_config: dict, model):
             min_lr = lr * 0.1
             return LearningRateOptim(optimizer, optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer,
                                                                                                T_0=epoch_max,
-                                                                                               eta_min=min_lr))
+                                                                                               eta_min=min_lr,
+                                                                                               T_mult=2))
         else:
             return learning_rate_schedulers[wrapped](optimizer, lr=lr,
                                                      n_warmup_steps=optimizer_config.get("sched_freq", 4000))

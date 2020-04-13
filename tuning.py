@@ -104,7 +104,7 @@ model_tuning_configs = {
         "kernel_size": {"grid_search": [3, 5, 9, 17, 33]},
         "embedding_gradient": "False",
         "lr": tune.sample_from(lambda spec: tune.loguniform(0.00000001, 0.01)),
-        "sched_freq": 400,
+        "sched_freq": 40,
         "weight_decay": 1.6459309598386149e-06,
         "LearningRateScheduler": "CosineWarmRestarts",
         "wrap": "False",
@@ -214,7 +214,7 @@ def tuner(smoke_test: bool, model, config_type):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Config file parser")
     parser.add_argument("-m", "--model",
-                        help="Name of the model, options are : convolutionalBasic, gated_conv, convolutional_old",
+                        help="Name of the model, options are : convolutionalBasic, gated_conv, convolutional_old, gcn",
                         type=str)
     parser.add_argument("-t", "--type", help="Bacteria or mammalian", type=str)
     args = parser.parse_args()

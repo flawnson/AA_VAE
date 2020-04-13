@@ -182,11 +182,13 @@ class GlobalContextVAEModel(nn.Module):
         input_len = x.shape[1]
         mask = x.le(20).unsqueeze(1).float()
         z, mu, log_var = self.bottleneck(
-            self.transformer_encoder(self.triple_encoder(self.protein_embedding(x).transpose(1, 2))).view(x.shape[0], -1))
+            self.transformer_encoder(self.triple_encoder(self.protein_embedding(x).transpose(1, 2)))
+                .view(x.shape[0], -1))
         data = self.fc3(z).view(z.shape[0], -1, input_len)
         data = self.resize_channels(torch.cat((data, mask), 1))
         return self.activation(self.deembed(self.transformer_decoder(data))), mu, log_var
 
     def representation(self, x):
-        x = self.transformer_encoder(self.triple_encoder(self.protein_embedding(x).transpose(1, 2))).view(x.shape[0], -1)
+        x = self.transformer_encoder(self.triple_encoder(self.protein_embedding(x).transpose(1, 2))).view(x.shape[0],
+                                                                                                          -1)
         return self.bottleneck(x)[1]
