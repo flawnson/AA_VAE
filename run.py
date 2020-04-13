@@ -37,8 +37,8 @@ if __name__ == "__main__":
     data_length = config["protein_length"]
     number_of_epochs = config["epochs"]  # times to run the model on complete data
     dataset_type = config["dataset"]  # (small|medium|large)
-    if config.get("train_dataset_name", "") == "":
-        train_dataset_name, test_dataset_name = get_data_set_default(config["class"] != "mammalian")
+    if config.get("train_dataset_name", "NA") == "NA":
+        train_dataset_name, test_dataset_name = get_data_set_default(config["class"])
         config["train_dataset_name"] = os.getcwd() + "/" + train_dataset_name
         config["test_dataset_name"] = os.getcwd() + "/" + test_dataset_name
 

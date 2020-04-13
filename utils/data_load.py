@@ -171,9 +171,9 @@ def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence,
     length = sum(c.values())
     for k in amino_acids:
         if c[k] > 0 and amino_acids_to_byte_map[k] <= 20:
-            rarity = length / (20 * c[k])
+            rarity = length / (21 * c[k])
             if rarity > 5:
-                rarity = 0.25
+                rarity = 0.05
             # rarity = 1
             scores.append(rarity)
         else:
