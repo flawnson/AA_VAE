@@ -137,7 +137,7 @@ class Trainer(LossFunctions):
         iteration_count = 0
         self.train_dataset_len = 0
         for i, x in enumerate(self.train_iterator):
-            self.train_dataset_len += x.shape[0].item()
+            self.train_dataset_len += x.shape[0]
             iteration_count = i
             kl_loss, recon_loss, accuracy = self.__inner_iteration(x, True, i)
             total_loss = recon_loss + kl_loss
@@ -174,7 +174,7 @@ class Trainer(LossFunctions):
         # we don't need to track the gradients, since we are not updating the parameters during evaluation / testing
         with torch.no_grad():
             for i, x in enumerate(self.test_iterator):
-                self.test_dataset_len += x.shape[0].item()
+                self.test_dataset_len += x.shape[0]
                 # update the gradients to zero
                 iteration_count = i
                 kl_loss, recon_loss, accuracy = self.__inner_iteration(x, False, i)

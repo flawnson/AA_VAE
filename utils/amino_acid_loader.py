@@ -190,7 +190,7 @@ def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence,
             if i > max_length:
                 break
         processed = process_sequence(protein_sequence, fixed_protein_length, pad_sequence)
-        if processed:
+        if processed is not None:
             proteins.append(processed)
         i = i + 1
 

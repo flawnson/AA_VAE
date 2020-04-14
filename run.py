@@ -29,6 +29,7 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--multigpu", help="multigpu mode", action="store_true")
     parser.add_argument("-p", "--pretrained", help="pretrained", type=str)
     parser.add_argument("-s", "--save", help="Save the model", action="store_true")
+    parser.add_argument("-l", "--large", help="Dataset is too large for memory", action="store_true")
     args = parser.parse_args()
     config: dict = json.load(open(args.config))
     model_config: dict = json.load(open(args.model))
@@ -46,8 +47,12 @@ if __name__ == "__main__":
 
     log.info("Creating the model")
     model, optimizer, device, model_name = create_model(config, model_config, args.pretrained, args.multigpu)
+
     log.info("Loading the data")
-    train_iterator, test_iterator, c, score, length_scores = load_data(config)
+    if args.large:
+        train_iterator, test_iterator, c, score, length_scores = load_large_data(config)
+    else:
+        train_iterator, test_iterator, c, score, length_scores = load_data(config)
 
     log.info(f"Model config:{model_config}")
     log.info(f"General config:{config}")
