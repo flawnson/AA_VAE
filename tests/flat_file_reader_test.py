@@ -1,7 +1,7 @@
 import unittest
 
 import utils.data.common as common
-import utils.data_load as loader
+import utils.amino_acid_loader as loader
 
 
 class FlatReaderTest(unittest.TestCase):

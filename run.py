@@ -6,7 +6,7 @@ import subprocess
 import torch
 
 import utils.logger as logger
-from utils.data_load import load_data
+from utils.amino_acid_loader import load_data
 from utils.logger import log
 from utils.model_factory import create_model
 from utils.training.train import Trainer

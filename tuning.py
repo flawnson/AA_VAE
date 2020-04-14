@@ -14,7 +14,7 @@ from ray.tune.utils import pin_in_object_store, get_pinned_object
 from torch.utils.data import DataLoader
 
 import utils.data.common
-from utils.data_load import process_sequences
+from utils.amino_acid_loader import process_sequences
 from utils.model_factory import create_model
 from utils.training.train import Trainer
 

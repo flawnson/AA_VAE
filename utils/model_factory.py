@@ -11,7 +11,7 @@ from models.linear_vae import LinearVAE
 from models.lstm_vae import LSTMVae
 from models.transformer_convolutional_vae import TransformerConvVAEModel
 from models.transformer_vae import TransformerModel
-from utils import data_load
+from utils import amino_acid_loader
 from utils.optimisers.learning_rate_optimiser import ScheduledOptim, StepOptim, LearningRateOptim
 from utils.optimisers.rangerlars import RangerLars
 
@@ -69,7 +69,7 @@ def create_model(config, model_config, pretrained_model=None, multigpu=False):
     model = models.get(model_config["model_name"])(
         model_config, config["hidden_size"],
         config["embedding_size"], config["protein_length"], device,
-        data_load.get_embedding_matrix(config["chem_features"] == "True"), model_config["embedding_gradient"] == "True") \
+        amino_acid_loader.get_embedding_matrix(config["chem_features"] == "True"), model_config["embedding_gradient"] == "True") \
         .to(device)
     model_name = model.name
 

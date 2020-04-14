@@ -2,8 +2,10 @@ import errno
 import math
 import os
 import os.path as osp
+
 import numpy
 import torch
+from sklearn.metrics import confusion_matrix
 
 from utils.logger import log
 from utils.training.common import calculate_gradient_stats, reconstruction_accuracy
@@ -70,10 +72,8 @@ class Trainer(LossFunctions):
     def calculate_confusion_matrix(self, predicted, actual, mask):
         actual_sequence = torch.masked_select(actual, mask).detach().cpu().numpy()
         predicted_sequence = torch.masked_select(predicted.argmax(axis=1), mask).detach().cpu().numpy()
-        from sklearn.metrics import confusion_matrix
         conf_mat = confusion_matrix(actual_sequence, predicted_sequence, labels=[x for x in range(self.vocab_size)])
         self.conf_matrix += conf_mat
-        # self.conf_matrix[actual_sequence, predicted_sequence] += 1
 
     def __inner_iteration(self, x, training: bool, i):
         """

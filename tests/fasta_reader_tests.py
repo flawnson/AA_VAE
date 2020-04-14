@@ -1,7 +1,7 @@
 import unittest
 
 import utils.data.common
-import utils.data_load as dataloader
+import utils.amino_acid_loader as dataloader
 from utils.logger import log
 
 
