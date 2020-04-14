@@ -47,7 +47,6 @@ if __name__ == "__main__":
 
     log.info("Creating the model")
     model, optimizer, device, model_name = create_model(config, model_config, args.pretrained, args.multigpu)
-
     log.info("Loading the data")
     train_dataset, test_dataset, train_iterator, test_iterator, c, score, length_scores = load_data(config)
 

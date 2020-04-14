@@ -104,6 +104,7 @@ def one_to_number(res_str):
 
 
 def get_embedding_matrix(features: bool = True):
+    log.info("Generating embedding matrix, with chemical features: {}".format(features))
     return seq_to_one_hot(amino_acids, features)
 
 
