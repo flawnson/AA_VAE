@@ -20,8 +20,8 @@ class Trainer(LossFunctions):
     Embeddings are nto generated using this method.
     """
 
-    def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer, train_dataset_length,
-                 test_dataset_length, n_epochs, loss_function_name="smoothened", vocab_size=23, patience_count=1000,
+    def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
+                 n_epochs, loss_function_name="smoothened", vocab_size=23, patience_count=1000,
                  weights=None, model_name="default", save_best=True, length_stats=None):
         """
 
@@ -41,8 +41,8 @@ class Trainer(LossFunctions):
         :param model_name: The generic name of the model
         """
         super().__init__(device, weights, length_stats)
-        log.info(f"Name: {model_name} Length:{data_length} trainDatasetLength:{train_dataset_length} "
-                 f"testDataSetLength:{test_dataset_length} Epochs:{n_epochs}")
+        log.info(f"Name: {model_name} Length:{data_length}"
+                 f"Epochs:{n_epochs}")
         log.info(f"LossFunction:{loss_function_name} VocabSize:{vocab_size} PatienceCount:{patience_count} ")
 
         loss_functions = {
@@ -59,8 +59,8 @@ class Trainer(LossFunctions):
         self.test_iterator = test_iterator
         self.device = device
         self.optimizer = optimizer
-        self.train_dataset_len = train_dataset_length
-        self.test_dataset_len = test_dataset_length
+        self.train_dataset_len = 0
+        self.test_dataset_len = 0
 
         self.n_epochs = n_epochs
         self.vocab_size = vocab_size
@@ -134,8 +134,11 @@ class Trainer(LossFunctions):
         train_recon_loss = 0
         recon_accuracy = 0
         valid_loop = True
-
+        iteration_count = 0
+        self.train_dataset_len = 0
         for i, x in enumerate(self.train_iterator):
+            self.train_dataset_len += x.shape[0].item()
+            iteration_count = i
             kl_loss, recon_loss, accuracy = self.__inner_iteration(x, True, i)
             total_loss = recon_loss + kl_loss
             if math.isnan(total_loss):
@@ -152,7 +155,7 @@ class Trainer(LossFunctions):
                     acc = acc / i
 
                 log.debug("KL: {} Recon:{} Accuracy:{}".format(train_kl_loss, train_recon_loss, acc * 100))
-        return train_kl_loss, train_recon_loss, recon_accuracy / len(self.train_iterator), valid_loop
+        return train_kl_loss, train_recon_loss, recon_accuracy / iteration_count, valid_loop
 
     def test(self):
         """
@@ -166,12 +169,14 @@ class Trainer(LossFunctions):
         test_kl_loss = 0
         test_recon_loss = 0
         test_accuracy = 0.0
-
+        iteration_count = 0
+        self.test_dataset_len = 0
         # we don't need to track the gradients, since we are not updating the parameters during evaluation / testing
         with torch.no_grad():
             for i, x in enumerate(self.test_iterator):
+                self.test_dataset_len += x.shape[0].item()
                 # update the gradients to zero
-
+                iteration_count = i
                 kl_loss, recon_loss, accuracy = self.__inner_iteration(x, False, i)
 
                 # backward pass
@@ -179,7 +184,7 @@ class Trainer(LossFunctions):
                 test_recon_loss += recon_loss
                 test_accuracy += accuracy
 
-        return test_kl_loss, test_recon_loss, test_accuracy / len(self.test_iterator)
+        return test_kl_loss, test_recon_loss, test_accuracy / iteration_count
 
     def trainer(self):
         """
