@@ -33,8 +33,8 @@ def to_categorical(num_classes):
 def load_data(_config: dict, max_length=-1):
     data_length = _config["protein_length"]
     batch_size = _config["batch_size"]  # number of data points in each batch
-    train_dataset_name = _config["train_dataset_name"]
-    test_dataset_name = _config["test_dataset_name"]
+    train_dataset_name = os.getcwd() + "/" + _config["train_dataset_name"]
+    test_dataset_name = os.getcwd() + "/" + _config["test_dataset_name"]
 
     log.info(f"Loading the sequence for train data: {train_dataset_name} and test data: {test_dataset_name}")
     pt_file = f"{train_dataset_name}_{data_length}_{True}_{True}_{max_length}.pt"
