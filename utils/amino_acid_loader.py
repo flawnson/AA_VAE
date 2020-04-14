@@ -178,6 +178,8 @@ def process_sequence(protein_sequence, fixed_protein_length=1500, pad_sequence=T
             if len(protein_sequence) < fixed_protein_length:
                 protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
         return torch.ByteTensor(one_to_number(protein_sequence))
+    log.error("Invalid sequence found, exiting")
+    exit(-1)
     return None
 
 

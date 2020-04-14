@@ -41,8 +41,7 @@ class Trainer(LossFunctions):
         :param model_name: The generic name of the model
         """
         super().__init__(device, weights, length_stats)
-        log.info(f"Name: {model_name} Length:{data_length}"
-                 f"Epochs:{n_epochs}")
+        log.info(f"Name: {model_name} Length:{data_length} Epochs:{n_epochs}")
         log.info(f"LossFunction:{loss_function_name} VocabSize:{vocab_size} PatienceCount:{patience_count} ")
 
         loss_functions = {
@@ -104,7 +103,8 @@ class Trainer(LossFunctions):
 
         # backward pass
         if training:
-            total_loss.backward()
+            if not math.isnan(total_loss):
+                total_loss.backward()
             if (i % 1000) == 0:
                 # log.debug(
                 #    "KL: {} Recon:{} Total:{} Accuracy:{}".format(kl_loss.item(), recon_loss.item(), total_loss.item(),
@@ -113,7 +113,7 @@ class Trainer(LossFunctions):
                 log.debug(
                     "Log10 Max gradient: {}, Min gradient: {}".format(math.log10(max_grad),
                                                                       math.log10(math.fabs(min_grad))))
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 50)
 
             self.optimizer.step()
             self.optimizer.zero_grad()
