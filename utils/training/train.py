@@ -2,7 +2,7 @@ import errno
 import math
 import os
 import os.path as osp
-
+import numpy
 import torch
 
 from utils.logger import log
@@ -65,12 +65,15 @@ class Trainer(LossFunctions):
         self.patience_count = patience_count
         self.criterion = loss_functions[loss_function_name]
         self.save_model = save_best
-        self.conf_matrix = torch.zeros([self.vocab_size, self.vocab_size]).to(self.device)
+        self.conf_matrix = numpy.zeros([self.vocab_size, self.vocab_size])
 
     def confusion_matrix(self, predicted, actual, mask):
-        actual_sequence = torch.masked_select(actual, mask)
-        predicted_sequence = torch.masked_select(predicted.argmax(axis=1), mask)
-        self.conf_matrix[actual_sequence, predicted_sequence] += 1
+        actual_sequence = torch.masked_select(actual, mask).detach().cpu().numpy()
+        predicted_sequence = torch.masked_select(predicted.argmax(axis=1), mask).detach().cpu().numpy()
+        from sklearn.metrics import confusion_matrix
+        conf_mat = confusion_matrix(actual_sequence, predicted_sequence, labels=[x for x in range(self.vocab_size+1)])
+        self.conf_matrix += conf_mat
+        # self.conf_matrix[actual_sequence, predicted_sequence] += 1
 
     def __inner_iteration(self, x, training: bool, i):
         """
