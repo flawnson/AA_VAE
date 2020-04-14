@@ -59,6 +59,7 @@ def load_data(_config: dict, max_length=-1):
         train_dataset, c, score, length_scores = load_from_saved_tensor(pt_file)
     else:
         filetype = _config.get("train_datatype", "text/json")
+
         train_dataset, c, score, length_scores = process_sequences(
             load_data_from_file(train_dataset_name, filetype=filetype), max_length,
             data_length, pad_sequence=True, fill_itself=False,
