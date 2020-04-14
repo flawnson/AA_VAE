@@ -4,6 +4,7 @@ import os
 
 import torch
 from torch.utils.data import DataLoader
+from torch.utils.data.dataset import IterableDataset
 
 from utils.data.common import save_tensor_to_file, load_data_from_file, load_from_saved_tensor
 from utils.logger import log
@@ -19,6 +20,21 @@ VOCABULARY_SIZE = len(amino_acids)
 
 amino_acids_to_byte_map = {r: amino_acids.index(r) for r in amino_acids}
 amino_acids_set = {r for r in amino_acids}
+
+
+class ProteinIterableDataset(IterableDataset):
+
+    def __init__(self, filename, protein_length):
+        self.filename = filename
+        self.length = protein_length
+
+    def __process_one_seq(self, sequence):
+        return process_sequence(sequence, self.length)
+
+    def __iter__(self):
+        file_itr = open(self.filename)
+        mapped_itr = map(self.__process_one_seq, file_itr)
+        return mapped_itr
 
 
 def to_categorical(num_classes):
@@ -43,7 +59,6 @@ def load_data(_config: dict, max_length=-1):
         train_dataset, c, score, length_scores = load_from_saved_tensor(pt_file)
     else:
         filetype = _config.get("train_datatype", "text/json")
-
         train_dataset, c, score, length_scores = process_sequences(
             load_data_from_file(train_dataset_name, filetype=filetype), max_length,
             data_length, pad_sequence=True, fill_itself=False,
@@ -61,7 +76,26 @@ def load_data(_config: dict, max_length=-1):
     log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     _train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, batch_size=batch_size)
-    return train_dataset, test_dataset, _train_iterator, _test_iterator, c, score, length_scores
+    return _train_iterator, _test_iterator, c, score, length_scores
+
+
+def load_large_data(config: dict):
+    data_length = config["protein_length"]
+    batch_size = config["batch_size"]  # number of data points in each batch
+    train_dataset_name = os.getcwd() + "/" + config["train_dataset_name"]
+    test_dataset_name = os.getcwd() + "/" + config["test_dataset_name"]
+
+    plateau_weights = [0]
+    plateau_weights.extend([1] * 20)
+    plateau_weights.extend([0, 0])
+    log.info(f"Loading the sequence for train data: {train_dataset_name} and test data: {test_dataset_name}")
+    train_dataset_iter = ProteinIterableDataset(train_dataset_name, data_length)
+    log.info(f"Loading the sequence for test data: {test_dataset_name}")
+    test_dataset = ProteinIterableDataset(test_dataset_name, data_length)
+    log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
+    _train_iterator = DataLoader(train_dataset_iter, shuffle=False, batch_size=batch_size)
+    _test_iterator = DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
+    return _train_iterator, _test_iterator, None, plateau_weights, None
 
 
 def aa_features():
@@ -133,6 +167,18 @@ def valid_protein(protein_sequence):
     return True
 
 
+def process_sequence(protein_sequence, fixed_protein_length=1500, pad_sequence=True):
+    protein_sequence = protein_sequence.rstrip("\n")
+    if valid_protein(protein_sequence):
+        protein_sequence = protein_sequence[:fixed_protein_length]
+        # pad sequence
+        if pad_sequence:
+            if len(protein_sequence) < fixed_protein_length:
+                protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
+        return torch.ByteTensor(one_to_number(protein_sequence))
+    return None
+
+
 def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence, fill_itself, pt_file=None):
     proteins = []
     c = collections.Counter()
@@ -142,18 +188,9 @@ def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence,
         if max_length != -1:
             if i > max_length:
                 break
-        protein_sequence = protein_sequence.rstrip("\n")
-        if valid_protein(protein_sequence):
-            lengths.append(len(protein_sequence))
-            protein_sequence = protein_sequence[:fixed_protein_length]
-            c.update(protein_sequence)
-            # pad sequence
-            if pad_sequence:
-                if len(protein_sequence) < fixed_protein_length:
-                    protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
-            proteins.append(torch.ByteTensor(one_to_number(protein_sequence)))
-        else:
-            continue
+        processed = process_sequence(protein_sequence, fixed_protein_length, pad_sequence)
+        if processed:
+            proteins.append(processed)
         i = i + 1
 
     log.info("Size of sequence is {}".format(i))
