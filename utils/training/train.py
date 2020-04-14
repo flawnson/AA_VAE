@@ -67,11 +67,11 @@ class Trainer(LossFunctions):
         self.save_model = save_best
         self.conf_matrix = numpy.zeros([self.vocab_size, self.vocab_size])
 
-    def confusion_matrix(self, predicted, actual, mask):
+    def calculate_confusion_matrix(self, predicted, actual, mask):
         actual_sequence = torch.masked_select(actual, mask).detach().cpu().numpy()
         predicted_sequence = torch.masked_select(predicted.argmax(axis=1), mask).detach().cpu().numpy()
         from sklearn.metrics import confusion_matrix
-        conf_mat = confusion_matrix(actual_sequence, predicted_sequence, labels=[x for x in range(self.vocab_size+1)])
+        conf_mat = confusion_matrix(actual_sequence, predicted_sequence, labels=[x for x in range(self.vocab_size)])
         self.conf_matrix += conf_mat
         # self.conf_matrix[actual_sequence, predicted_sequence] += 1
 
@@ -118,7 +118,7 @@ class Trainer(LossFunctions):
             self.optimizer.step()
             self.optimizer.zero_grad()
         else:
-            self.confusion_matrix(predicted, x, mask)
+            self.calculate_confusion_matrix(predicted, x, mask)
 
         return kl_loss.item(), recon_loss.item(), recon_accuracy
 
@@ -190,13 +190,12 @@ class Trainer(LossFunctions):
         patience_counter = 0
         train_recon_accuracy = -1
         for e in range(self.n_epochs):
-
+            if e % 5 == 0:
+                self.conf_matrix = numpy.zeros([self.vocab_size, self.vocab_size])
             train_kl_loss, train_recon_loss, train_recon_accuracy, valid = self.train()
             if not valid:
                 log.error("Loop breaking as the loss was nan")
                 break
-            if e % 5 == 0:
-                self.conf_matrix = torch.zeros([self.vocab_size, self.vocab_size]).to(self.device)
 
             train_recon_loss /= self.train_dataset_len
             train_kl_loss /= self.train_dataset_len
@@ -255,10 +254,10 @@ class Trainer(LossFunctions):
                 raise e
         log.info(f"Writing model to saved_models/{self.model_name}_{accuracy}_{date_time}.json")
         torch.save(self.model.state_dict(), f"saved_models/{self.model_name}_{accuracy}_{date_time}.json")
-        #torch.save({
+        # torch.save({
         #    'model_state_dict': self.model.state_dict(),
         #    'optimizer_state_dict': self.optimizer.state_dict()},
         #    f"saved_models/{self.model_name}_{accuracy}_{date_time}")
-        confusion_matrix = self.conf_matrix.detach().cpu().numpy()
         from numpy import savetxt
-        savetxt(f"saved_models/conf_matrix_{self.model_name}_{accuracy}_{date_time}.csv", confusion_matrix, delimiter=',')
+        savetxt(f"saved_models/conf_matrix_{self.model_name}_{accuracy}_{date_time}.csv", X=self.conf_matrix,
+                delimiter=',')
