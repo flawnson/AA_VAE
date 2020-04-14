@@ -1,6 +1,5 @@
 import argparse
 import json
-import os
 import subprocess
 
 import torch
@@ -36,11 +35,11 @@ if __name__ == "__main__":
     logger.set_file_logger()
     data_length = config["protein_length"]
     number_of_epochs = config["epochs"]  # times to run the model on complete data
-    dataset_type = config["dataset"]  # (small|medium|large)
     if config.get("train_dataset_name", "NA") == "NA":
+        dataset_type = config["dataset"]  # (small|medium|large)
         train_dataset_name, test_dataset_name = get_data_set_default(config["class"])
-        config["train_dataset_name"] = os.getcwd() + "/" + train_dataset_name
-        config["test_dataset_name"] = os.getcwd() + "/" + test_dataset_name
+        config["train_dataset_name"] = train_dataset_name
+        config["test_dataset_name"] = test_dataset_name
 
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.enabled = True
