@@ -92,7 +92,15 @@ def load_large_data(config: dict):
     log.info(f"Loading the sequence for train data: {train_dataset_name} and test data: {test_dataset_name}")
     train_dataset_iter = ProteinIterableDataset(train_dataset_name, data_length)
     log.info(f"Loading the sequence for test data: {test_dataset_name}")
-    test_dataset = ProteinIterableDataset(test_dataset_name, data_length)
+    pt_file = f"{test_dataset_name}_{data_length}_{True}_{True}.pt"
+    if os.path.exists(pt_file):
+        # pass
+        test_dataset, ct, scoret, _ = load_from_saved_tensor(pt_file)
+    else:
+        filetype = config.get("test_datatype", "text/json")
+        test_dataset, ct, scoret, _ = process_sequences(load_data_from_file(test_dataset_name, filetype=filetype),
+                                                    -1, data_length,
+                                                    pad_sequence=True, fill_itself=False, pt_file=pt_file)
     log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     _train_iterator = DataLoader(train_dataset_iter, shuffle=False, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
@@ -171,6 +179,8 @@ def valid_protein(protein_sequence):
 
 def process_sequence(protein_sequence, fixed_protein_length=1500, pad_sequence=True):
     protein_sequence = protein_sequence.rstrip("\n")
+    if len(protein_sequence) == 0:
+        log.error("No data in sequence")
     if valid_protein(protein_sequence):
         protein_sequence = protein_sequence[:fixed_protein_length]
         # pad sequence

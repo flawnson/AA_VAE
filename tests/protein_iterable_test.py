@@ -1,8 +1,6 @@
 import unittest
 
-import utils.amino_acid_loader
 import utils.amino_acid_loader as dataloader
-from utils.logger import log
 
 
 class FastaReaderTest(unittest.TestCase):
@@ -11,8 +9,7 @@ class FastaReaderTest(unittest.TestCase):
         i = 0
         iterator = loader.__iter__()
         for x in iterator:
-            i = i+1
-            if (i%10000)==0:
+            i = i + 1
+            if (i % 10000) == 0:
                 print(i)
         assert True
-

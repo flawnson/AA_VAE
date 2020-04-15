@@ -145,7 +145,7 @@ class Trainer(LossFunctions):
         self.train_dataset_len = 0
         for i, x in enumerate(self.train_iterator):
             self.train_dataset_len += x.shape[0]
-            iteration_count = i
+            iteration_count = i+1
             kl_loss, recon_loss, accuracy = self.__inner_iteration(x, True, i)
             total_loss = recon_loss + kl_loss
             if math.isnan(total_loss):
@@ -183,7 +183,7 @@ class Trainer(LossFunctions):
             for i, x in enumerate(self.test_iterator):
                 self.test_dataset_len += x.shape[0]
                 # update the gradients to zero
-                iteration_count = i
+                iteration_count = i+1
                 kl_loss, recon_loss, accuracy = self.__inner_iteration(x, False, i)
 
                 # backward pass
