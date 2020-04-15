@@ -67,6 +67,7 @@ class TransformerEncoderLayer(nn.Module):
             ConvolutionalBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalBlock(in_c=out_c, out_c=channels, padded=True, kernel_size=kernel_size),
         )
+        self.gamma = nn.Parameter(torch.zeros(1))
 
     def forward(self, src):
         r"""Pass the input through the encoder layer.
@@ -77,7 +78,7 @@ class TransformerEncoderLayer(nn.Module):
             see the docs in Transformer class.
         """
         residual = src
-        src2 = self.spatial_attention(src)
+        src2 = self.gamma*self.spatial_attention(src)
         src = src + self.dropout1(src2)
         src = self.channel_attention(src) + residual
         return src
@@ -116,6 +117,7 @@ class TransformerDecoderLayer(nn.Module):
             ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=channels, padded=True, kernel_size=kernel_size)
         )
+        self.gamma = nn.Parameter(torch.zeros(1))
 
     def forward(self, src):
         r"""Pass the input through the encoder layer.
@@ -128,8 +130,8 @@ class TransformerDecoderLayer(nn.Module):
         """
         residual = src
         src = self.channel_attention(src)
-        src2 = self.spatial_attention(src)
-        src = self.dropout1(src2) + residual
+        src2 = self.gamma *self.spatial_attention(src)
+        src =  self.dropout1(src2) + residual
         return src
 
 

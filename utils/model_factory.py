@@ -32,14 +32,14 @@ def get_optimizer(optimizer_config: dict, model):
     weight_decay = optimizer_config["weight_decay"]
     optimizer = optimisers.get(optimizer_config.get("optimizer", "Adam"))(model.parameters(), lr=lr,
                                                                           weight_decay=weight_decay)
-    wrapped = optimizer_config.get("LearningRateScheduler", "False")
-    if wrapped != "False":
-        if wrapped == "Cosine":
+    scheduler = optimizer_config.get("LearningRateScheduler", "False")
+    if scheduler != "False":
+        if scheduler == "Cosine":
             epoch_max = optimizer_config.get("sched_freq", 4000)
             min_lr = lr * 0.01
             return LearningRateOptim(optimizer, optim.lr_scheduler.CosineAnnealingLR(optimizer,
                                                                                      T_max=epoch_max, eta_min=min_lr))
-        if wrapped == "CosineWarmRestarts":
+        if scheduler == "CosineWarmRestarts":
             epoch_max = optimizer_config.get("sched_freq", 4000)
             min_lr = lr * 0.01
             return LearningRateOptim(optimizer, optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer,
@@ -47,7 +47,7 @@ def get_optimizer(optimizer_config: dict, model):
                                                                                                eta_min=min_lr,
                                                                                                T_mult=1))
         else:
-            return learning_rate_schedulers[wrapped](optimizer, lr=lr,
+            return learning_rate_schedulers[scheduler](optimizer, lr=lr,
                                                      n_warmup_steps=optimizer_config.get("sched_freq", 4000))
     else:
         return optimizer

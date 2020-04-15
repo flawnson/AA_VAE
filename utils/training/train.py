@@ -105,15 +105,22 @@ class Trainer(LossFunctions):
         if training:
             if not math.isnan(total_loss):
                 total_loss.backward()
+            else:
+                v1 = torch.isnan(x).any()
+                v2 = torch.isnan(predicted).any()
+                v3 = torch.isnan(mu).any()
+                v4 = torch.isnan(var).any()
+                log.error("kl: {} recon: {} x:{} predicted:{} mu:{} var:{}".format(kl_loss, recon_loss, v1, v2, v3, v4))
+                recon_loss = self.criterion(predicted, x)
             if (i % 1000) == 0:
                 # log.debug(
                 #    "KL: {} Recon:{} Total:{} Accuracy:{}".format(kl_loss.item(), recon_loss.item(), total_loss.item(),
                 #                                                   recon_accuracy))
                 max_grad, min_grad = calculate_gradient_stats(self.model.parameters())
                 log.debug(
-                    "Log10 Max gradient: {}, Min gradient: {}".format(math.log10(max_grad),
-                                                                      math.log10(math.fabs(min_grad))))
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 50)
+                    "Log10 Max gradient: {}, Min gradient: {}".format((max_grad),
+                                                                      (math.fabs(min_grad))))
+            # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 500)
 
             self.optimizer.step()
             self.optimizer.zero_grad()
@@ -149,7 +156,7 @@ class Trainer(LossFunctions):
             train_kl_loss += kl_loss
             train_recon_loss += recon_loss
             recon_accuracy += accuracy
-            if (i % 1000) == 0:
+            if (i % 100) == 0:
                 acc = recon_accuracy
                 if i != 0:
                     acc = acc / i

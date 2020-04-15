@@ -86,9 +86,9 @@ def load_large_data(config: dict):
     train_dataset_name = os.getcwd() + "/" + config["train_dataset_name"]
     test_dataset_name = os.getcwd() + "/" + config["test_dataset_name"]
 
-    plateau_weights = [0]
-    plateau_weights.extend([1] * 20)
-    plateau_weights.extend([0, 0])
+    plateau_weights = [0.0]
+    plateau_weights.extend([1.0] * 20)
+    plateau_weights.extend([0.0, 0.0])
     log.info(f"Loading the sequence for train data: {train_dataset_name} and test data: {test_dataset_name}")
     train_dataset_iter = ProteinIterableDataset(train_dataset_name, data_length)
     log.info(f"Loading the sequence for test data: {test_dataset_name}")
@@ -96,7 +96,7 @@ def load_large_data(config: dict):
     log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     _train_iterator = DataLoader(train_dataset_iter, shuffle=False, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
-    return _train_iterator, _test_iterator, None, plateau_weights, None
+    return _train_iterator, _test_iterator, None, torch.FloatTensor(plateau_weights), None
 
 
 def aa_features():
@@ -178,9 +178,8 @@ def process_sequence(protein_sequence, fixed_protein_length=1500, pad_sequence=T
             if len(protein_sequence) < fixed_protein_length:
                 protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
         return torch.ByteTensor(one_to_number(protein_sequence))
-    log.error("Invalid sequence found, exiting")
-    exit(-1)
-    return None
+    log.error("Invalid sequence found{}, exiting".format(protein_sequence))
+    return "0" * fixed_protein_length
 
 
 def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence, fill_itself, pt_file=None):

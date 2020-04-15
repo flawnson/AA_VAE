@@ -12,7 +12,8 @@ class LossFunctions:
 
     def smoothened_loss(self, pred, actual, epsilon=0.1):
         istarget = actual.le(20)  # (1. - actual.eq(Constants.PAD).float()).contiguous().view(-1)
-
+        target_count = torch.sum(istarget, dim=1)
+        target_count[target_count == 0] = 1
         actual_one_hot = torch.zeros(*pred.size(), requires_grad=False).to(self.device)
         actual_one_hot = actual_one_hot.scatter_(1, actual.unsqueeze(1).data, 1)
 
@@ -21,7 +22,7 @@ class LossFunctions:
         pred_probs = F.log_softmax(pred, dim=-1)
 
         loss = -torch.sum(actual_smoothed * pred_probs, dim=1)
-        mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / torch.sum(istarget, dim=1))
+        mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / target_count)
 
         return mean_loss
 
