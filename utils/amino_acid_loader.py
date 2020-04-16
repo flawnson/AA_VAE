@@ -197,13 +197,13 @@ def process_sequence(protein_sequence, fixed_protein_length=1500, pad_sequence=T
 
 
 def calculate_bucket_cost(length_counter: collections.Counter, fixed_protein_length, window):
-    values = [0.0] * fixed_protein_length
-    for i in range(fixed_protein_length):
+    values = [0.0] * (fixed_protein_length + 2)
+    for i in range(fixed_protein_length + 1):
         for j in range(-window, window + 1):
             values[i] = values[i] + length_counter.get(i + j, 0)
-        if values[i] ==0:
+        if values[i] == 0:
             values[i] = 1
-        values[i] = (2 * window + 1) / values[i]
+        values[i] = values[i] / (2 * window + 1)
 
     return values
 
@@ -247,6 +247,6 @@ def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence,
             scores.append(0)
 
     data = torch.stack(proteins), c, torch.FloatTensor(scores), buckets
-    if pt_file is not None:
-        save_tensor_to_file(pt_file, data)
+    # if pt_file is not None:
+    #     save_tensor_to_file(pt_file, data)
     return data
