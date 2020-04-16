@@ -126,8 +126,9 @@ class TransformerDecoderLayer(nn.Module):
             see the docs in Transformer class.
         """
         residual = src
-        src = self.channel_attention(src)
-        src = self.dropout1(self.spatial_attention(src)) + residual
+        src = self.channel_attention(src) + residual
+        src2 = self.spatial_attention(src)
+        src = src + self.dropout1(src2)
         return src
 
 
