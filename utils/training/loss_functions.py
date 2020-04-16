@@ -36,8 +36,9 @@ class LossFunctions:
 
         pred_probs = F.log_softmax(predicted, dim=-1)
 
+        weights = self.length_stats[torch.sum(istarget, dim =1)]
         loss = -torch.sum(actual_smoothed * pred_probs, dim=1)
-        mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / self.length_stats[torch.sum(istarget, dim=1)])
+        mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / weights)
 
         return mean_loss
 

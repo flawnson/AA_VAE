@@ -1,12 +1,11 @@
 import collections
-import math
 import os
 
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import IterableDataset
 
-from utils.data.common import save_tensor_to_file, load_data_from_file, load_from_saved_tensor
+from utils.data.common import load_data_from_file, load_from_saved_tensor
 from utils.logger import log
 
 """
@@ -99,8 +98,8 @@ def load_large_data(config: dict):
     else:
         filetype = config.get("test_datatype", "text/json")
         test_dataset, ct, scoret, _ = process_sequences(load_data_from_file(test_dataset_name, filetype=filetype),
-                                                    -1, data_length,
-                                                    pad_sequence=True, fill_itself=False, pt_file=pt_file)
+                                                        -1, data_length,
+                                                        pad_sequence=True, fill_itself=False, pt_file=pt_file)
     log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     _train_iterator = DataLoader(train_dataset_iter, shuffle=False, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
@@ -181,7 +180,12 @@ def process_sequence(protein_sequence, fixed_protein_length=1500, pad_sequence=T
     protein_sequence = protein_sequence.rstrip("\n")
     if len(protein_sequence) == 0:
         log.error("No data in sequence")
+    lengths = []
     if valid_protein(protein_sequence):
+        length = len(protein_sequence)
+        if length > 200:
+            length = 200
+        lengths.append(length)
         protein_sequence = protein_sequence[:fixed_protein_length]
         # pad sequence
         if pad_sequence:
@@ -192,15 +196,33 @@ def process_sequence(protein_sequence, fixed_protein_length=1500, pad_sequence=T
     return "0" * fixed_protein_length
 
 
+def calculate_bucket_cost(length_counter: collections.Counter, fixed_protein_length, window):
+    values = [0.0] * fixed_protein_length
+    for i in range(fixed_protein_length):
+        for j in range(-window, window + 1):
+            values[i] = values[i] + length_counter.get(i + j, 0)
+        if values[i] ==0:
+            values[i] = 1
+        values[i] = (2 * window + 1) / values[i]
+
+    return values
+
+
 def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence, fill_itself, pt_file=None):
     proteins = []
     c = collections.Counter()
     lengths = []
     i = 0
+    lengths = []
     for protein_sequence in sequences:
         if max_length != -1:
             if i > max_length:
                 break
+        if valid_protein(protein_sequence):
+            length = len(protein_sequence)
+            if length > 200:
+                length = 200
+            lengths.append(length)
         processed = process_sequence(protein_sequence, fixed_protein_length, pad_sequence)
         if processed is not None:
             proteins.append(processed)
@@ -208,16 +230,11 @@ def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence,
 
     log.info("Size of sequence is {}".format(i))
     length_counter = collections.Counter(lengths)
-    buckets = [0.0] * (fixed_protein_length + 1)
     averaging_window = 10
-    buckets[0] = length_counter.get(0, 0)
-    for i in range(averaging_window - 1):
-        buckets[i + 1] = buckets[i] + length_counter.get(i + 1, 0)
-    for i in range(averaging_window, fixed_protein_length):
-        buckets[i] = buckets[i - 1] + length_counter.get(i, 1) - length_counter.get(i - averaging_window, 1)
-    for i in range(len(buckets)):
-        buckets[i] = math.sqrt(buckets[i] / averaging_window)
+    window = int(averaging_window / 2)
+
     scores = []
+    buckets = calculate_bucket_cost(length_counter, fixed_protein_length, window)
     # length = sum(c.values())
     for k in amino_acids:
         if c[k] > 0 and amino_acids_to_byte_map[k] <= 20:
