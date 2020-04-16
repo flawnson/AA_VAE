@@ -67,7 +67,6 @@ class TransformerEncoderLayer(nn.Module):
             ConvolutionalBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalBlock(in_c=out_c, out_c=channels, padded=True, kernel_size=kernel_size),
         )
-        self.gamma = nn.Parameter(torch.zeros(1))
 
     def forward(self, src):
         r"""Pass the input through the encoder layer.
@@ -78,8 +77,7 @@ class TransformerEncoderLayer(nn.Module):
             see the docs in Transformer class.
         """
         residual = src
-        src2 = self.gamma*self.spatial_attention(src)
-        src = src + self.dropout1(src2)
+        src = src + self.dropout1(self.spatial_attention(src))
         src = self.channel_attention(src) + residual
         return src
 
@@ -117,7 +115,6 @@ class TransformerDecoderLayer(nn.Module):
             ConvolutionalTransposeBlock(in_c=out_c, out_c=out_c, padded=True, kernel_size=kernel_size),
             ConvolutionalTransposeBlock(in_c=out_c, out_c=channels, padded=True, kernel_size=kernel_size)
         )
-        self.gamma = nn.Parameter(torch.zeros(1))
 
     def forward(self, src):
         r"""Pass the input through the encoder layer.
@@ -130,8 +127,7 @@ class TransformerDecoderLayer(nn.Module):
         """
         residual = src
         src = self.channel_attention(src)
-        src2 = self.gamma *self.spatial_attention(src)
-        src =  self.dropout1(src2) + residual
+        src = self.dropout1(self.spatial_attention(src)) + residual
         return src
 
 
@@ -150,7 +146,7 @@ class GlobalContextVAEModel(nn.Module):
         self.triple_encoder = nn.Conv1d(kernel_size=3, in_channels=embeddings_static.shape[1],
                                         out_channels=self.channels, stride=1, padding=1, bias=False)
         self.deembed = nn.ConvTranspose1d(kernel_size=3, in_channels=self.channels,
-                                                 out_channels=embeddings_static.shape[0], padding=1, bias=False)
+                                          out_channels=embeddings_static.shape[0], padding=1, bias=False)
         self.protein_embedding = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
         self.protein_embedding.weight.data.copy_(embeddings_static)
         self.protein_embedding.weight.requires_grad = False

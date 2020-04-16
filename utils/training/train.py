@@ -161,7 +161,7 @@ class Trainer(LossFunctions):
                 if i != 0:
                     acc = acc / i
 
-                log.debug("KL: {} Recon:{} Accuracy:{}".format(train_kl_loss, train_recon_loss, acc * 100))
+                log.debug("KL: {} Recon:{} Accuracy:{} {}".format(train_kl_loss, train_recon_loss, acc * 100, accuracy))
         return train_kl_loss, train_recon_loss, recon_accuracy / iteration_count, valid_loop
 
     def test(self):

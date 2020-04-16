@@ -23,7 +23,7 @@ class LossFunctions:
 
         loss = -torch.sum(actual_smoothed * pred_probs, dim=1)
         mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / target_count)
-
+        del loss, istarget, target_count, actual_one_hot, actual_smoothed, pred_probs
         return mean_loss
 
     def length_stats_based_averaging(self, predicted, actual, epsilon=0.1):
