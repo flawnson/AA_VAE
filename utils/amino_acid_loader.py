@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import IterableDataset
 
-from utils.data.common import load_data_from_file, load_from_saved_tensor
+from utils.data.common import load_data_from_file, load_from_saved_tensor, save_tensor_to_file
 from utils.logger import log
 
 """
@@ -247,6 +247,6 @@ def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence,
             scores.append(0)
 
     data = torch.stack(proteins), c, torch.FloatTensor(scores), buckets
-    # if pt_file is not None:
-    #     save_tensor_to_file(pt_file, data)
+    if pt_file is not None:
+        save_tensor_to_file(pt_file, data)
     return data
