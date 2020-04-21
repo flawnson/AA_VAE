@@ -19,7 +19,7 @@
   "embedding_gradient": "False",
   "lr": 0.0003,
   "train_datatype": "text/plain",
-  "train_dataset_name": "data/eukaryota_bacteria_1_to_1_1500_50M",
+  "train_dataset_name": "data/train_set_large_1500_mammalian.json",
   "test_datatype": "text/json",
   "test_dataset_name": "data/test_set_large_no_ofr_no_trim_1500_mammalian.json"
 }

@@ -8,7 +8,7 @@ class LossFunctions:
     def __init__(self, device, weights, length_stats):
         self.length_stats = None if length_stats is None else torch.tensor(length_stats).to(device)
         self.device = device
-        self.weights = torch.tensor(weights, dtype=torch.double).to(device)
+        self.weights = torch.tensor(weights, dtype=torch.float32).to(device)
 
     def smoothened_loss(self, pred, actual, epsilon=0.1):
         istarget = actual.le(20)  # (1. - actual.eq(Constants.PAD).float()).contiguous().view(-1)
@@ -36,7 +36,7 @@ class LossFunctions:
 
         pred_probs = F.log_softmax(predicted, dim=-1)
 
-        weights = self.length_stats[torch.sum(istarget, dim =1)]
+        weights = self.length_stats[torch.sum(istarget, dim=1)]
         loss = -torch.sum(actual_smoothed * pred_probs, dim=1)
         mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / weights)
 

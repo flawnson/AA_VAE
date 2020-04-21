@@ -21,7 +21,7 @@ class Trainer(LossFunctions):
     """
 
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
-                 n_epochs, loss_function_name="length_factored", vocab_size=23, patience_count=1000,
+                 n_epochs, loss_function_name="smoothened", vocab_size=23, patience_count=1000,
                  weights=None, model_name="default", save_best=True, length_stats=None):
         """
 
@@ -120,7 +120,7 @@ class Trainer(LossFunctions):
                 log.debug(
                     "Log10 Max gradient: {}, Min gradient: {}".format((max_grad),
                                                                       (math.fabs(min_grad))))
-            # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 500)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
 
             self.optimizer.step()
             self.optimizer.zero_grad()

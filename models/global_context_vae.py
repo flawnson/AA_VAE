@@ -1,5 +1,5 @@
 import copy
-
+import torch.nn.functional as F
 import torch.nn.modules.activation
 
 from models.model_common import *
@@ -173,7 +173,7 @@ class GlobalContextVAEModel(nn.Module):
 
     def bottleneck(self, h):
         mu = self.fc1(h)
-        log_var = self.fc2(h)
+        log_var = (self.fc2(h))
         z = reparameterization(mu, log_var, self.device)
         return z, mu, log_var
 
