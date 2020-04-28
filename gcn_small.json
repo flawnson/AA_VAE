@@ -1,7 +1,7 @@
 {
   "protein_length": 1500,
   "batch_size": 6000,
-  "epochs": 150,
+  "epochs": 1500,
   "iteration_freq": 1000,
   "chem_features": "False",
   "added_length": 0,
@@ -17,7 +17,7 @@
   "channels": 16,
   "kernel_size": 5,
   "embedding_gradient": "False",
-  "lr": 0.0003,
+  "lr": 0.00003,
   "train_datatype": "text/plain",
   "train_dataset_name": "data/train_set_large_1500_mammalian.json",
   "test_datatype": "text/json",

@@ -19,10 +19,10 @@ from utils.model_factory import create_model
 from utils.training.train import Trainer
 
 config_common_mammalian = {
-    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 150, 'epochs': 150,
-    "iteration_freq": 1000,
+    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 1000, 'epochs': 150,
     "chem_features": "False",
-    'added_length': 0, 'hidden_size': 1000, 'embedding_size': 640, "tuning": True
+    "optimizer": "RAdam",
+    'added_length': 0, 'hidden_size': 1000, 'embedding_size': 448, "tuning": True
 }
 
 config_common_bacteria = {
@@ -40,8 +40,8 @@ model_tuning_configs = {
         "layers": {"grid_search": [5]},
         "embedding_gradient": "False",
         "chem_features": "False",
-        "lr": tune.sample_from(lambda spec: tune.loguniform(0.000000001, 0.001)),
-        "weight_decay": tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001))
+        "lr": tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.0001)),
+        "weight_decay": 1.6459309598386149e-06
     },
     "gated_conv": {
         "model_name": "gated_cnn",
@@ -130,9 +130,8 @@ def tuner_run(config):
     weights = utils.data.common.load_from_saved_tensor(weights_name)
     train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     train = Trainer(model, config["protein_length"], train_iterator, None, device,
-                    optimizer,
-                    len(train_dataset),
-                    0, 0, weights=weights, save_best=False)
+                    optimizer, n_epochs= 0,
+                    weights=weights, save_best=False)
 
     train_dataset_len = train_dataset.shape[0]
     epochs = config["epochs"]

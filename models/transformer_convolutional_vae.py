@@ -225,7 +225,6 @@ class TransformerConvVAEModel(nn.Module):
         self.fc2: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc3: nn.Module = nn.Linear(z_dim, h_dim)
         self.activation = nn.LogSoftmax(dim=0)
-        # self.init_weights()
 
     def init_weights(self):
         initrange = 0.1
@@ -243,11 +242,10 @@ class TransformerConvVAEModel(nn.Module):
         mask = x.le(20).unsqueeze(1).float()
         z, mu, log_var = self.bottleneck(
             self.transformer_encoder(self.embedder(self.encoder(x).transpose(1, 2))).view(x.shape[0], -1))
-        # z, mu, log_var = self.bottleneck(output)
         data = self.fc3(z).view(z.shape[0], -1, input_len)
         data = self.resize_channels(torch.cat((data, mask), 1))
         return self.activation(self.deembed(self.transformer_decoder(data))), mu, log_var
 
     def representation(self, x):
         x = self.transformer_encoder(self.embedder(self.encoder(x).transpose(1, 2))).view(x.shape[0], -1)
-        return self.bottleneck(x)[1]
+        return self.bottleneck(x)

@@ -1,3 +1,7 @@
-gdown
-ray[tune]
+gdown~=3.10.2
+ray[tune]~=0.8.1
 torch
+numpy~=1.18.1
+scikit-learn~=0.22.1
+pandas~=1.0.0
+matplotlib~=3.1.3

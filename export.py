@@ -4,6 +4,7 @@ import argparse
 import collections
 import json
 
+import numpy
 import pandas as pd
 import torch
 
@@ -78,18 +79,26 @@ def read_sequences(file, fixed_protein_length):
     return torch.stack(proteins)
 
 
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Config file parser")
     parser.add_argument("-c", "--config", help="common config file", type=str)
     parser.add_argument("-m", "--modelconfig", help="model config file", type=str)
     parser.add_argument("-x", "--model", help="model to load", type=str)
     parser.add_argument("-g", "--multigpu", help="multigpu mode", action="store_true")
+    parser.add_argument("-o", "--outputfile", help="output file to store the embedding", type=str)
+    parser.add_argument("-t", "--mimetype", help="mimetype for the output", type=str)
+
     args = parser.parse_args()
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     config: dict = json.load(open(args.config))
     model_config: dict = json.load(open(args.modelconfig))
     print(f"Creating the model")
+
+    # checkpoint = torch.load(args.model)['module.deembed.weight'].detach().cpu().numpy()
+    # numpy.save("deembed.npy", checkpoint)
     model, _, device, _ = model_factory.create_model(config, model_config, args.model, args.multigpu)
     FIXED_PROTEIN_LENGTH = config["protein_length"]
     protein_file = "data/human_proteins.json"
@@ -97,13 +106,24 @@ if __name__ == "__main__":
     proteins_onehot = read_sequences(protein_file, FIXED_PROTEIN_LENGTH)
     model.eval()
     embedding_list = []
+    mu_list = []
+    sigma_list = []
+
     for protein in proteins_onehot:
         protein_rep = protein.view(1, -1)
         if args.multigpu:
-            protein_embeddings = model.module.representation(protein_rep.to(device).long()).view(-1)
+            protein_embeddings, mu, var = model.module.representation(protein_rep.to(device).long())
         else:
-            protein_embeddings = model.representation(protein_rep.to(device).long()).view(-1)
-        val = protein_embeddings.to('cpu').detach().numpy()
-        embedding_list.append(val)
+            protein_embeddings, mu, var = model.representation(protein_rep.to(device).long())
+        embedding = protein_embeddings.view(-1).to('cpu').detach().numpy()
+        embedding_list.append(embedding)
+        mu_list.append(mu.view(-1).to('cpu').detach().numpy())
+        sigma_list.append(var.view(-1).to('cpu').detach().numpy())
+
     proteins['embeddings'] = embedding_list
-    proteins.to_json("exports/embeddings.json")
+    proteins['mu'] = mu_list
+    proteins['sigma'] = sigma_list
+    if args.mimetype == "application/json":
+        proteins.to_json(args.outputfile)
+    if args.mimetype == "text/csv":
+        proteins.to_csv(args.outputfile)
