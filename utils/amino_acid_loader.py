@@ -60,8 +60,7 @@ def load_data(_config: dict, max_length=-1):
         filetype = _config.get("train_datatype", "text/json")
 
         train_dataset, c, score, length_scores = process_sequences(
-            load_data_from_file(train_dataset_name, filetype=filetype), max_length,
-            data_length, pad_sequence=True, fill_itself=False,
+            load_data_from_file(train_dataset_name, filetype=filetype), max_length, data_length, pad_sequence=True,
             pt_file=pt_file)
     log.info(f"Loading the sequence for test data: {test_dataset_name}")
     pt_file = f"{test_dataset_name}_{data_length}_{True}_{True}_{max_length}.pt"
@@ -71,8 +70,7 @@ def load_data(_config: dict, max_length=-1):
     else:
         filetype = _config.get("test_datatype", "text/json")
         test_dataset, ct, scoret, _ = process_sequences(load_data_from_file(test_dataset_name, filetype=filetype),
-                                                        max_length, data_length,
-                                                        pad_sequence=True, fill_itself=False, pt_file=pt_file)
+                                                        max_length, data_length, pad_sequence=True, pt_file=pt_file)
     log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     _train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, batch_size=batch_size)
@@ -97,9 +95,8 @@ def load_large_data(config: dict):
         test_dataset, ct, scoret, _ = load_from_saved_tensor(pt_file)
     else:
         filetype = config.get("test_datatype", "text/json")
-        test_dataset, ct, scoret, _ = process_sequences(load_data_from_file(test_dataset_name, filetype=filetype),
-                                                        -1, data_length,
-                                                        pad_sequence=True, fill_itself=False, pt_file=pt_file)
+        test_dataset, ct, scoret, _ = process_sequences(load_data_from_file(test_dataset_name, filetype=filetype), -1,
+                                                        data_length, pad_sequence=True, pt_file=pt_file)
     log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     _train_iterator = DataLoader(train_dataset_iter, shuffle=False, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
@@ -208,7 +205,7 @@ def calculate_bucket_cost(length_counter: collections.Counter, fixed_protein_len
     return values
 
 
-def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence, fill_itself, pt_file=None):
+def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence, pt_file=None):
     proteins = []
     c = collections.Counter()
     lengths = []
