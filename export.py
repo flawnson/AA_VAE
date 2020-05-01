@@ -4,7 +4,6 @@ import argparse
 import collections
 import json
 
-import numpy
 import pandas as pd
 import torch
 
@@ -79,8 +78,6 @@ def read_sequences(file, fixed_protein_length):
     return torch.stack(proteins)
 
 
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Config file parser")
     parser.add_argument("-c", "--config", help="common config file", type=str)
@@ -108,21 +105,31 @@ if __name__ == "__main__":
     embedding_list = []
     mu_list = []
     sigma_list = []
+    representations = []
 
     for protein in proteins_onehot:
         protein_rep = protein.view(1, -1)
         if args.multigpu:
             protein_embeddings, mu, var = model.module.representation(protein_rep.to(device).long())
+            representation, _, _ = model(protein_rep.to(device).long())
         else:
             protein_embeddings, mu, var = model.representation(protein_rep.to(device).long())
+            representation, _, _ = model(protein_rep.to(device).long())
+        max_line = representation.argmax(axis=1).view(-1).to('cpu').detach().numpy().tolist()
+        sequence = ""
+        for index in max_line:
+            sequence = sequence + amino_acids[index]
+        # amino_acid_sequence = amino_acids[representation]
         embedding = protein_embeddings.view(-1).to('cpu').detach().numpy()
         embedding_list.append(embedding)
         mu_list.append(mu.view(-1).to('cpu').detach().numpy())
         sigma_list.append(var.view(-1).to('cpu').detach().numpy())
+        representations.append(sequence)
 
     proteins['embeddings'] = embedding_list
     proteins['mu'] = mu_list
     proteins['sigma'] = sigma_list
+    proteins['reconstruction'] = representations
     if args.mimetype == "application/json":
         proteins.to_json(args.outputfile)
     if args.mimetype == "text/csv":
