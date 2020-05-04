@@ -3,7 +3,8 @@ import torch
 
 def label_smoothing(inputs, epsilon):
     k = inputs.size()[-1]
-    return ((1 - epsilon) * inputs) + (epsilon / k)
+    inputs = ((1 - epsilon) * inputs) + (epsilon / k)
+    return inputs
 
 
 def calculate_gradient_stats(parameters):
@@ -56,6 +57,6 @@ def reconstruction_accuracy(predicted, actual, mask):
     Computes average sequence identity between input and output sequences
     """
     output_sequences = torch.masked_select(actual, mask)
-    input_sequences = torch.masked_select(predicted.argmax(axis=1), mask)
+    input_sequences = torch.masked_select(predicted.argmax(axis=2), mask)
 
     return float((input_sequences == output_sequences).sum()) / float(len(input_sequences))
