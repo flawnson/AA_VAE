@@ -1,6 +1,6 @@
 {
   "protein_length": 1500,
-  "batch_size": 4500,
+  "batch_size": 6000,
   "epochs": 1500,
   "iteration_freq": 1000,
   "chem_features": "False",
@@ -11,8 +11,7 @@
   "sched_freq": 4000,
   "weight_decay": 1.6459309598386149e-06,
   "optimizer": "RAdam",
-  "LearningRateScheduler": "Cosine",
-  "layers": 6,
+  "layers": 4,
   "channels": 16,
   "kernel_size": 5,
   "embedding_gradient": "False",

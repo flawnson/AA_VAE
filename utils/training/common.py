@@ -57,6 +57,6 @@ def reconstruction_accuracy(predicted, actual, mask):
     Computes average sequence identity between input and output sequences
     """
     output_sequences = torch.masked_select(actual, mask)
-    input_sequences = torch.masked_select(predicted.argmax(axis=2), mask)
+    input_sequences = torch.masked_select(predicted.argmax(axis=1), mask)
 
     return float((input_sequences == output_sequences).sum()) / float(len(input_sequences))

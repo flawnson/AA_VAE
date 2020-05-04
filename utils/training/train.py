@@ -70,7 +70,7 @@ class Trainer(LossFunctions):
 
     def calculate_confusion_matrix(self, predicted, actual, mask):
         actual_sequence = torch.masked_select(actual, mask).detach().cpu().numpy()
-        predicted_sequence = torch.masked_select(predicted.argmax(axis=2), mask).detach().cpu().numpy()
+        predicted_sequence = torch.masked_select(predicted.argmax(axis=1), mask).detach().cpu().numpy()
         conf_mat = confusion_matrix(actual_sequence, predicted_sequence, labels=[x for x in range(self.vocab_size)])
         self.conf_matrix += conf_mat
 

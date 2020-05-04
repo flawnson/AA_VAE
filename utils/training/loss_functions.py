@@ -16,16 +16,16 @@ class LossFunctions:
         target_count = torch.sum(istarget, dim=1)
         target_count[target_count == 0] = 1
         actual_one_hot = torch.zeros(*pred.size(), requires_grad=False).to(self.device)
-        actual_one_hot = actual_one_hot.scatter_(2, actual.unsqueeze(2).data, 1)
+        actual_one_hot = actual_one_hot.scatter_(1, actual.unsqueeze(1).data, 1)
         # if self.weights is not None:
         #     actual_one_hot = self.weights[actual].view(actual.shape[0], 1, -1) * actual_one_hot
 
         k = actual.shape[1]
         actual_one_hot = ((1 - epsilon) * actual_one_hot) + (epsilon / k)
-        pred_probs = F.log_softmax(pred, dim=1)
+        pred_probs = F.log_softmax(pred, dim=-1)
 
         # target_count = torch.sum(istarget)
-        loss = -torch.sum(actual_one_hot * pred_probs, dim=2)
+        loss = -torch.sum(actual_one_hot * pred_probs, dim=1)
         mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / target_count)
         del loss, istarget, target_count, actual_one_hot, pred_probs
         return mean_loss
