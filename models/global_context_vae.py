@@ -190,4 +190,4 @@ class GlobalContextVAEModel(nn.Module):
     def representation(self, x):
         x = self.transformer_encoder(self.triple_encoder(self.protein_embedding(x).transpose(1, 2))).view(x.shape[0],
                                                                                                           -1)
-        return self.bottleneck(x)[1]
+        return self.bottleneck(x)

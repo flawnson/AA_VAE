@@ -8,6 +8,7 @@ import pandas as pd
 import torch
 
 import utils.model_factory as model_factory
+import utils.training.common as common
 
 """
 Valid amino acids
@@ -86,6 +87,7 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--multigpu", help="multigpu mode", action="store_true")
     parser.add_argument("-o", "--outputfile", help="output file to store the embedding", type=str)
     parser.add_argument("-t", "--mimetype", help="mimetype for the output", type=str)
+    parser.add_argument("-i", "--input", help="The input file", type=str)
 
     args = parser.parse_args()
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -99,6 +101,8 @@ if __name__ == "__main__":
     model, _, device, _ = model_factory.create_model(config, model_config, args.model, args.multigpu)
     FIXED_PROTEIN_LENGTH = config["protein_length"]
     protein_file = "data/human_proteins.json"
+    if args.input is not None:
+        protein_file = args.input
     proteins = pd.read_json(protein_file)
     proteins_onehot = read_sequences(protein_file, FIXED_PROTEIN_LENGTH)
     model.eval()
@@ -106,19 +110,23 @@ if __name__ == "__main__":
     mu_list = []
     sigma_list = []
     representations = []
+    correctness_all = []
 
     for protein in proteins_onehot:
-        protein_rep = protein.view(1, -1)
+        protein_rep = protein.view(1, -1).to(device).long()
         if args.multigpu:
-            protein_embeddings, mu, var = model.module.representation(protein_rep.to(device).long())
-            representation, _, _ = model(protein_rep.to(device).long())
+            protein_embeddings, mu, var = model.module.representation(protein_rep)
+            representation, _, _ = model(protein_rep)
         else:
-            protein_embeddings, mu, var = model.representation(protein_rep.to(device).long())
-            representation, _, _ = model(protein_rep.to(device).long())
+            protein_embeddings, mu, var = model.representation(protein_rep)
+            representation, _, _ = model(protein_rep)
         max_line = representation.argmax(axis=1).view(-1).to('cpu').detach().numpy().tolist()
         sequence = ""
+        correctness = common.reconstruction_accuracy(representation, protein_rep, protein_rep.le(20))
+        correctness_all.append(correctness)
         for index in max_line:
             sequence = sequence + amino_acids[index]
+
         # amino_acid_sequence = amino_acids[representation]
         embedding = protein_embeddings.view(-1).to('cpu').detach().numpy()
         embedding_list.append(embedding)
@@ -130,6 +138,8 @@ if __name__ == "__main__":
     proteins['mu'] = mu_list
     proteins['sigma'] = sigma_list
     proteins['reconstruction'] = representations
+    proteins['correctness'] = correctness_all
+
     if args.mimetype == "application/json":
         proteins.to_json(args.outputfile)
     if args.mimetype == "text/csv":
