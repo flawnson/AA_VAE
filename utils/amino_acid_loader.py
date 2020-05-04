@@ -189,7 +189,7 @@ def process_sequence(protein_sequence, fixed_protein_length=1500, pad_sequence=T
             if len(protein_sequence) < fixed_protein_length:
                 protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
         return torch.ByteTensor(one_to_number(protein_sequence))
-    log.error("Invalid sequence found{}".format(protein_sequence))
+    # log.error("Invalid sequence found{}".format(protein_sequence))
     return "0" * fixed_protein_length
 
 
@@ -216,6 +216,7 @@ def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence,
             if i > max_length:
                 break
         if valid_protein(protein_sequence):
+            c.update(protein_sequence)
             length = len(protein_sequence)
             if length > 200:
                 length = 200
@@ -232,13 +233,13 @@ def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence,
 
     scores = []
     buckets = calculate_bucket_cost(length_counter, fixed_protein_length, window)
-    # length = sum(c.values())
+    length = sum(c.values())
     for k in amino_acids:
         if c[k] > 0 and amino_acids_to_byte_map[k] <= 20:
-            # rarity = length / (21 * c[k])
-            # if rarity > 5:
-            #     rarity = 0.05
-            rarity = 1
+            rarity = length / (21 * c[k])
+            if rarity > 5:
+                rarity = 0.05
+            # rarity = 1
             scores.append(rarity)
         else:
             scores.append(0)

@@ -50,9 +50,9 @@ if __name__ == "__main__":
 
     log.info("Loading the data")
     if args.large:
-        train_iterator, test_iterator, c, score, length_scores = load_large_data(config)
+        train_iterator, test_iterator, c, weights, length_scores = load_large_data(config)
     else:
-        train_iterator, test_iterator, c, score, length_scores = load_data(config)
+        train_iterator, test_iterator, c, weights, length_scores = load_data(config)
 
     log.info(f"Model config:{model_config}")
     log.info(f"General config:{config}")
@@ -64,5 +64,5 @@ if __name__ == "__main__":
 
     log.info("Start the training")
     Trainer(model, config["protein_length"], train_iterator, test_iterator, device, optimizer,
-            number_of_epochs, weights=score, model_name=model_name,
+            number_of_epochs, weights=weights, model_name=model_name,
             save_best=args.save, length_stats=length_scores).trainer()

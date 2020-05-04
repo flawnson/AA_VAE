@@ -21,7 +21,7 @@ class Trainer(LossFunctions):
     """
 
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
-                 n_epochs, loss_function_name="length_factored", vocab_size=23, patience_count=1000,
+                 n_epochs, loss_function_name="smoothened", vocab_size=23, patience_count=1000,
                  weights=None, model_name="default", save_best=True, length_stats=None):
         """
 
@@ -145,7 +145,7 @@ class Trainer(LossFunctions):
         self.train_dataset_len = 0
         for i, x in enumerate(self.train_iterator):
             self.train_dataset_len += x.shape[0]
-            iteration_count = i+1
+            iteration_count = i + 1
             kl_loss, recon_loss, accuracy = self.__inner_iteration(x, True, i)
             total_loss = recon_loss + kl_loss
             if math.isnan(total_loss):
@@ -161,7 +161,8 @@ class Trainer(LossFunctions):
                 if i != 0:
                     acc = acc / i
 
-                log.debug("KL: {} Recon:{} Accuracy:{} {}".format(train_kl_loss, train_recon_loss, acc * 100, accuracy))
+                log.debug("KL: {} Recon:{} Accuracy:{} {}".format(train_kl_loss, train_recon_loss, acc * 100,
+                                                                  accuracy))
         return train_kl_loss, train_recon_loss, recon_accuracy / iteration_count, valid_loop
 
     def test(self):
@@ -183,7 +184,7 @@ class Trainer(LossFunctions):
             for i, x in enumerate(self.test_iterator):
                 self.test_dataset_len += x.shape[0]
                 # update the gradients to zero
-                iteration_count = i+1
+                iteration_count = i + 1
                 kl_loss, recon_loss, accuracy = self.__inner_iteration(x, False, i)
 
                 # backward pass
