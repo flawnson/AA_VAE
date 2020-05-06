@@ -40,7 +40,7 @@ class Trainer(LossFunctions):
         :param weights: The weight of each class.
         :param model_name: The generic name of the model
         """
-        super().__init__(device, weights, length_stats)
+        super().__init__(device, weights, length_stats, vocab_size)
         log.info(f"Name: {model_name} Length:{data_length} Epochs:{n_epochs}")
         log.info(f"LossFunction:{loss_function_name} VocabSize:{vocab_size} PatienceCount:{patience_count} ")
 
@@ -120,7 +120,7 @@ class Trainer(LossFunctions):
                 log.debug(
                     "Log10 Max gradient: {}, Min gradient: {}".format((max_grad),
                                                                       (math.fabs(min_grad))))
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 10)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 50)
 
             self.optimizer.step()
             self.optimizer.zero_grad()
@@ -164,6 +164,34 @@ class Trainer(LossFunctions):
                 log.debug("KL: {} Recon:{} Accuracy:{} {}".format(train_kl_loss, train_recon_loss, acc * 100,
                                                                   accuracy))
         return train_kl_loss, train_recon_loss, recon_accuracy / iteration_count, valid_loop
+
+    def get_representation(self, dataset):
+        embedding_list = []
+        mu_list = []
+        sigma_list = []
+        representations = []
+        correctness_all = []
+        self.model.eval()
+        amino_acids = "UCSTPAGNDEQHRKMILVFYWX0"
+        with torch.no_grad():
+            for i, x in enumerate(dataset):
+                x = x.long().to(self.device)
+                representation, mu, var = self.model(x)
+                protein_embeddings = self.model.module.representation(x)
+                max_line = representation.argmax(axis=1).view(-1).to('cpu').detach().numpy().tolist()
+                sequence = ""
+                correctness = reconstruction_accuracy(representation, x, x.le(20))
+                correctness_all.append(correctness)
+                for index in max_line:
+                    sequence = sequence + amino_acids[index]
+
+                # amino_acid_sequence = amino_acids[representation]
+                embedding = protein_embeddings.view(-1).to('cpu').detach().numpy()
+                embedding_list.append(embedding)
+                mu_list.append(mu.view(-1).to('cpu').detach().numpy())
+                sigma_list.append(var.view(-1).to('cpu').detach().numpy())
+                representations.append(sequence)
+        return embedding_list, mu_list, sigma_list, representations, correctness_all
 
     def test(self):
         """

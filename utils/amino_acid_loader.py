@@ -45,32 +45,33 @@ def to_categorical(num_classes):
     return categorical
 
 
+def __load_data(pt_file, filetype, dataset_path, max_length, data_length):
+    if os.path.exists(pt_file):
+        # pass
+        return load_from_saved_tensor(pt_file)
+    else:
+        return process_sequences(
+            load_data_from_file(dataset_path, filetype=filetype), max_length, data_length, pad_sequence=True,
+            pt_file=pt_file)
+
+
 def load_data(_config: dict, max_length=-1):
     data_length = _config["protein_length"]
     batch_size = _config["batch_size"]  # number of data points in each batch
+
     train_dataset_name = os.getcwd() + "/" + _config["train_dataset_name"]
     test_dataset_name = os.getcwd() + "/" + _config["test_dataset_name"]
 
     log.info(f"Loading the sequence for train data: {train_dataset_name} and test data: {test_dataset_name}")
     pt_file = f"{train_dataset_name}_{data_length}_{True}_{True}_{max_length}.pt"
-    if os.path.exists(pt_file):
-        # pass
-        train_dataset, c, score, length_scores = load_from_saved_tensor(pt_file)
-    else:
-        filetype = _config.get("train_datatype", "text/json")
+    train_dataset, c, score, length_scores = __load_data(pt_file, _config.get("train_datatype", "text/json"),
+                                                         train_dataset_name, max_length, data_length)
 
-        train_dataset, c, score, length_scores = process_sequences(
-            load_data_from_file(train_dataset_name, filetype=filetype), max_length, data_length, pad_sequence=True,
-            pt_file=pt_file)
     log.info(f"Loading the sequence for test data: {test_dataset_name}")
     pt_file = f"{test_dataset_name}_{data_length}_{True}_{True}_{max_length}.pt"
-    if os.path.exists(pt_file):
-        # pass
-        test_dataset, ct, scoret, _ = load_from_saved_tensor(pt_file)
-    else:
-        filetype = _config.get("test_datatype", "text/json")
-        test_dataset, ct, scoret, _ = process_sequences(load_data_from_file(test_dataset_name, filetype=filetype),
-                                                        max_length, data_length, pad_sequence=True, pt_file=pt_file)
+    test_dataset, ct, scoret, _ = __load_data(pt_file, _config.get("test_datatype", "text/json"),
+                                              test_dataset_name, max_length, data_length)
+
     log.info(f"Loading the iterator for train data: {train_dataset_name} and test data: {test_dataset_name}")
     _train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     _test_iterator = DataLoader(test_dataset, batch_size=batch_size)

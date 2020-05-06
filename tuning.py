@@ -99,15 +99,13 @@ model_tuning_configs = {
     },
     "gcn": {
         "model_name": "global_context_vae",
-        "layers": 4,
+        "layers": 5,
         "channels": 16,
-        "kernel_size": {"grid_search": [3, 5, 9, 17, 33]},
+        "kernel_size": {"grid_search": [5]},
         "embedding_gradient": "False",
-        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00000001, 0.01)),
+        "lr": tune.sample_from(lambda spec: tune.loguniform(0.0001, 0.01)),
         "sched_freq": 40,
         "weight_decay": 1.6459309598386149e-06,
-        "LearningRateScheduler": "CosineWarmRestarts",
-        "wrap": "False",
         "optimizer": "RAdam"
     }
 }

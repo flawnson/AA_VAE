@@ -5,10 +5,11 @@ from utils.training.common import label_smoothing
 
 
 class LossFunctions:
-    def __init__(self, device, weights, length_stats):
+    def __init__(self, device, weights, length_stats, vocab_size=21):
         self.length_stats = None if length_stats is None else torch.tensor(length_stats).to(device)
         self.device = device
         self.weights = torch.tensor(weights, dtype=torch.float32).to(device)
+        self.vocab_size = vocab_size
 
     def smoothened_loss(self, pred, actual, epsilon=0.1):
         istarget = actual.le(20)  # (1. - actual.eq(Constants.PAD).float()).contiguous().view(-1)
@@ -26,7 +27,7 @@ class LossFunctions:
 
         # target_count = torch.sum(istarget)
         loss = -torch.sum(actual_one_hot * pred_probs, dim=1)
-        mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / target_count)
+        mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / target_count)/actual.shape[0]
         del loss, istarget, target_count, actual_one_hot, pred_probs
         return mean_loss
 
