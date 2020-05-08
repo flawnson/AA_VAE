@@ -64,10 +64,9 @@ class TrainLinear:
         f1 = f1_score(torch.argmax(labels, dim=1).cpu(),
                       pred.cpu(),
                       average='macro')
-        print(f"Accuracy: {accuracy:.2f}")
-        print(f"auroc: {auroc:.2f}")
-        print(f"F1: {f1:.2f}")
-        print("-"*20)
+        print(f"Accuracy: {accuracy:.3f}")
+        print(f"auroc: {auroc:.3f}")
+        print(f"F1: {f1:.3f}")
 
         return accuracy
 
@@ -76,9 +75,8 @@ class TrainLinear:
         pass
 
     def run(self) -> tuple:
-        dataset_size = len(self.dataset)
-        indices = list(range(dataset_size))
-        split = int(np.floor(self.test_split * dataset_size))
+        indices = list(range(len(self.dataset)))
+        split = int(np.floor(self.test_split * len(self.dataset)))
         train_indices, test_indices = indices[split:], indices[:split]
         train_sampler = SubsetRandomSampler(train_indices)
         test_sampler = SubsetRandomSampler(test_indices)
@@ -93,10 +91,17 @@ class TrainLinear:
                                pin_memory=True)
 
         train_record, test_record = [], []
-        for epoch in range(self.run_config.get('epochs') + 1):
-            # FIXME: Iteration occurs over batches, not epochs, restructuring needed
 
+        epoch_num = 0
+        for epoch in range(self.run_config.get('epochs') + 1):
+            print("-"*10 + f"Epoch number: {epoch_num}" + "-"*10)
+            epoch_num += 1
+
+            batch_num = 0
             for (train_batch, train_labels), (test_batch, test_labels) in zip(train_data, test_data):
+                print(f"Batch number: {batch_num}")
+                batch_num += 1
+
                 train_record.append(self.train(train_batch.float().to(self.device),
                                                train_labels.to(self.device)))
                 train_record.append(self.test(test_batch.float().to(self.device),

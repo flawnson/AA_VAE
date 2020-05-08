@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    embed_file = osp.join("/home/ubuntu/Work/amino-acid-vae", "exports", "embeddings.json")
+    embed_file = osp.join(r"C:\Users\flawn\Documents\amino-acid-vae\exports\embeddings_wip_cvae.json")
     json_embed = open(embed_file)
     json_data = json.load(json_embed)
 
@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     model_config = json_config.get('model_config')
     model = LinearModel(len(np.squeeze(list(dataset.x["embeddings"].values())[0])),  # Embedding size
-                        len(dataset.y[0]),  # Number of classes
+                        len(dataset.y[0].to(device)),  # Number of classes
                         model_config.get('layer_sizes'),  # List of layer sizes
                         model_config.get('dropout')).to(device)  # Boolean value
 
