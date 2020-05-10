@@ -182,7 +182,7 @@ def inner_iteration(x, labels, training: bool, model, device, optimizer, criteri
         optimizer.zero_grad()
     # forward pass
     predicted = model(x)
-
+    labels = labels.to(device)
     recon_loss = criterion(predicted, labels)
     # reconstruction accuracy
     recon_accuracy = reconstruction_accuracy(predicted, labels)
@@ -304,7 +304,7 @@ if __name__ == "__main__":
     train_iterator = DataLoader(
         LabeledProtein(train_sequence_dataset, train_protein_class, train_protein_fold, train_protein_super),
         shuffle=True,
-        batch_size=100)
+        batch_size=500)
     embeddings_map = amino_acid_loader.get_embedding_matrix(False)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     test_data = pd.read_csv("../data/scop_from_domain/test.csv")
