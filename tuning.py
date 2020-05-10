@@ -19,7 +19,7 @@ from utils.model_factory import create_model
 from utils.training.train import Trainer
 
 config_common_mammalian = {
-    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 1000, 'epochs': 150,
+    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 400, 'epochs': 150,
     "chem_features": "False",
     "optimizer": "RAdam",
     'added_length': 0, 'hidden_size': 1000, 'embedding_size': 448, "tuning": True
@@ -73,7 +73,7 @@ model_tuning_configs = {
         "kernel_size": {"grid_search": [3]},
         "embedding_gradient": "False",
         "chem_features": "False",
-        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00001, 0.001)),
+        "lr": tune.sample_from(lambda spec: tune.loguniform(0.00001, 0.01)),
         # "lr": 0.0005279379246234669,
         "weight_decay": 1.6459309598386149e-06,
         "wrap": "True",
@@ -99,7 +99,7 @@ model_tuning_configs = {
     },
     "gcn": {
         "model_name": "global_context_vae",
-        "layers": 5,
+        "layers": 4,
         "channels": 16,
         "kernel_size": {"grid_search": [5]},
         "embedding_gradient": "False",
@@ -139,7 +139,7 @@ def tuner_run(config):
         train_kl_loss /= train_dataset_len
         recon_loss /= train_dataset_len
 
-        print_str = f'Epoch {e}, kl: {train_kl_loss:.3f}, recon: {recon_loss:.3f} accuracy {train_recon_accuracy:.2f}'
+        print_str = f'Epoch {e}, kl: {train_kl_loss:.6f}, recon: {recon_loss:.6f} accuracy {train_recon_accuracy:.6f}'
         total_loss = train_recon_accuracy + train_kl_loss
         if total_loss == math.nan or not valid_loop:
             break
@@ -188,7 +188,7 @@ def tuner(smoke_test: bool, model, config_type):
     global pinned_dataset
     pinned_dataset = pin_in_object_store(train_dataset)
     sched = AsyncHyperBandScheduler(
-        time_attr="training_iteration", metric="accuracy")
+        time_attr="training_iteration", metric="mean_loss")
 
     analysis = tune.run(
         tuner_run,
@@ -202,9 +202,9 @@ def tuner(smoke_test: bool, model, config_type):
             "gpu": gpus
         },
         local_dir=local_dir,
-        num_samples=1 if smoke_test else 3,
+        num_samples=1 if smoke_test else 15,
         config=config_tune)
-    print("Best config is:", analysis.get_best_config(metric="accuracy"))
+    print("Best config is:", analysis.get_best_config(metric="mean_loss"))
 
 
 if __name__ == "__main__":

@@ -68,6 +68,8 @@ def read_sequences(file, fixed_protein_length):
                 sequences = data["protein_sequence"].values()
     print("Size of sequence is {}".format(len(sequences)))
     for protein_sequence in sequences:
+        if len(protein_sequence) >= 1500:
+            continue
         if valid_protein(protein_sequence):
             protein_sequence = protein_sequence[:fixed_protein_length]
             # pad sequence
@@ -104,6 +106,7 @@ if __name__ == "__main__":
     if args.input is not None:
         protein_file = args.input
     proteins = pd.read_json(protein_file)
+    proteins = proteins[proteins['protein_sequence'].map(len) < 1500]
     proteins_onehot = read_sequences(protein_file, FIXED_PROTEIN_LENGTH)
     model.eval()
     embedding_list = []
@@ -139,7 +142,7 @@ if __name__ == "__main__":
     proteins['sigma'] = sigma_list
     proteins['reconstruction'] = representations
     proteins['correctness'] = correctness_all
-
+    print(proteins.describe())
     if args.mimetype == "application/json":
         proteins.to_json(args.outputfile)
     if args.mimetype == "text/csv":

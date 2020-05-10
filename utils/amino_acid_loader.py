@@ -191,7 +191,7 @@ def process_sequence(protein_sequence, fixed_protein_length=1500, pad_sequence=T
                 protein_sequence += "0" * (fixed_protein_length - len(protein_sequence))
         return torch.ByteTensor(one_to_number(protein_sequence))
     # log.error("Invalid sequence found{}".format(protein_sequence))
-    return "0" * fixed_protein_length
+    return torch.ByteTensor(one_to_number("0" * fixed_protein_length))
 
 
 def calculate_bucket_cost(length_counter: collections.Counter, fixed_protein_length, window):
@@ -206,7 +206,7 @@ def calculate_bucket_cost(length_counter: collections.Counter, fixed_protein_len
     return values
 
 
-def process_sequences(sequences, max_length, fixed_protein_length, pad_sequence, pt_file=None):
+def process_sequences(sequences, max_length=-1, fixed_protein_length=1500, pad_sequence=True, pt_file=None):
     proteins = []
     c = collections.Counter()
     lengths = []
