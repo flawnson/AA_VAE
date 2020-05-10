@@ -127,7 +127,7 @@ class GlobalContextVAEModel(nn.Module):
         z, mu, log_var = self.bottleneck(
             self.transformer_encoder(self.triple_encoder(self.protein_embedding(x).transpose(1, 2)))
                 .view(x.shape[0], -1))
-        return z, mu, log_var
+        return z
 
     def representation(self, x):
         x = self.transformer_encoder(self.triple_encoder(self.protein_embedding(x).transpose(1, 2))).view(x.shape[0],
@@ -143,10 +143,12 @@ class Predictor(nn.Module):
         self.name = "predictor"
         super(Predictor, self).__init__()
         self.embedder = GlobalContextVAEModel(model_config, z_dim, input_size, device, embeddings_static)
-        self.predictor = LinearPredictor(448, [128, 32, 8])
+        self.predictor = LinearPredictor(448, [128, 32, 8],7)
 
     def forward(self, x):
-        return self.predictor(self.embedder(x))
+        data = self.embedder(x)
+        data = self.predictor(data)
+        return data
 
 
 import torch
@@ -156,7 +158,7 @@ import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 
 import math
-from utils.training.common import reconstruction_accuracy
+from utils.training.common import reconstruction_accuracy_full
 
 
 def inner_iteration(x, labels, training: bool, model, device, optimizer, criterion, reconstruction_accuracy):
@@ -195,12 +197,40 @@ def inner_iteration(x, labels, training: bool, model, device, optimizer, criteri
             log.error("recon: {} x:{} predicted:{}".format(recon_loss, v1, v2))
             recon_loss = criterion(predicted, x)
 
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 50)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
 
         optimizer.step()
         optimizer.zero_grad()
 
     return recon_loss.item(), recon_accuracy
+
+
+def test(model, device, optimizer, criterion, reconstruction_accuracy):
+        """
+        Run a test or validation iteration
+        :return:
+        """
+        # set the evaluation mode
+        model.eval()
+
+        # test loss for the data
+        test_recon_loss = 0
+        test_accuracy = 0.0
+        iteration_count = 0
+        # we don't need to track the gradients, since we are not updating the parameters during evaluation / testing
+        with torch.no_grad():
+            for i, data in enumerate(test_iterator):
+                x, labels, _, _ = data
+                # update the gradients to zero
+                iteration_count = i + 1
+                recon_loss, accuracy = inner_iteration(x, labels, False, model, device, optimizer, criterion,
+                                               reconstruction_accuracy)
+
+                # backward pass
+                test_recon_loss += recon_loss
+                test_accuracy += accuracy
+
+        return test_recon_loss, test_accuracy / iteration_count
 
 
 def train(model, device, optimizer, criterion, reconstruction_accuracy):
@@ -213,11 +243,15 @@ def train(model, device, optimizer, criterion, reconstruction_accuracy):
     # Statistics of the epoch
     train_recon_loss = 0
     valid_loop = True
+    counter =0
+    total_accuracy = 0
     for i, data in enumerate(train_iterator):
+        counter = counter + 1
         x, labels, _, _ = data
         recon_loss, accuracy = inner_iteration(x, labels, True, model, device, optimizer, criterion,
                                                reconstruction_accuracy)
         total_loss = recon_loss
+        total_accuracy += accuracy
         if math.isnan(total_loss):
             log.error("Loss was nan, loop is breaking, change parameters")
             valid_loop = False
@@ -226,7 +260,7 @@ def train(model, device, optimizer, criterion, reconstruction_accuracy):
         train_recon_loss += recon_loss
         if (i % 100) == 0:
             log.debug("Recon: {} ".format(train_recon_loss))
-    return train_recon_loss, valid_loop
+    return train_recon_loss, valid_loop, total_accuracy/counter
 
 
 class IDMapper:
@@ -283,8 +317,9 @@ if __name__ == "__main__":
         LabeledProtein(test_sequence_dataset, test_protein_class, test_protein_fold, test_protein_super))
     gcn_config = {"layers": 4, "channels": 16, "kernel_size": 5}
     model = Predictor(gcn_config, 448, 1500, device, embeddings_map).to(device)
-    print(model)
-    optimizer = torch.optim.Adam(model.parameters())
+    optimizer = torch.optim.Adam(model.parameters(), lr=3e-5)
     loss_func = torch.nn.CrossEntropyLoss()
     for x in range(100):
-        train(model, device, optimizer, loss_func, reconstruction_accuracy)
+        _,_, accuracy = train(model, device, optimizer, loss_func, reconstruction_accuracy_full)
+        _,test_acc = test(model,device,optimizer,loss_func,reconstruction_accuracy_full)
+        print(f"{accuracy} {test_acc}")
