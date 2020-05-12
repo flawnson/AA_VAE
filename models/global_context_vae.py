@@ -172,8 +172,8 @@ class GlobalContextVAEModel(nn.Module):
         self.deembed.weight.data.uniform_(-initrange, initrange)
 
     def bottleneck(self, h):
-        mu = self.fc1(h)
-        log_var = (self.fc2(h))
+        mu = (self.fc1(h))
+        log_var = torch.nn.functional.tanh(self.fc2(h))
         z = reparameterization(mu, log_var, self.device)
         return z, mu, log_var
 
