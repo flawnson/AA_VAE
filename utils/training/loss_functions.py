@@ -23,12 +23,12 @@ class LossFunctions:
 
         k = actual.shape[1]
         actual_one_hot = ((1 - epsilon) * actual_one_hot) + (epsilon / k)
-        pred_probs = F.log_softmax(pred, dim=-1)
+        pred_probs = F.log_softmax(pred, dim=1)
 
         # target_count = torch.sum(istarget)
         loss = -torch.sum(actual_one_hot * pred_probs, dim=1)
-        mean_loss = torch.sum(torch.sum(loss * istarget, dim=1) / target_count)/actual.shape[0]
-        del loss, istarget, target_count, actual_one_hot, pred_probs
+        mean_loss = torch.mean(torch.sum(loss * istarget, dim=1) / target_count)
+        del loss, istarget, target_count, actual_one_hot
         return mean_loss
 
     def length_stats_based_averaging(self, predicted, actual, epsilon=0.1):

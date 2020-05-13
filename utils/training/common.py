@@ -46,6 +46,22 @@ def kl_loss_function(mu, logvar):
     return kld
 
 
+def reconstruction_accuracy_full(predicted, actual):
+    """
+
+    :param predicted: The result returned by the model
+    :param actual: The comparison data
+    :param mask: The mask that differentiates the actual data points from padding.
+    :return: The accuracy of reconstruction
+
+    Computes average sequence identity between input and output sequences
+    """
+    # output_sequences = torch.masked_select(actual, mask)
+    input_sequences = predicted.argmax(axis=1)
+
+    return float((input_sequences == actual).sum()) / float(len(input_sequences))
+
+
 def reconstruction_accuracy(predicted, actual, mask):
     """
 

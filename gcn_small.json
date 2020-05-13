@@ -15,9 +15,10 @@
   "channels": 16,
   "kernel_size": 5,
   "embedding_gradient": "False",
-  "lr": 0.00003,
-  "train_datatype": "text/json",
-  "train_dataset_name": "data/train_set_large_1500_mammalian.json",
+  "lr": 0.0007896,
+  "train_datatype": "text/plain",
+  "train_dataset_name": "data/other",
   "test_datatype": "text/json",
   "test_dataset_name": "data/test_set_large_no_ofr_no_trim_1500_mammalian.json"
+
 }

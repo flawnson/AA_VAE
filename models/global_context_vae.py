@@ -163,7 +163,7 @@ class GlobalContextVAEModel(nn.Module):
         self.fc1: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc2: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc3: nn.Module = nn.Linear(z_dim, h_dim)
-        self.activation = nn.LogSoftmax(dim=1)
+        self.activation = nn.Softmax(dim=1)
         # self.init_weights()
 
     def init_weights(self):
@@ -172,8 +172,8 @@ class GlobalContextVAEModel(nn.Module):
         self.deembed.weight.data.uniform_(-initrange, initrange)
 
     def bottleneck(self, h):
-        mu = self.fc1(h)
-        log_var = (self.fc2(h))
+        mu = (self.fc1(h))
+        log_var = torch.nn.functional.tanh(self.fc2(h))
         z = reparameterization(mu, log_var, self.device)
         return z, mu, log_var
 
@@ -185,7 +185,8 @@ class GlobalContextVAEModel(nn.Module):
                 .view(x.shape[0], -1))
         data = self.fc3(z).view(z.shape[0], -1, input_len)
         data = self.resize_channels(torch.cat((data, mask), 1))
-        return self.activation(self.deembed(self.transformer_decoder(data))), mu, log_var
+        data = self.deembed(self.transformer_decoder(data))
+        return self.activation(data), mu, log_var
 
     def representation(self, x):
         x = self.transformer_encoder(self.triple_encoder(self.protein_embedding(x).transpose(1, 2))).view(x.shape[0],
