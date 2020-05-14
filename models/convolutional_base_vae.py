@@ -132,7 +132,7 @@ class ConvolutionalBaseVAE(nn.Module):
 
     def representation(self, x):
         x = self.encoder(self.embedding(x).transpose(1, 2))
-        return self.bottleneck(x)[1]
+        return x, self.bottleneck(x)
 
     def forward(self, x):
         h = self.encoder(self.embedding(x).transpose(1, 2))

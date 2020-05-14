@@ -27,7 +27,7 @@ class LossFunctions:
 
         # target_count = torch.sum(istarget)
         loss = -torch.sum(actual_one_hot * pred_probs, dim=1)
-        mean_loss = torch.mean(torch.sum(loss * istarget, dim=1) / target_count)
+        mean_loss = (torch.sum(loss * istarget) / torch.sum(target_count))
         del loss, istarget, target_count, actual_one_hot
         return mean_loss
 

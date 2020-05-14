@@ -114,14 +114,15 @@ if __name__ == "__main__":
     sigma_list = []
     representations = []
     correctness_all = []
+    last_layer = []
 
     for protein in proteins_onehot:
         protein_rep = protein.view(1, -1).to(device).long()
         if args.multigpu:
-            protein_embeddings, mu, var = model.module.representation(protein_rep)
+            prev, protein_embeddings, mu, var = model.module.representation(protein_rep)
             representation, _, _ = model(protein_rep)
         else:
-            protein_embeddings, mu, var = model.representation(protein_rep)
+            prev, protein_embeddings, mu, var = model.representation(protein_rep)
             representation, _, _ = model(protein_rep)
         max_line = representation.argmax(axis=1).view(-1).to('cpu').detach().numpy().tolist()
         sequence = ""
@@ -136,12 +137,15 @@ if __name__ == "__main__":
         mu_list.append(mu.view(-1).to('cpu').detach().numpy())
         sigma_list.append(var.view(-1).to('cpu').detach().numpy())
         representations.append(sequence)
+        last_layer.append(prev.view(-1).to('cpu').detach().numpy())
 
     proteins['embeddings'] = embedding_list
     proteins['mu'] = mu_list
     proteins['sigma'] = sigma_list
     proteins['reconstruction'] = representations
     proteins['correctness'] = correctness_all
+    proteins['uncompressed_embedding'] = last_layer
+
     print(proteins.describe())
     if args.mimetype == "application/json":
         proteins.to_json(args.outputfile)

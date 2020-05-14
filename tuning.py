@@ -19,7 +19,7 @@ from utils.model_factory import create_model
 from utils.training.train import Trainer
 
 config_common_mammalian = {
-    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 1800, 'epochs': 150,
+    'dataset': 'medium', 'protein_length': 1500, 'class': 'mammalian', 'batch_size': 400, 'epochs': 150,
     "chem_features": "False",
     "optimizer": "RAdam",
     'added_length': 0, 'hidden_size': 1000, 'embedding_size': 448, "tuning": True
@@ -40,7 +40,7 @@ model_tuning_configs = {
         "layers": {"grid_search": [5]},
         "embedding_gradient": "False",
         "chem_features": "False",
-        "lr": tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.1)),
+        "lr": {"grid_search":[0.1,0.01,0.001,0.0001,0.00001,0.000001]}, #tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.1)),
         "weight_decay": 1.6459309598386149e-06
     },
     "gated_conv": {
@@ -195,14 +195,14 @@ def tuner(smoke_test: bool, model, config_type):
         name="exp",
         scheduler=sched,
         stop={
-            "training_iteration": 5 if smoke_test else 10
+            "training_iteration": 5 if smoke_test else 4
         },
         resources_per_trial={
             "cpu": cpus,
             "gpu": gpus
         },
         local_dir=local_dir,
-        num_samples=1 if smoke_test else 10,
+        num_samples=1 if smoke_test else 1,
         config=config_tune)
     print("Best config is:", analysis.get_best_config(metric="mean_loss"))
 
