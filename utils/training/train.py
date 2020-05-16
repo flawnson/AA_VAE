@@ -21,7 +21,7 @@ class Trainer(LossFunctions):
     """
 
     def __init__(self, model, data_length, train_iterator, test_iterator, device, optimizer,
-                 n_epochs, loss_function_name="smoothened", vocab_size=23, patience_count=1000,
+                 n_epochs, loss_function_name="bce", vocab_size=23, patience_count=1000,
                  weights=None, model_name="default", save_best=True, length_stats=None):
         """
 

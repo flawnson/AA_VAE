@@ -43,7 +43,7 @@ if __name__ == "__main__":
         config["test_dataset_name"] = test_dataset_name
 
     torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.enabled = True
+    # torch.backends.cudnn.enabled = True
 
     log.info("Creating the model")
     model, optimizer, device, model_name = create_model(config, model_config, args.pretrained, args.multigpu)

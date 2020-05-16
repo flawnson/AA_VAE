@@ -5,10 +5,13 @@ import collections
 import json
 
 import pandas as pd
-import torch
+import torch.nn.modules.activation
+from torch.utils.data import DataLoader, Dataset
 
 import utils.model_factory as model_factory
 import utils.training.common as common
+from models.model_common import *
+from utils.amino_acid_loader import process_sequence
 
 """
 Valid amino acids
@@ -78,7 +81,29 @@ def read_sequences(file, fixed_protein_length):
             proteins.append(torch.ByteTensor(one_to_number(protein_sequence)))
         else:
             continue
-    return torch.stack(proteins)
+    return proteins
+
+
+class LabeledProtein(Dataset):
+
+    def __init__(self, sequence_data):
+        self.sequence = sequence_data
+
+    def __len__(self):
+        return len(self.sequence)
+
+    def __getitem__(self, idx):
+        return self.sequence[idx]
+
+
+def get_iterator_from_file(filename, batch_size=500, shuffle=False):
+    file_data = pd.read_json(filename)
+    # file_data = file_data[file_data['protein_sequence'].map(len) < 1500]
+    file_sequence_dataset = [process_sequence(sequences) for sequences in file_data['sequence']]
+    return file_data, DataLoader(
+        LabeledProtein(file_sequence_dataset),
+        shuffle=shuffle,
+        batch_size=batch_size)
 
 
 if __name__ == "__main__":
@@ -105,9 +130,7 @@ if __name__ == "__main__":
     protein_file = "data/human_proteins.json"
     if args.input is not None:
         protein_file = args.input
-    proteins = pd.read_json(protein_file)
-    proteins = proteins[proteins['protein_sequence'].map(len) < 1500]
-    proteins_onehot = read_sequences(protein_file, FIXED_PROTEIN_LENGTH)
+    proteins, proteins_onehot = get_iterator_from_file(protein_file)
     model.eval()
     embedding_list = []
     mu_list = []
@@ -117,9 +140,10 @@ if __name__ == "__main__":
     last_layer = []
 
     for protein in proteins_onehot:
-        protein_rep = protein.view(1, -1).to(device).long()
+        protein_rep = protein.to(device).long()
         if args.multigpu:
-            prev, protein_embeddings, mu, var = model.module.representation(protein_rep)
+            values = model.module.representation(protein_rep)
+            prev, (protein_embeddings, mu, var) = values
             representation, _, _ = model(protein_rep)
         else:
             prev, protein_embeddings, mu, var = model.representation(protein_rep)
@@ -132,21 +156,22 @@ if __name__ == "__main__":
             sequence = sequence + amino_acids[index]
 
         # amino_acid_sequence = amino_acids[representation]
-        embedding = protein_embeddings.view(-1).to('cpu').detach().numpy()
-        embedding_list.append(embedding)
-        mu_list.append(mu.view(-1).to('cpu').detach().numpy())
-        sigma_list.append(var.view(-1).to('cpu').detach().numpy())
-        representations.append(sequence)
-        last_layer.append(prev.view(-1).to('cpu').detach().numpy())
-
+        embedding = protein_embeddings.to('cpu').detach().numpy()
+        embedding_list.extend(embedding.tolist())
+        mu_list.extend(mu.to('cpu').detach().numpy().tolist())
+        sigma_list.extend(var.to('cpu').detach().numpy().tolist())
+        # representations.extend(sequence)
+        # last_layer.append(prev.view(-1).to('cpu').detach().numpy())
+    print("Loading into pandas data frame")
     proteins['embeddings'] = embedding_list
     proteins['mu'] = mu_list
     proteins['sigma'] = sigma_list
-    proteins['reconstruction'] = representations
-    proteins['correctness'] = correctness_all
-    proteins['uncompressed_embedding'] = last_layer
-
-    print(proteins.describe())
+    # proteins['reconstruction'] = representations
+    # proteins['correctness'] = correctness_all
+    # proteins['uncompressed_embedding'] = last_layer
+    print("Describing the dataset")
+    # print(proteins.describe())
+    print("Storing to file")
     if args.mimetype == "application/json":
         proteins.to_json(args.outputfile)
     if args.mimetype == "text/csv":
