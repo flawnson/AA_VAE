@@ -1,17 +1,18 @@
 {
   "data_config": {
+    "embed": "embeddings_750.json",
     "task": "quinary",
     "onehot": true,
     "batch_size": 16,
     "test_ratio": 0.3
   },
   "model_config": {
-    "layer_sizes": [128, 32],
+    "layer_sizes": [128, 64, 16],
     "dropout": 0.50
   },
   "run_config": {
     "epochs": 100,
-    "lr": 0.001,
+    "lr": 0.0005,
     "wd": 5e-5,
     "auroc_average": "macro",
     "auroc_multi_class": "ovr"

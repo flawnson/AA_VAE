@@ -45,36 +45,35 @@ class TrainLinear:
         print(f"Loss: {loss:.4f}")
         return loss
 
-    def test(self, batch, labels) -> float:
+    @torch.no_grad()
+    def score(self, batchset: list, labelset: list) -> float:
         self.model.eval()
         torch.set_grad_enabled(False)
-        logits = self.model(batch)
+
+        logits = self.model(batchset)
         pred = logits.max(1)[1]
 
-        accuracy = accuracy_score(pred.cpu(), torch.argmax(labels, dim=1).cpu())
+        accuracy = accuracy_score(pred.cpu(), torch.argmax(labelset, dim=1).cpu())
         output_mask = np.isin(list(range(list(self.model.children())[-1][-1].out_features)),
-                              np.unique(torch.argmax(labels, dim=1)))
+                              np.unique(torch.argmax(labelset, dim=1)))
         test = np.apply_along_axis(func1d=lambda arr: arr[output_mask], axis=1,
                                    arr=logits.to('cpu').data.numpy())
         s_logits = F.softmax(input=torch.from_numpy(test), dim=1)
-        auroc = roc_auc_score(torch.argmax(labels, dim=1).cpu(),
+        auroc = roc_auc_score(torch.argmax(labelset, dim=1).cpu(),
                               s_logits,
                               average=self.run_config.get("auroc_average"),
                               multi_class=self.run_config.get("auroc_multi_class"))
-        f1 = f1_score(torch.argmax(labels, dim=1).cpu(),
+        f1 = f1_score(torch.argmax(labelset, dim=1).cpu(),
                       pred.cpu(),
                       average='macro')
-        print(f"Accuracy: {accuracy:.3f}")
-        print(f"auroc: {auroc:.3f}")
-        print(f"F1: {f1:.3f}")
 
-        return accuracy
+        return accuracy, auroc, f1
 
     def logs(self):
         # TODO: Need to implement logging of metrics and scores
         pass
 
-    def run(self) -> tuple:
+    def run(self) -> None:
         indices = list(range(len(self.dataset)))
         split = int(np.floor(self.test_split * len(self.dataset)))
         train_indices, test_indices = indices[split:], indices[:split]
@@ -90,22 +89,25 @@ class TrainLinear:
                                sampler=test_sampler,
                                pin_memory=True)
 
-        train_record, test_record = [], []
-
         epoch_num = 0
         for epoch in range(self.run_config.get('epochs') + 1):
-            print("-"*10 + f"Epoch number: {epoch_num}" + "-"*10)
+            print("-"*20 + f"Epoch number: {epoch_num}" + "-"*20)
             epoch_num += 1
 
-            batch_num = 0
+            iteration = 0
             for (train_batch, train_labels), (test_batch, test_labels) in zip(train_data, test_data):
-                print(f"Batch number: {batch_num}")
-                batch_num += 1
+                print("-"*15 + f"Iteration number: {iteration}" + "-"*15)
+                iteration += 1
 
-                train_record.append(self.train(train_batch.float().to(self.device),
-                                               train_labels.to(self.device)))
-                train_record.append(self.test(test_batch.float().to(self.device),
-                                              test_labels))
+                train_loss = self.train(train_batch.float().to(self.device),
+                                               train_labels.to(self.device))
+                train_accs, train_auc, train_f1 = self.score(train_batch.float().to(self.device), train_labels)
+                test_accs, test_auc, test_f1 = self.score(test_batch.float().to(self.device), test_labels)
 
-        return train_record, test_record
+                print(f"Train Loss: {train_loss}")
+                print(f"Train Accuracy: {train_accs:.3f}, Test Accuracy: {test_accs:.3f}")
+                print(f"Train auroc: {train_auc:.3f} Test auroc: {test_auc:.3f}")
+                print(f"Train F1: {train_f1:.3f} Test F1: {test_f1:.3f}")
+
+        return None
 
