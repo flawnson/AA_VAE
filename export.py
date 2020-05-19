@@ -96,7 +96,7 @@ class LabeledProtein(Dataset):
         return self.sequence[idx]
 
 
-def get_iterator_from_file(filename, batch_size=500, shuffle=False):
+def get_iterator_from_file(filename, batch_size=100, shuffle=False):
     file_data = pd.read_json(filename)
     # file_data = file_data[file_data['protein_sequence'].map(len) < 1500]
     file_sequence_dataset = [process_sequence(sequences) for sequences in file_data['sequence']]
