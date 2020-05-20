@@ -31,7 +31,7 @@ class TrainLinear:
                 torch.tensor(np.asarray(self.dataset.y)).shape[0])
             self.weights = (1 / self.imb_wc[1:]) / (sum(1 / self.imb_wc[1:])).to(device)
 
-    def train(self, batch, labels):
+    def train(self, batch, labels) -> torch.Tensor:
         # TODO: Need to apply known mask to ignore unknowns (supervised task)
         self.model.train()
         torch.set_grad_enabled(True)
@@ -42,7 +42,6 @@ class TrainLinear:
         loss = F.cross_entropy(logits, labels, weight=self.weights.float())
         loss.backward()
         self.optimizer.step()
-        print(f"Loss: {loss:.4f}")
         return loss
 
     @torch.no_grad()
@@ -67,11 +66,18 @@ class TrainLinear:
                       pred.cpu(),
                       average='macro')
 
-        return accuracy, auroc, f1
+        return [accuracy, auroc, f1]
 
     def logs(self):
         # TODO: Need to implement logging of metrics and scores
         pass
+
+    @staticmethod
+    def average_batch_scores(scores_list: list) -> list:
+        reformated_scores = [list(i) for i in zip(*scores_list)]
+        avg_scores = [sum(scores) / len(scores) for scores in reformated_scores]
+
+        return avg_scores
 
     def run(self) -> None:
         indices = list(range(len(self.dataset)))
@@ -101,13 +107,19 @@ class TrainLinear:
 
                 train_loss = self.train(train_batch.float().to(self.device),
                                                train_labels.to(self.device))
-                train_accs, train_auc, train_f1 = self.score(train_batch.float().to(self.device), train_labels)
-                test_accs, test_auc, test_f1 = self.score(test_batch.float().to(self.device), test_labels)
+                train_scores = self.score(train_batch.float().to(self.device), train_labels)
+                test_scores = self.score(test_batch.float().to(self.device), test_labels)
 
-                print(f"Train Loss: {train_loss}")
-                print(f"Train Accuracy: {train_accs:.3f}, Test Accuracy: {test_accs:.3f}")
-                print(f"Train auroc: {train_auc:.3f} Test auroc: {test_auc:.3f}")
-                print(f"Train F1: {train_f1:.3f} Test F1: {test_f1:.3f}")
+                print(f"Train Loss: {train_loss:.3f}")
+                print(f"Train Accuracy: {train_scores[0]:.3f}, Test Accuracy: {test_scores[0]:.3f}")
+                print(f"Train auroc: {train_scores[1]:.3f} Test auroc: {test_scores[1]:.3f}")
+                print(f"Train F1: {train_scores[2]:.3f} Test F1: {test_scores[2]:.3f}")
+
+            avg_train_scores = self.average_batch_scores(train_scores)
+            avg_test_scores = self.average_batch_scores(test_scores)
+            print(f"Avg Train Accuracy: {avg_train_scores[0]:.3f}, Avg Test Accuracy: {avg_test_scores[0]:.3f}")
+            print(f"Avg Train auroc: {avg_train_scores[1]:.3f}, Avg Test auroc: {avg_test_scores[1]:.3f}")
+            print(f"Avg Train F1: {avg_train_scores[2]:.3f}, Avg Test F1: {avg_test_scores[2]:.3f}")
 
         return None
 
