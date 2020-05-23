@@ -101,19 +101,22 @@ class TrainLinear:
             epoch_num += 1
 
             iteration = 0
-            for (train_batch, train_labels), (test_batch, test_labels) in zip(train_data, test_data):
-                print("-"*15 + f"Iteration number: {iteration}" + "-"*15)
-                iteration += 1
+            try:
+                for (train_batch, train_labels), (test_batch, test_labels) in zip(train_data, test_data):
+                    print("-"*15 + f"Iteration number: {iteration}" + "-"*15)
+                    iteration += 1
 
-                train_loss = self.train(train_batch.float().to(self.device),
-                                               train_labels.to(self.device))
-                train_scores = self.score(train_batch.float().to(self.device), train_labels)
-                test_scores = self.score(test_batch.float().to(self.device), test_labels)
+                    train_loss = self.train(train_batch.float().to(self.device),
+                                                   train_labels.to(self.device))
+                    train_scores = self.score(train_batch.float().to(self.device), train_labels)
+                    test_scores = self.score(test_batch.float().to(self.device), test_labels)
 
-                print(f"Train Loss: {train_loss:.3f}")
-                print(f"Train Accuracy: {train_scores[0]:.3f}, Test Accuracy: {test_scores[0]:.3f}")
-                print(f"Train auroc: {train_scores[1]:.3f} Test auroc: {test_scores[1]:.3f}")
-                print(f"Train F1: {train_scores[2]:.3f} Test F1: {test_scores[2]:.3f}")
+                    print(f"Train Loss: {train_loss:.3f}")
+                    print(f"Train Accuracy: {train_scores[0]:.3f}, Test Accuracy: {test_scores[0]:.3f}")
+                    print(f"Train auroc: {train_scores[1]:.3f} Test auroc: {test_scores[1]:.3f}")
+                    print(f"Train F1: {train_scores[2]:.3f} Test F1: {test_scores[2]:.3f}")
+            except ValueError:
+                print("Ran out of data to continue batched training, continuing run")
 
             avg_train_scores = self.average_batch_scores(train_scores)
             avg_test_scores = self.average_batch_scores(test_scores)
