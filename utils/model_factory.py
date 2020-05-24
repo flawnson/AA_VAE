@@ -67,10 +67,9 @@ def create_model(config, model_config, pretrained_model=None, multigpu=False):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model = models.get(model_config["model_name"])(
-        model_config, config["hidden_size"],
+        model_config,
         config["embedding_size"], config["protein_length"], device,
-        amino_acid_loader.get_embedding_matrix(config["chem_features"] == "True"), model_config["embedding_gradient"] == "True") \
-        .to(device)
+        [25, 128]).to(device)
     model_name = model.name
 
     if multigpu:

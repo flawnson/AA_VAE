@@ -194,7 +194,7 @@ class TransformerDecoderLayer(nn.Module):
 
 
 class TransformerConvVAEModel(nn.Module):
-    def __init__(self, model_config, h_dim, z_dim, input_size, device, embeddings_static, requires_grad=True):
+    def __init__(self, model_config, z_dim, input_size, device, embeddings_static):
         torch.manual_seed(0)
         self.device = device
 
@@ -205,13 +205,13 @@ class TransformerConvVAEModel(nn.Module):
         layers = model_config["layers"]
         self.channels = model_config["channels"]
         kernel_dimension = model_config["kernel_size"]
-        self.embedder = nn.Conv1d(kernel_size=3, in_channels=embeddings_static.shape[1],
+        self.embedder = nn.Conv1d(kernel_size=3, in_channels=embeddings_static[1],
                                   out_channels=self.channels, stride=1, padding=1, bias=False)
         self.deembed = nn.ConvTranspose1d(kernel_size=3, in_channels=self.channels,
-                                          out_channels=embeddings_static.shape[0], padding=1, bias=False)
-        self.encoder = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
-        self.encoder.weight.data.copy_(embeddings_static)
-        self.encoder.weight.requires_grad = False
+                                          out_channels=embeddings_static[0], padding=1, bias=False)
+        self.encoder = nn.Embedding(embeddings_static[0], embeddings_static[1])
+        # self.encoder.weight.data.copy_(embeddings_static)
+        # self.encoder.weight.requires_grad = False
 
         encoder_layers = TransformerEncoderLayer(channels=self.channels, kernel_size=kernel_dimension)
         self.transformer_encoder = TransformerLayer(encoder_layers, layers)

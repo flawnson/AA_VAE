@@ -1,10 +1,10 @@
 {
   "model_name": "transformer_convolutional",
   "layers": 4,
-  "channels": 16,
-  "kernel_size": 3,
+  "channels": 128,
+  "kernel_size": 33,
   "embedding_gradient": "False",
-  "lr": 0.0049246234669,
+  "lr": 0.000049246234669,
   "weight_decay": 1.6459309598386149e-06,
   "optimizer": "Adam",
   "sched_freq": 400

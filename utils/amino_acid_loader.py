@@ -14,7 +14,7 @@ X - unknown
 U - Selenocysteine
 0 - padding for fixed length encoders
 """
-amino_acids = "UCSTPAGNDEQHRKMILVFYWX0"
+amino_acids = "UCSTPAGNDEQHRKMILVFYWX0ZB"
 VOCABULARY_SIZE = len(amino_acids)
 
 amino_acids_to_byte_map = {r: amino_acids.index(r) for r in amino_acids}
