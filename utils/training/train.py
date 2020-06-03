@@ -107,7 +107,7 @@ class Trainer(LossFunctions):
                 log.info(
                     "Log10 Max gradient: {}, Min gradient: {}".format((max_grad),
                                                                       (math.fabs(min_grad))))
-
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 50)
             self.optimizer.step()
 
         return kl_loss.item(), recon_loss.item(), recon_accuracy
