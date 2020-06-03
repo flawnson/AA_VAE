@@ -240,7 +240,7 @@ def process_sequences(sequences, max_length=-1, fixed_protein_length=1500, pad_s
             rarity = length / (21 * c[k])
             if rarity > 5:
                 rarity = 0.05
-            # rarity = 1
+            rarity = 1
             scores.append(rarity)
         else:
             scores.append(0)

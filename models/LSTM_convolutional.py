@@ -1,42 +1,27 @@
 import torch.nn as nn
 
-from models.model_common import *
-from models.vae_template import VaeTemplate
-from models.model_common import ConvolutionalBlock, ConvolutionalTransposeBlock
+from models.model_common import ConvolutionalBlock, ConvolutionalTransposeBlock, out_size_conv, out_size_transpose, \
+    reparameterization
 
 
 class Encoder(nn.Module):
-    def __init__(self, layers, kernel_size, input_size, input_channels: int, channel_scale_factor, max_channels=256,
-                 kernel_expansion_factor=1):
+    def __init__(self, layers, kernel_size, input_size, input_channels: int):
         super().__init__()
         conv_layers = []
         output_channels = 2 ** ((input_channels - 1).bit_length())
         out_size = input_size
-        base_kernel_size = kernel_size + 1
-        padding = 0
+        base_kernel_size = kernel_size
         padded = True
-        if padded:
-            padding = int((base_kernel_size - 1) / 2)
+        padding = int((base_kernel_size - 1) / 2)
 
         for n in range(layers):
-            base_kernel_size = kernel_size + 1
             block = ConvolutionalBlock(input_channels, output_channels, base_kernel_size, padded=padded)
             conv_layers.append(block)
-            kernel_size = kernel_size * kernel_expansion_factor
-            input_channels = output_channels
-            output_channels = int(output_channels * channel_scale_factor)
-            if output_channels > max_channels:
-                output_channels = max_channels
-            if padded:
-                padding = int((base_kernel_size - 1) / 2)
-
             out_size = int(out_size_conv(out_size, padding, 1, base_kernel_size, 1))
 
         self.out_size = int(out_size)
         self.out_channels = int(input_channels)
-        self.final_kernel_size = base_kernel_size
         self.conv_layers = nn.Sequential(*conv_layers)
-        self.residue = 200
 
     def forward(self, x):
         x = self.conv_layers(x)
@@ -86,30 +71,32 @@ class Decoder(nn.Module):
         return x
 
 
-class LSTMVae(nn.Module):
+class LSTMConvolutionalVae(nn.Module):
     def __init__(self, model_config, z_dim, input_size, device, embeddings_static):
-        layers = model_config["layers"]
+        self.name = "lstm_convolutional"
+        lstm_layers = model_config["lstm_layers"]
         cnn_layers = model_config["cnn_layers"]
         self.channels = model_config["channels"]
         kernel_dimension = model_config["kernel_size"]
-        embedding_size = model_config["aa_embedding_size"]
-        vocab = model_config.get("vocab", 25)
-        super(LSTMVae, self).__init__()
-        embedding_size = int(embedding_size / 2) * 2
+        hidden_embedding_size = embeddings_static[1]
+        vocab = embeddings_static[0]
+        super(LSTMConvolutionalVae, self).__init__()
+        hidden_embedding_size = int(hidden_embedding_size / 2) * 2
         bidirectional = True
-
-        self.embeds = nn.Embedding(vocab, self.channels)
+        self.device = device
+        lstm_features = int(self.channels / (2 if bidirectional else 1))
+        self.embeds = nn.Embedding(vocab, hidden_embedding_size)
         self.rectifier = nn.ReLU()
-        self.encoder_rnn = nn.LSTM(embedding_size, self.channels, num_layers=layers,
+        self.encoder_rnn = nn.LSTM(hidden_embedding_size, lstm_features, num_layers=lstm_layers,
                                    bidirectional=bidirectional,
                                    batch_first=True)
-        self.encoder_cnn = Encoder(cnn_layers, kernel_dimension, input_size, self.channels, 1)
+        self.encoder_cnn = Encoder(cnn_layers, kernel_dimension, input_size, self.channels)
         self.decoder_cnn = Decoder(cnn_layers, kernel_dimension, input_size, self.channels, self.channels, 1)
-        self.decoder_rnn = nn.LSTM(z_dim * (2 if bidirectional else 1),
-                                   int(embedding_size / (2 if bidirectional else 1)),
-                                   num_layers=layers, bidirectional=bidirectional,
+        self.decoder_rnn = nn.LSTM(self.channels,
+                                   hidden_embedding_size,
+                                   num_layers=lstm_layers, bidirectional=bidirectional,
                                    batch_first=True)
-        self.deembed = nn.Linear(embedding_size, vocab)
+        self.deembed = nn.Linear(int(hidden_embedding_size * (2 if bidirectional else 1)), vocab)
         h_dim = input_size * self.channels
         self.fc1: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc2: nn.Module = nn.Linear(h_dim, z_dim)
@@ -124,8 +111,12 @@ class LSTMVae(nn.Module):
 
     def forward(self, x):
         batch_size = x.shape[0]
+        self.encoder_rnn.flatten_parameters()
+        self.decoder_rnn.flatten_parameters()
         h = self.encoder_cnn(self.rectifier(self.encoder_rnn(self.embeds(x))[0]).transpose(1, 2)).view(batch_size, -1)
         z, mu, log_var = self.bottleneck(h)
-        z = self.fc3(z)
-        val = self.smax(self.deembed(self.decoder_rnn(self.decoder_cnn(z).transpose(1, 2))[0]))
-        return val.transpose(1, 2), mu, log_var
+        z = self.fc3(z).view(batch_size, self.channels, -1)
+        v1 = self.decoder_cnn(z).transpose(1, 2)
+        v2 = self.decoder_rnn(v1)
+        val = self.deembed(v2[0])
+        return self.smax(val.transpose(1, 2)), mu, log_var

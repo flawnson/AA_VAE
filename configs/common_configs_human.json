@@ -11,5 +11,5 @@
   "hidden_size": 1000,
   "embedding_size": 768,
   "train_dataset_name": "data/human_proteins.json",
-  "test_dataset_name" : "data/test_set_large_no_ofr_no_trim_1500_mammalian.json"
+  "test_dataset_name" : "data/test_set_small_200.json"
 }

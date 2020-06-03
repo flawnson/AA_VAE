@@ -301,13 +301,13 @@ class TransformerEncoderLayer(nn.Module):
         return src
 
 
-class TransformerModel(nn.Module):
+class TransformerVAEModel(nn.Module):
     def __init__(self, model_config, h_dim, z_dim, input_size, device, embeddings_static, requires_grad=True):
         torch.manual_seed(0)
         self.device = device
 
         self.name = "transformer_vae"
-        super(TransformerModel, self).__init__()
+        super(TransformerVAEModel, self).__init__()
         self.model_type = 'Transformer'
         self.src_mask = None
         nheads = model_config["heads"]

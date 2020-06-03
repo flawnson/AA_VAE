@@ -31,6 +31,11 @@ config_common_bacteria = {
     'added_length': 0, 'hidden_size': 200, 'embedding_size': 128, "tuning": True
 }
 
+config_common_human = {
+    'dataset': 'human', 'protein_length': 1500, 'class': 'human', 'batch_size': 10, 'epochs': 150,
+    'embedding_size': 768, "tuning": True
+}
+
 model_tuning_configs = {
     "convolutional_basic": {
         "model_name": "convolutional_basic",
@@ -40,7 +45,8 @@ model_tuning_configs = {
         "layers": {"grid_search": [5]},
         "embedding_gradient": "False",
         "chem_features": "False",
-        "lr": {"grid_search":[0.1,0.01,0.001,0.0001,0.00001,0.000001]}, #tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.1)),
+        "lr": {"grid_search": [0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001]},
+        # tune.sample_from(lambda spec: tune.loguniform(0.000001, 0.1)),
         "weight_decay": 1.6459309598386149e-06
     },
     "gated_conv": {
@@ -107,6 +113,17 @@ model_tuning_configs = {
         "sched_freq": 40,
         "weight_decay": 1.6459309598386149e-06,
         "optimizer": "RAdam"
+    },
+    "lstm_convolutional": {
+        "model_name": "lstm_convolutional",
+        "lstm_layers": {"grid_search": [4, 8]},
+        "cnn_layers": {"grid_search": [4, 8]},
+        "channels": {"grid_search": [128, 256]},
+        "kernel_size": {"grid_search": [17, 33]},
+        "embedding_gradient": "False",
+        "lr": tune.sample_from(lambda spec: tune.loguniform(0.0000001, 0.01)),
+        "weight_decay": 1.6459309598386149e-06,
+        "optimizer": "Adam"
     }
 }
 
@@ -128,7 +145,7 @@ def tuner_run(config):
     weights = utils.data.common.load_from_saved_tensor(weights_name)
     train_iterator = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     train = Trainer(model, config["protein_length"], train_iterator, None, device,
-                    optimizer, n_epochs= 0,
+                    optimizer, n_epochs=0,
                     weights=weights, save_best=False)
 
     train_dataset_len = train_dataset.shape[0]
@@ -151,10 +168,12 @@ def tuner_run(config):
 
 def tuner(smoke_test: bool, model, config_type):
     ray.init()
-    if config_type == "bacteria":
-        config_common = config_common_bacteria
-    else:
-        config_common = config_common_mammalian
+    config_classes = {
+        "bacteria": config_common_bacteria,
+        "mammalian": config_common_mammalian,
+        "human": config_common_human
+    }
+    config_common = config_classes[config_type]
     cpus = int(multiprocessing.cpu_count())
     gpus = torch.cuda.device_count()
 
@@ -162,10 +181,12 @@ def tuner(smoke_test: bool, model, config_type):
 
     dataset_type = config_common["dataset"]  # (small|medium|large)
     data_length = config_common["protein_length"]
-    if config_common["class"] != "mammalian":
-        train_dataset_name = f"data/train_set_{dataset_type}_{data_length}.json"
-    else:
-        train_dataset_name = "data/validation_set_large_no_ofr_no_trim_1500_mammalian.json"
+    dataset_map = {
+        "bacteria": f"data/train_set_{dataset_type}_{data_length}.json",
+        "mammalian": "data/validation_set_large_no_ofr_no_trim_1500_mammalian.json",
+        "human": "data/human_proteins.json"
+    }
+    train_dataset_name = dataset_map[config_common["class"]]
 
     max_dataset_length = 80000
 
@@ -202,17 +223,18 @@ def tuner(smoke_test: bool, model, config_type):
             "gpu": gpus
         },
         local_dir=local_dir,
-        num_samples=1 if smoke_test else 1,
+        num_samples=3 if smoke_test else 1,
         config=config_tune)
-    print("Best config is:", analysis.get_best_config(metric="mean_loss"))
+    print("Best config is:", analysis.get_best_config(metric="mean_loss", mode="min"))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Config file parser")
     parser.add_argument("-m", "--model",
-                        help="Name of the model, options are : convolutionalBasic, gated_conv, convolutional_old, gcn",
+                        help="Name of the model, options are : convolutionalBasic, gated_conv, convolutional_old, gcn,"
+                             " lstm_convolutional",
                         type=str)
-    parser.add_argument("-t", "--type", help="Bacteria or mammalian", type=str)
+    parser.add_argument("-t", "--type", help="human, bacteria or mammalian", type=str)
     args = parser.parse_args()
 
     debug = False
