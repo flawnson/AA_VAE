@@ -19,12 +19,14 @@ if __name__ == "__main__":
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    embed_file = osp.join("/home/ubuntu/Work/amino-acid-vae", "exports", "embeddings.json")
-    json_embed = open(embed_file)
-    json_data = json.load(json_embed)
-
     json_file = open(args.config)
     json_config = json.load(json_file)
+
+    embed_file = osp.join(osp.dirname(osp.dirname(osp.dirname(__file__))),
+                          "exports",
+                          json_config["data_config"]["embed"])
+    json_embed = open(embed_file)
+    json_data = json.load(json_embed)
 
     data_config = json_config.get('data_config')
     if data_config['task'] == "binary":
@@ -45,4 +47,4 @@ if __name__ == "__main__":
                         model_config.get('dropout')).to(device)  # Boolean value
 
     run_config = json_config.get('run_config')
-    TrainLinear(run_config, data_config, dataset, model, device).run()
+    result = TrainLinear(run_config, data_config, dataset, model, device).run()
