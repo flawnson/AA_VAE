@@ -5,6 +5,8 @@ import torch.nn as nn
 class LinearLayer(torch.nn.Module):
     def __init__(self, in_size, out_size, layer_sizes, dropout=.25):
         """
+        Iteratively creates layers to be used in LinearModel class.
+        Input layer, hidden layers, and output layer are defined separately.
 
         :param in_size: Model input size (embedding size)
         :param out_size: Model output size (target size)

@@ -10,34 +10,36 @@ from sklearn.preprocessing import OneHotEncoder
 
 class EmbeddingData(Dataset, metaclass=ABCMeta):
     @abstractmethod
-    def __init__(self, embedding_dict, onehot):
+    def __init__(self, embedding_dict: dict, onehot: bool):
         """
         Factory class to create datasets that consist of protein embedding and label pairs.
         self.k represents the known mask (in a semi-supervised task this would be useful,
         as is implemented in the GAT model. For this linear model however, it is used to
         ensure any unknown protein embeddings are not learnt by the model (the linear will
-        be trained in a supervised manner)
+        be trained in a supervised manner) Design of preprocessing mimics the code used to preprocess
+        GNNs_ProteinStructure
 
         :param embeddings: torch tensor of embeddings
         :param targets: torch tensor of corresponding targets
         """
         self.onehot = onehot
         self.x = embedding_dict
-        if self.onehot:
-            self.y = [item[1] for item in self.onehot_encoder()]
-        else:
-            self.y = [item[1] for item in self.integer_encoder()]
+        self.y = [item[1] for item in self.onehot_encoder()] if self.onehot else [item[1] for item in self.integer_encoder()]
 
     def label_mapper(self):
         return {}
 
-    def onehot_encoder(self):
+    def filter_embeddings(self) -> dict:
         embed_dict: dict = dict(zip(self.x["gene"].values(), self.x["embeddings"].values()))
         label_dict: dict = self.label_mapper()
 
         intersect = embed_dict.keys() & label_dict.keys()
         filter_embed = {key: np.squeeze(value) for key, value in embed_dict.items() if key in intersect}  # Extra dim
 
+        return filter_embed
+
+    def onehot_encoder(self) -> list:
+        filter_embed = self.filter_embeddings()
         onehot_encoder = OneHotEncoder(sparse=False)
         integer_encoded = np.asarray(list(label_dict.values())).reshape(len(list(label_dict.values())), 1)
         onehot_encoded = onehot_encoder.fit_transform(integer_encoded)
@@ -47,18 +49,14 @@ class EmbeddingData(Dataset, metaclass=ABCMeta):
         return pairs
 
     def integer_encoder(self) -> list:
-        embed_dict: dict = dict(zip(self.x["gene"].values(), self.x["embeddings"].values()))
-        label_dict: dict = self.label_mapper()
-
-        intersect = embed_dict.keys() & label_dict.keys()
-        filter_embed = {key: np.squeeze(value) for key, value in embed_dict.items() if key in intersect}  # Extra dim
+        filter_embed = self.filter_embeddings()
         filter_label = {key: value for key, value in label_dict.items() if key in intersect}
 
         pairs = [[filter_embed[gene], filter_label[gene]] for gene in intersect]
 
         return pairs
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int):
         if self.onehot:
             examples = self.onehot_encoder()
         else:
@@ -73,7 +71,7 @@ class BinaryLabels(EmbeddingData, ABC):
     def __init__(self, embedding_dict, onehot):
         super(BinaryLabels, self).__init__(embedding_dict=embedding_dict, onehot=onehot)
 
-    def get_label(self, positive, negative):
+    def get_label(self, positive: int, negative: int):
         """
 
         :param positive: Positive hit data as determined by the input label file

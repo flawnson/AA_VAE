@@ -12,6 +12,11 @@ from model import LinearModel
 from trainer import TrainLinear
 
 if __name__ == "__main__":
+    """
+    Validation model used to benchmark against GNNs_ProteinStructure
+    Use the validation_config.json file in config directory to define configurations
+    Integer label encodings have been deprecated in favor of onehot encodings
+    """
     path = osp.join('simple-vae', 'configs')  # Implicitly used to get config file?
     parser = argparse.ArgumentParser(description="Config file parser")
     parser.add_argument("-f", "--config", help="json config file", type=str)
