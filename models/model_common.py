@@ -11,9 +11,9 @@ class ConvolutionalBlock(nn.Module):
         if padded:
             padding = int((kernel_size - 1) / 2)
         self.conv_block = nn.Sequential(
+            nn.BatchNorm1d(out_c),
             nn.Conv1d(in_c, out_c, kernel_size=kernel_size, bias=False, padding=padding, groups=1),
-            nn.ELU(),
-            nn.BatchNorm1d(out_c)
+            nn.ELU()
         )
 
     def forward(self, x):
@@ -109,9 +109,9 @@ class ConvolutionalTransposeBlock(nn.Module):
         if padded:
             padding = int((kernel_size - 1) / 2)
         self.conv_block = nn.Sequential(
-            nn.ELU(inplace=True),
             nn.BatchNorm1d(in_c),
-            nn.ConvTranspose1d(in_c, out_c, kernel_size=kernel_size, bias=False, padding=padding, groups=1)
+            nn.ConvTranspose1d(in_c, out_c, kernel_size=kernel_size, bias=False, padding=padding, groups=1),
+            nn.ELU(inplace=True)
         )
 
     def forward(self, x):

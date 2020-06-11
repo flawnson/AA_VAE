@@ -1,35 +1,29 @@
 from models.model_common import *
 
 
-def init_weights(m):
-    if type(m) == nn.Conv1d or type(m) == nn.ConvTranspose1d or type(m) == nn.Linear:
-        nn.init.xavier_uniform_(m.weight)
-
-
 class Encoder(nn.Module):
-    def __init__(self, layers, kernel_size, input_size, input_channels: int, channel_scale_factor, max_channels=256,
-                 kernel_expansion_factor=1):
-        super().__init__()
+    def __init__(self, embeddings_static, lstm_layers, layers, z_dim, input_channels, kernel_size,
+                 kernel_expansion_factor, channel_scale_factor, max_channels):
+        super(Encoder, self).__init__()
+        self.embedding = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
+        self.embedding.weight.data.copy_(embeddings_static)
+        self.embedding.weight.requires_grad = False
+        self.lstm = nn.LSTM(embeddings_static.shape[1], input_channels, lstm_layers, dropout=0.1, batch_first=True)
         conv_layers = []
         output_channels = 2 ** ((input_channels - 1).bit_length())
-        out_size = input_size
+        out_size = z_dim
         base_kernel_size = kernel_size + 1
-        padding = 0
-        padded = True
-        if padded:
-            padding = int((base_kernel_size - 1) / 2)
 
         for n in range(layers):
             base_kernel_size = kernel_size + 1
-            block = ConvolutionalBlock(input_channels, output_channels, base_kernel_size, padded=padded)
+            block = ConvolutionalBlock(input_channels, output_channels, base_kernel_size, padded=True)
             conv_layers.append(block)
             kernel_size = kernel_size * kernel_expansion_factor
             input_channels = output_channels
             output_channels = int(output_channels * channel_scale_factor)
             if output_channels > max_channels:
                 output_channels = max_channels
-            if padded:
-                padding = int((base_kernel_size - 1) / 2)
+            padding = int((base_kernel_size - 1) / 2)
 
             out_size = int(out_size_conv(out_size, padding, 1, base_kernel_size, 1))
 
@@ -37,16 +31,16 @@ class Encoder(nn.Module):
         self.out_channels = int(input_channels)
         self.final_kernel_size = base_kernel_size
         self.conv_layers = nn.Sequential(*conv_layers)
-        self.residue = 200
 
     def forward(self, x):
+        x, _ = self.lstm(self.embedding(x))
+        x = x.transpose(0,1).transpose(1,2)
         x = self.conv_layers(x)
-        x = x.view(x.shape[0], -1)
         return x
 
 
 class Decoder(nn.Module):
-    def __init__(self, layers, kernel_size, output_expected, input_size, input_channels: int, output_channels_expected,
+    def __init__(self, lstm_layers, layers, kernel_size, output_expected, input_size, input_channels: int, output_channels_expected,
                  channel_scale_factor, max_channels=256, kernel_expansion_factor=1):
         super().__init__()
         conv_layers = []
@@ -80,49 +74,51 @@ class Decoder(nn.Module):
         self.conv_layers = nn.Sequential(*conv_layers)
 
         self.out_size = out_size
+        self.lstm = nn.LSTM(output_channels_expected, output_channels_expected, lstm_layers, dropout=0.1, batch_first=True)
         assert out_size == output_expected
         self.residue = 200
 
     def forward(self, x):
         x = self.conv_layers(x)
+        x = self.lstm(x)
         return x
 
 
-class ConvolutionalBaseVAE(nn.Module):
-    def __init__(self, model_config, h_dim, z_dim, input_size, device, embeddings_static, requires_grad=True):
+class BiDirectionalLSTM(nn.Module):
+    def __init__(self, model_config,  z_dim, input_size, device, embeddings_static):
         torch.manual_seed(0)
-        super(ConvolutionalBaseVAE, self).__init__()
-        self.name = "convolutional_basic"
+        super(BiDirectionalLSTM, self).__init__()
+        self.name = "bidirectional_lstm"
+        lstm_layers = model_config["lstm_layers"]
+        conv_layers = model_config["conv_layers"]
         kernel_size = model_config["kernel_size"]
-        layers = model_config["layers"]
+        max_channels = model_config["max_channels"]
+        channels = model_config["channels"]
         channel_scale_factor = model_config["channel_scale_factor"]
         kernel_expansion_factor = model_config["kernel_expansion_factor"]
         if kernel_expansion_factor == 1:
             kernel_size = kernel_size - 1
 
         self.device = device
-        self.encoder = Encoder(layers, kernel_size, input_size, embeddings_static.shape[1], channel_scale_factor,
-                               kernel_expansion_factor=kernel_expansion_factor)
+        self.encoder = Encoder(embeddings_static, lstm_layers, conv_layers, z_dim, channels,
+                               kernel_size, kernel_expansion_factor,
+                               channel_scale_factor, max_channels)
+
         h_dim = int(self.encoder.out_size * self.encoder.out_channels)
-        self.decoder = Decoder(layers, self.encoder.final_kernel_size, input_size, self.encoder.out_size,
+
+        self.decoder = Decoder(embeddings_static, lstm_layers, conv_layers, self.encoder.final_kernel_size, input_size,
+                               self.encoder.out_size,
                                self.encoder.out_channels,
                                embeddings_static.shape[0], channel_scale_factor,
                                kernel_expansion_factor=kernel_expansion_factor)
 
-        self.encoder.apply(init_weights)
-        self.decoder.apply(init_weights)
         self.fc1: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc2: nn.Module = nn.Linear(h_dim, z_dim)
         self.fc3: nn.Module = nn.Linear(z_dim, h_dim)
-        self.fc1.apply(init_weights)
-        self.fc2.apply(init_weights)
-        self.fc3.apply(init_weights)
-        embedding = nn.Embedding(embeddings_static.shape[0], embeddings_static.shape[1])
-        embedding.weight.data.copy_(embeddings_static)
-        embedding.weight.requires_grad = False
 
-        self.embedding = embedding
-        self.smax = nn.Softmax(dim=2)
+        self.predictor = nn.Linear(z_dim, 7)
+
+        self.smax = nn.Softmax(dim=1)
 
     def bottleneck(self, h):
         mu = self.fc1(h)
@@ -137,7 +133,8 @@ class ConvolutionalBaseVAE(nn.Module):
     def forward(self, x):
         h = self.encoder(self.embedding(x).transpose(1, 2))
         z, mu, log_var = self.bottleneck(h)
+        class_prediction = self.predictor(z)
         z = self.fc3(z)
         z = z.view(z.shape[0], self.encoder.out_channels, -1)
         val = self.decoder(z).transpose(1, 2)
-        return val.transpose(1, 2), mu, log_var
+        return class_prediction, val.transpose(1, 2), mu, log_var

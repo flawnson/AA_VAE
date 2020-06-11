@@ -21,13 +21,13 @@ class LossFunctions:
         # if self.weights is not None:
         #     actual_one_hot = self.weights[actual].view(actual.shape[0], 1, -1) * actual_one_hot
 
-        k = actual.shape[1]
-        actual_one_hot = ((1 - epsilon) * actual_one_hot) + (epsilon / k)
+        # k = actual.shape[1]
+        # actual_one_hot = ((1 - epsilon) * actual_one_hot) + (epsilon / k)
         pred_probs = F.log_softmax(pred, dim=1)
 
         # target_count = torch.sum(istarget)
         loss = -torch.sum(actual_one_hot * pred_probs, dim=1)
-        mean_loss = torch.mean(torch.sum(loss * istarget, dim=1) / target_count)
+        mean_loss = (torch.sum(loss * istarget) / torch.sum(target_count))
         del loss, istarget, target_count, actual_one_hot
         return mean_loss
 
@@ -48,8 +48,17 @@ class LossFunctions:
         return mean_loss
 
     def binary_cross_entropy_wrapper(self, predicted, actual):
-        torch.nn.functional.binary_cross_entropy_with_logits(predicted, actual, reduction="mean",
-                                                             weight=self.weights)
+        actual_one_hot = torch.zeros(predicted.size(), requires_grad=False).to(self.device)
+        actual_one_hot = actual_one_hot.scatter_(1, actual.unsqueeze(1).data, 1)
+        if self.weights is None:
+            return torch.nn.functional.binary_cross_entropy(predicted, actual_one_hot, reduction="mean")
+        else:
+            return torch.nn.functional.binary_cross_entropy(predicted, actual_one_hot, reduction="mean",
+                                                            weight=self.weights)
+
+    def binary_cross_entropy_with_logits_wrapper(self, predicted, actual):
+        return torch.nn.functional.binary_cross_entropy_with_logits(predicted, actual, reduction="mean",
+                                                                    weight=self.weights)
 
     def cross_entropy_wrapper(self, predicted, actual):
         """

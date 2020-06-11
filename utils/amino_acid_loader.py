@@ -14,7 +14,7 @@ X - unknown
 U - Selenocysteine
 0 - padding for fixed length encoders
 """
-amino_acids = "UCSTPAGNDEQHRKMILVFYWX0"
+amino_acids = "UCSTPAGNDEQHRKMILVFYWX0ZB"
 VOCABULARY_SIZE = len(amino_acids)
 
 amino_acids_to_byte_map = {r: amino_acids.index(r) for r in amino_acids}
@@ -240,7 +240,7 @@ def process_sequences(sequences, max_length=-1, fixed_protein_length=1500, pad_s
             rarity = length / (21 * c[k])
             if rarity > 5:
                 rarity = 0.05
-            # rarity = 1
+            rarity = 1
             scores.append(rarity)
         else:
             scores.append(0)

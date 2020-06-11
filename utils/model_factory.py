@@ -2,16 +2,10 @@ import torch
 import torch.optim as optim
 
 import utils.optimisers.radam as radam
-from models.convolutional_base_vae import ConvolutionalBaseVAE
+from models import *
 from models.convolutional_linear import Convolutional_Linear_VAE
 from models.convolutional_vae import ConvolutionalVAE
 from models.gated_cnn import GatedCNN
-from models.global_context_vae import GlobalContextVAEModel
-from models.linear_vae import LinearVAE
-from models.lstm_vae import LSTMVae
-from models.transformer_convolutional_vae import TransformerConvVAEModel
-from models.transformer_vae import TransformerModel
-from utils import amino_acid_loader
 from utils.optimisers.learning_rate_optimiser import ScheduledOptim, StepOptim, LearningRateOptim
 from utils.optimisers.rangerlars import RangerLars
 
@@ -60,17 +54,17 @@ def create_model(config, model_config, pretrained_model=None, multigpu=False):
               "convolutional_linear": Convolutional_Linear_VAE,
               "convolutional_basic": ConvolutionalBaseVAE,
               "gated_cnn": GatedCNN,
-              "transformer": TransformerModel,
+              "transformer": TransformerVAEModel,
               "transformer_convolutional": TransformerConvVAEModel,
-              "global_context_vae": GlobalContextVAEModel
+              "global_context_vae": GlobalContextVAEModel,
+              "lstm_convolutional": LSTMConvolutionalVae
               }
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model = models.get(model_config["model_name"])(
-        model_config, config["hidden_size"],
+        model_config,
         config["embedding_size"], config["protein_length"], device,
-        amino_acid_loader.get_embedding_matrix(config["chem_features"] == "True"), model_config["embedding_gradient"] == "True") \
-        .to(device)
+        [25, 128]).to(device)
     model_name = model.name
 
     if multigpu:

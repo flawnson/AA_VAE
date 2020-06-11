@@ -1,6 +1,7 @@
 {
-  "model_name": "transformer_convolutional",
-  "layers": 4,
+  "model_name": "lstm_convolutional",
+  "lstm_layers": 4,
+  "cnn_layers" : 4,
   "channels": 128,
   "kernel_size": 33,
   "embedding_gradient": "False",
